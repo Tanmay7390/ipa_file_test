@@ -1,0 +1,46 @@
+import 'package:flutter/cupertino.dart';
+import 'components/tab_naviagtor.dart'; // Import the tab navigator
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  // This widget is the root of your application.
+  // Helper function to apply font family to a TextStyle
+  TextStyle _applyFontFamily(TextStyle style) {
+    return style.copyWith(fontFamily: 'SF Pro Display', letterSpacing: 0.25);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final defaultTextTheme = const CupertinoTextThemeData();
+
+    return CupertinoApp(
+      title: 'Flutter Demo',
+      theme: CupertinoThemeData(
+        brightness: Brightness.light,
+        textTheme: CupertinoTextThemeData(
+          textStyle: _applyFontFamily(defaultTextTheme.textStyle),
+          actionTextStyle: _applyFontFamily(defaultTextTheme.actionTextStyle),
+          tabLabelTextStyle: _applyFontFamily(
+            defaultTextTheme.tabLabelTextStyle,
+          ),
+          navTitleTextStyle: _applyFontFamily(
+            defaultTextTheme.navTitleTextStyle,
+          ),
+          navLargeTitleTextStyle: _applyFontFamily(
+            defaultTextTheme.navLargeTitleTextStyle,
+          ),
+          pickerTextStyle: _applyFontFamily(defaultTextTheme.pickerTextStyle),
+          dateTimePickerTextStyle: _applyFontFamily(
+            defaultTextTheme.dateTimePickerTextStyle,
+          ),
+        ),
+      ),
+      home: const TabScaffoldExample(),
+    );
+  }
+}
