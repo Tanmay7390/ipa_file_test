@@ -1,15 +1,11 @@
 import 'package:flutter/cupertino.dart';
-import 'components/tab_naviagtor.dart'; // Import the tab navigator
+import 'package:flutter_test_22/router.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
-  // Helper function to apply font family to a TextStyle
   TextStyle _applyFontFamily(TextStyle style) {
     return style.copyWith(fontFamily: 'SF Pro Display', letterSpacing: 0.25);
   }
@@ -17,9 +13,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final defaultTextTheme = const CupertinoTextThemeData();
-
-    return CupertinoApp(
-      title: 'Flutter Demo',
+    return CupertinoApp.router(
+      routerConfig: appRouter,
+      title: 'Wareozo',
       theme: CupertinoThemeData(
         brightness: Brightness.light,
         textTheme: CupertinoTextThemeData(
@@ -40,7 +36,6 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const TabScaffoldExample(),
     );
   }
 }

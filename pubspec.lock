@@ -83,6 +83,19 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_web_plugins:
+    dependency: transitive
+    description: flutter
+    source: sdk
+    version: "0.0.0"
+  go_router:
+    dependency: "direct main"
+    description:
+      name: go_router
+      sha256: "0b1e06223bee260dee31a171fb1153e306907563a0b0225e8c1733211911429a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "15.1.2"
   leak_tracker:
     dependency: transitive
     description:
@@ -115,6 +128,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.1.1"
+  logging:
+    dependency: transitive
+    description:
+      name: logging
+      sha256: c8245ada5f1717ed44271ed1c26b8ce85ca3228fd2ffdb75468ab01979309d61
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.0"
   matcher:
     dependency: transitive
     description:
@@ -139,14 +160,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.16.0"
-  modal_bottom_sheet:
-    dependency: "direct main"
+  navigator_resizable:
+    dependency: transitive
     description:
-      name: modal_bottom_sheet
-      sha256: eac66ef8cb0461bf069a38c5eb0fa728cee525a531a8304bd3f7b2185407c67e
+      name: navigator_resizable
+      sha256: ec1abf6f4b804ad5d4dc1fab3c914d6290543ee7b8a34095168c8726dbe38312
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.0"
+    version: "1.0.2"
   path:
     dependency: transitive
     description:
@@ -176,6 +197,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  smooth_sheets:
+    dependency: "direct main"
+    description:
+      name: smooth_sheets
+      sha256: eab057b744dabb891a40761a8179d183c464cddaabb30547933d45faca54f8be
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.12.0"
   source_span:
     dependency: transitive
     description:
@@ -242,4 +271,4 @@ packages:
     version: "15.0.0"
 sdks:
   dart: ">=3.8.0 <4.0.0"
-  flutter: ">=3.19.0"
+  flutter: ">=3.27.0"
