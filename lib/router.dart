@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test_22/drawer.dart';
+import 'package:flutter_test_22/forms/employee_form.dart';
 import 'package:flutter_test_22/tabs/employee_tab.dart';
 import 'package:flutter_test_22/tabs/home_tab.dart';
 import 'package:go_router/go_router.dart';
@@ -44,7 +45,8 @@ final appRouter = GoRouter(
               routes: [
                 GoRoute(
                   path: 'add',
-                  builder: (context, state) => const EmployeeAddPage(),
+                  parentNavigatorKey: _rootNavigatorKey,
+                  builder: (context, state) => EmployeeAddPage(),
                 ),
                 GoRoute(
                   path: 'profile/:id',
@@ -181,12 +183,6 @@ class HomeDetailsPage extends StatelessWidget {
   const HomeDetailsPage({super.key});
   @override
   Widget build(BuildContext context) => _buildSubPage('Home Details', context);
-}
-
-class EmployeeAddPage extends StatelessWidget {
-  const EmployeeAddPage({super.key});
-  @override
-  Widget build(BuildContext context) => _buildSubPage('Add Employee', context);
 }
 
 class EmployeeProfilePage extends StatelessWidget {

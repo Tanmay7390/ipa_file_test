@@ -319,34 +319,25 @@ class ScaffoldWithNavBar extends StatelessWidget {
       child: Column(
         children: [
           Expanded(child: navigationShell),
-          Container(
-            decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: CupertinoColors.systemGrey5, width: 0.5),
-              ),
+          CupertinoTabBar(
+            currentIndex: navigationShell.currentIndex,
+            onTap: (index) => navigationShell.goBranch(
+              index,
+              initialLocation: index == navigationShell.currentIndex,
             ),
-            child: CupertinoTabBar(
-              currentIndex: navigationShell.currentIndex,
-              onTap: (index) => navigationShell.goBranch(
-                index,
-                initialLocation: index == navigationShell.currentIndex,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(CupertinoIcons.home),
+                label: 'Home',
               ),
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(CupertinoIcons.home),
-                  label: 'Home',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(CupertinoIcons.search_circle_fill),
-                  label: 'Employee',
-                ),
-              ],
-              backgroundColor: CupertinoColors.systemBackground.withOpacity(
-                0.8,
+              BottomNavigationBarItem(
+                icon: Icon(CupertinoIcons.search_circle_fill),
+                label: 'Employee',
               ),
-              activeColor: CupertinoColors.activeBlue,
-              inactiveColor: CupertinoColors.inactiveGray,
-            ),
+            ],
+            backgroundColor: CupertinoColors.systemBackground.withOpacity(0.8),
+            activeColor: CupertinoColors.activeBlue,
+            inactiveColor: CupertinoColors.inactiveGray,
           ),
         ],
       ),
