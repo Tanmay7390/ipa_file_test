@@ -1,14 +1,25 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test_22/components/form_fields.dart';
+import 'package:smooth_sheets/smooth_sheets.dart';
+import 'package:flutter/material.dart';
 
-class EmployeeAddPage extends StatefulWidget {
-  const EmployeeAddPage({super.key});
-
-  @override
-  State<EmployeeAddPage> createState() => _EmployeeAddPageState();
+void showEmployeeAddSheet(BuildContext context) {
+  Navigator.of(context, rootNavigator: true).push(
+    CupertinoModalSheetRoute(
+      swipeDismissible: true,
+      builder: (context) => const EmployeeAddSheet(),
+    ),
+  );
 }
 
-class _EmployeeAddPageState extends State<EmployeeAddPage> {
+class EmployeeAddSheet extends StatefulWidget {
+  const EmployeeAddSheet({super.key});
+
+  @override
+  State<EmployeeAddSheet> createState() => _EmployeeAddSheetState();
+}
+
+class _EmployeeAddSheetState extends State<EmployeeAddSheet> {
   final Map<String, dynamic> formData = {};
   final Map<String, String> validationErrors = {};
 
@@ -46,7 +57,6 @@ class _EmployeeAddPageState extends State<EmployeeAddPage> {
 
   bool _validateForm() {
     validationErrors.clear();
-
     void checkRequired(String key, String label) {
       if (formData[key]?.toString().trim().isEmpty ?? true) {
         validationErrors[key] = '$label is required';
@@ -98,150 +108,176 @@ class _EmployeeAddPageState extends State<EmployeeAddPage> {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.white,
-      navigationBar: CupertinoNavigationBar(
-        backgroundColor: CupertinoColors.white,
-        border: null,
-        leading: CupertinoButton(
-          padding: EdgeInsets.zero,
-          child: Icon(CupertinoIcons.back, color: CupertinoColors.black),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        middle: Text(
-          'Edit profile',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: _saveForm,
-          child: Text(
-            'Save',
-            style: TextStyle(
-              color: CupertinoColors.systemBlue,
-              fontWeight: FontWeight.w600,
+    return SheetKeyboardDismissible(
+      dismissBehavior: const SheetKeyboardDismissBehavior.onDragDown(),
+      child: Sheet(
+        decoration: SheetDecorationBuilder(
+          size: SheetSize.stretch,
+          builder: (context, child) => ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: ColoredBox(
+              color: CupertinoColors.systemGroupedBackground,
+              child: child,
             ),
           ),
         ),
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              SizedBox(height: 20),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 130,
-                    child: FormFieldWidgets.buildAvatarField(
-                      'profileImage',
-                      '',
-                      context: context,
-                      onChanged: _updateFormData,
-                      formData: formData,
-                      validationErrors: validationErrors,
-                      initials: _getInitials(),
-                      size: 100,
-                    ),
-                  ),
-                  Expanded(
-                    child: _buildSection(compact: true, [
-                      FormFieldWidgets.buildTextField(
-                        'firstName',
-                        'First Name',
-                        'text',
-                        isRequired: true,
-                        onChanged: _updateFormData,
-                        formData: formData,
-                        validationErrors: validationErrors,
-                        compact: true,
+        child: SheetContentScaffold(
+          backgroundColor: Colors.white,
+          topBar: CupertinoNavigationBar(
+            middle: const Text('New Employee'),
+            backgroundColor: CupertinoColors.systemBackground,
+            border: const Border(
+              bottom: BorderSide(
+                color: CupertinoColors.systemGrey4,
+                width: 0.5,
+              ),
+            ),
+            leading: CupertinoButton(
+              padding: EdgeInsets.zero,
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.pop(context),
+            ),
+            trailing: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: _saveForm,
+              child: const Text('Add'),
+            ),
+          ),
+          body: SizedBox.expand(
+            child: SafeArea(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    SizedBox(height: 10),
+                    Padding(
+                      padding: EdgeInsetsGeometry.symmetric(
+                        horizontal: 16,
+                        vertical: 0,
                       ),
-                      FormFieldWidgets.buildTextField(
-                        'lastName',
-                        'Last Name',
-                        'text',
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Text('Code : #1024', style: TextStyle(fontSize: 15)),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 130,
+                          child: FormFieldWidgets.buildAvatarField(
+                            'profileImage',
+                            '',
+                            context: context,
+                            onChanged: _updateFormData,
+                            formData: formData,
+                            validationErrors: validationErrors,
+                            initials: _getInitials(),
+                            size: 100,
+                          ),
+                        ),
+                        Expanded(
+                          child: _buildSection(compact: true, [
+                            FormFieldWidgets.buildTextField(
+                              'firstName',
+                              'First Name',
+                              'text',
+                              isRequired: true,
+                              onChanged: _updateFormData,
+                              formData: formData,
+                              validationErrors: validationErrors,
+                              compact: true,
+                            ),
+                            FormFieldWidgets.buildTextField(
+                              'lastName',
+                              'Last Name',
+                              'text',
+                              isRequired: true,
+                              onChanged: _updateFormData,
+                              formData: formData,
+                              validationErrors: validationErrors,
+                              compact: true,
+                            ),
+                          ]),
+                        ),
+                      ],
+                    ),
+                    _buildSection(title: 'GENERAL DETAILS', [
+                      FormFieldWidgets.buildSelectField(
+                        'gender',
+                        'Gender',
+                        genderOptions,
                         isRequired: true,
                         onChanged: _updateFormData,
                         formData: formData,
                         validationErrors: validationErrors,
-                        compact: true,
+                      ),
+                      FormFieldWidgets.buildDateField(
+                        'dateOfBirth',
+                        'Date of Birth',
+                        isRequired: true,
+                        context: context,
+                        minimumDate: DateTime(1920),
+                        maximumDate: DateTime.now().subtract(
+                          Duration(days: 365 * 16),
+                        ),
+                        dateFormat: 'dd/MM/yyyy',
+                        onChanged: _updateFormData,
+                        formData: formData,
+                        validationErrors: validationErrors,
+                      ),
+                      FormFieldWidgets.buildMultiSelectField(
+                        'languages',
+                        'Languages',
+                        languageOptions,
+                        onChanged: _updateFormData,
+                        formData: formData,
+                        validationErrors: validationErrors,
+                        // context: context,
                       ),
                     ]),
-                  ),
-                ],
+                    _buildSection(title: 'CONTACT DETAILS', [
+                      FormFieldWidgets.buildTextField(
+                        'email',
+                        'Email',
+                        'email',
+                        isRequired: true,
+                        onChanged: _updateFormData,
+                        formData: formData,
+                        validationErrors: validationErrors,
+                      ),
+                      FormFieldWidgets.buildTextField(
+                        'phone',
+                        'Phone',
+                        'phone',
+                        isRequired: true,
+                        onChanged: _updateFormData,
+                        formData: formData,
+                        validationErrors: validationErrors,
+                      ),
+                      FormFieldWidgets.buildTextAreaField(
+                        'address',
+                        'Address',
+                        isRequired: true,
+                        onChanged: _updateFormData,
+                        formData: formData,
+                        validationErrors: validationErrors,
+                      ),
+                      FormFieldWidgets.buildSwitchField(
+                        'isActive',
+                        'Active',
+                        formData: formData,
+                        validationErrors: validationErrors,
+                        onChanged: _updateFormData,
+                      ),
+                    ]),
+                    SizedBox(height: 50),
+                  ],
+                ),
               ),
-              _buildSection(title: 'GENERAL DETAILS', [
-                FormFieldWidgets.buildSelectField(
-                  'gender',
-                  'Gender',
-                  genderOptions,
-                  isRequired: true,
-                  onChanged: _updateFormData,
-                  formData: formData,
-                  validationErrors: validationErrors,
-                ),
-                FormFieldWidgets.buildDateField(
-                  'dateOfBirth',
-                  'Date of Birth',
-                  isRequired: true,
-                  context: context,
-                  minimumDate: DateTime(1920),
-                  maximumDate: DateTime.now().subtract(
-                    Duration(days: 365 * 16),
-                  ),
-                  dateFormat: 'dd/MM/yyyy',
-                  onChanged: _updateFormData,
-                  formData: formData,
-                  validationErrors: validationErrors,
-                ),
-                FormFieldWidgets.buildMultiSelectField(
-                  'languages',
-                  'Languages',
-                  languageOptions,
-                  onChanged: _updateFormData,
-                  formData: formData,
-                  validationErrors: validationErrors,
-                  // context: context,
-                ),
-              ]),
-              _buildSection(title: 'CONTACT DETAILS', [
-                FormFieldWidgets.buildTextField(
-                  'email',
-                  'Email',
-                  'email',
-                  isRequired: true,
-                  onChanged: _updateFormData,
-                  formData: formData,
-                  validationErrors: validationErrors,
-                ),
-                FormFieldWidgets.buildTextField(
-                  'phone',
-                  'Phone',
-                  'phone',
-                  isRequired: true,
-                  onChanged: _updateFormData,
-                  formData: formData,
-                  validationErrors: validationErrors,
-                ),
-                FormFieldWidgets.buildTextAreaField(
-                  'address',
-                  'Address',
-                  isRequired: true,
-                  onChanged: _updateFormData,
-                  formData: formData,
-                  validationErrors: validationErrors,
-                ),
-                FormFieldWidgets.buildSwitchField(
-                  'isActive',
-                  'Active',
-                  formData: formData,
-                  validationErrors: validationErrors,
-                  onChanged: _updateFormData,
-                ),
-              ]),
-              SizedBox(height: 50),
-            ],
+            ),
           ),
         ),
       ),

@@ -33,7 +33,7 @@ class FormFieldWidgets {
               child: Text(
                 '$label $required',
                 style: TextStyle(
-                  fontSize: 17,
+                  fontSize: 16,
                   color: hasError
                       ? CupertinoColors.systemRed
                       : CupertinoColors.black,
@@ -234,7 +234,7 @@ class FormFieldWidgets {
                   child: Text(
                     label,
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: 16,
                       color: CupertinoColors.black,
                     ),
                   ),
@@ -253,7 +253,7 @@ class FormFieldWidgets {
                   prefix: type == 'phone' ? Text('+91  ') : null,
                   suffix: type == 'email' ? Text('@gmail.com') : null,
                   padding: EdgeInsets.zero,
-                  style: TextStyle(fontSize: 17, color: CupertinoColors.black),
+                  style: TextStyle(fontSize: 16, color: CupertinoColors.black),
                   keyboardType: type == 'phone'
                       ? TextInputType.phone
                       : type == 'email'
@@ -294,7 +294,7 @@ class FormFieldWidgets {
                 width: 100,
                 child: Text(
                   label,
-                  style: TextStyle(fontSize: 17, color: CupertinoColors.black),
+                  style: TextStyle(fontSize: 16, color: CupertinoColors.black),
                 ),
               ),
               SizedBox(width: 16),
@@ -309,7 +309,7 @@ class FormFieldWidgets {
                   ),
                   decoration: BoxDecoration(),
                   padding: EdgeInsets.zero,
-                  style: TextStyle(fontSize: 17, color: CupertinoColors.black),
+                  style: TextStyle(fontSize: 16, color: CupertinoColors.black),
                   maxLines: maxLines,
                   minLines: minLines,
                   keyboardType: TextInputType.multiline,
@@ -348,7 +348,7 @@ class FormFieldWidgets {
                 width: 100,
                 child: Text(
                   label,
-                  style: TextStyle(fontSize: 17, color: CupertinoColors.black),
+                  style: TextStyle(fontSize: 16, color: CupertinoColors.black),
                 ),
               ),
               SizedBox(width: 16),
@@ -376,7 +376,7 @@ class FormFieldWidgets {
                           Text(
                             formData[key] ?? 'Select $label $required',
                             style: TextStyle(
-                              fontSize: 17,
+                              fontSize: 16,
                               color: formData[key] != null
                                   ? CupertinoColors.black
                                   : hasError
@@ -430,7 +430,7 @@ class FormFieldWidgets {
                 width: 100,
                 child: Text(
                   label,
-                  style: TextStyle(fontSize: 17, color: CupertinoColors.black),
+                  style: TextStyle(fontSize: 16, color: CupertinoColors.black),
                 ),
               ),
               SizedBox(width: 16),
@@ -470,7 +470,7 @@ class FormFieldWidgets {
                                 ? Text(
                                     'Select $label $required',
                                     style: TextStyle(
-                                      fontSize: 17,
+                                      fontSize: 16,
                                       color: CupertinoColors.systemGrey,
                                     ),
                                     overflow: TextOverflow.ellipsis,
@@ -576,7 +576,7 @@ class FormFieldWidgets {
                 width: 100,
                 child: Text(
                   label,
-                  style: TextStyle(fontSize: 17, color: CupertinoColors.black),
+                  style: TextStyle(fontSize: 16, color: CupertinoColors.black),
                 ),
               ),
               SizedBox(width: 16),
@@ -605,7 +605,7 @@ class FormFieldWidgets {
                                   ? _formatDate(selectedDate, dateFormat)
                                   : 'Select $label $required',
                               style: TextStyle(
-                                fontSize: 17,
+                                fontSize: 16,
                                 color: selectedDate != null
                                     ? CupertinoColors.black
                                     : hasError
@@ -707,7 +707,7 @@ class FormFieldWidgets {
             width: 100,
             child: Text(
               label,
-              style: TextStyle(fontSize: 17, color: CupertinoColors.black),
+              style: TextStyle(fontSize: 16, color: CupertinoColors.black),
             ),
           ),
           SizedBox(width: 16),

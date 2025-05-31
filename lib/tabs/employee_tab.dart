@@ -1,48 +1,39 @@
 import 'dart:developer';
+
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test_22/forms/employee_form.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pull_down_button/pull_down_button.dart';
 import 'dart:async';
 import '../components/page_scaffold.dart';
 import '../components/swipable_row.dart';
+import '../apis/providers/employee_provider.dart';
 
-class EmployeeTab extends StatefulWidget {
+class EmployeeTab extends ConsumerStatefulWidget {
   const EmployeeTab({super.key});
 
   @override
-  State<EmployeeTab> createState() => _EmployeeTabState();
+  ConsumerState<EmployeeTab> createState() => _EmployeeTabState();
 }
 
-class _EmployeeTabState extends State<EmployeeTab> {
+class _EmployeeTabState extends ConsumerState<EmployeeTab> {
   final TextEditingController _searchController = TextEditingController();
-  bool _showSearchField = false;
-  bool isloading = true;
 
-  final List<String> _allItems = List.generate(
-    20,
-    (index) => 'Employee ${index + 1}',
-  );
-  List<String> _filteredItems = [];
+  bool _showSearchField = false;
   Timer? _debounce;
+  String _lastSearchQuery = '';
+  bool _hasInitialized = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _filteredItems = List.from(_allItems);
     _searchController.addListener(_onSearchChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // This runs just like useEffect(..., []) or componentDidMount
-      fetchDataOrInitialize();
-    });
-  }
 
-  void fetchDataOrInitialize() async {
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() {
-      isloading = false;
+    // Load employees when widget initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInitialData();
     });
-    // Perform any API call, DB setup, or local state updates here
-    log("Widget mounted and ready");
   }
 
   @override
@@ -53,235 +44,177 @@ class _EmployeeTabState extends State<EmployeeTab> {
     super.dispose();
   }
 
+  void _loadInitialData() async {
+    if (!_hasInitialized) {
+      setState(() => _isLoading = true);
+
+      try {
+        await ref
+            .read(employeeListProvider.notifier)
+            .loadEmployees(page: 1, refresh: true);
+        _hasInitialized = true;
+      } catch (e) {
+        log('Error loading initial data: $e');
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
+    }
+  }
+
   void _onSearchChanged() {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () {
-      final value = _searchController.text;
-      setState(() {
-        _filteredItems = value.isEmpty
-            ? List.from(_allItems)
-            : _allItems
-                  .where(
-                    (item) => item.toLowerCase().contains(value.toLowerCase()),
-                  )
-                  .toList();
-      });
+
+    _debounce = Timer(const Duration(milliseconds: 100), () async {
+      final query = _searchController.text.trim();
+
+      // Only make API call if search query has actually changed
+      if (query != _lastSearchQuery) {
+        setState(() => _isLoading = true);
+
+        _lastSearchQuery = query;
+        ref.read(employeeSearchProvider.notifier).state = query;
+
+        // Reset pagination and load with search
+        try {
+          // Reset pagination and load with search
+          await ref
+              .read(employeeListProvider.notifier)
+              .loadEmployees(
+                page: 1,
+                refresh: true,
+                searchQuery: query.isEmpty ? null : query,
+              );
+        } catch (e) {
+          log('Error searching employees: $e');
+        } finally {
+          if (mounted) {
+            setState(() => _isLoading = false);
+          }
+        }
+      }
     });
   }
 
-  void _deleteItem(int index) {
+  Future<void> _onRefresh() async {
+    setState(() => _isLoading = true);
+    try {
+      final searchQuery = ref.read(employeeSearchProvider);
+      await ref
+          .read(employeeListProvider.notifier)
+          .loadEmployees(
+            page: 1,
+            refresh: true,
+            searchQuery: searchQuery.isEmpty ? null : searchQuery,
+          );
+    } catch (e) {
+      log('Error refreshing employees: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _toggleSearch() {
     setState(() {
-      final itemToDelete = _filteredItems[index];
-      _filteredItems.removeAt(index);
-      _allItems.remove(itemToDelete);
+      _showSearchField = !_showSearchField;
+
+      if (!_showSearchField) {
+        // Only make API call if there was actually a search query
+        final hadSearchQuery = _searchController.text.trim().isNotEmpty;
+
+        _searchController.clear();
+        _lastSearchQuery = '';
+        ref.read(employeeSearchProvider.notifier).state = '';
+
+        // Only reload if we were actually searching
+        if (hadSearchQuery) {
+          _onRefresh();
+        }
+      }
     });
+  }
+
+  void _deleteEmployee(String employeeId) async {
+    try {
+      await ref.read(employeeActionsProvider).deleteEmployee(employeeId);
+
+      // Refresh the list after successful deletion
+      await _onRefresh();
+
+      if (mounted) {
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Success'),
+            content: const Text('Employee deleted successfully'),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Error'),
+            content: Text('Failed to delete employee: $e'),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final employeeListState = ref.watch(employeeListProvider);
+
     return CustomPageScaffold(
-      isLoading: isloading,
+      isLoading: _isLoading,
       heading: 'Employees',
       searchController: _searchController,
       showSearchField: _showSearchField,
-      onSearchToggle: (bool value) {
-        setState(() {
-          _showSearchField = value;
-          if (!value) {
-            _searchController.clear();
-            _filteredItems = List.from(_allItems);
-          }
-        });
-      },
-      onSearchChange: (value) {
-        if (_debounce?.isActive ?? false) _debounce!.cancel();
-        _debounce = Timer(const Duration(milliseconds: 300), () {
-          setState(() {
-            _filteredItems = value.isEmpty
-                ? List.from(_allItems)
-                : _allItems
-                      .where(
-                        (item) =>
-                            item.toLowerCase().contains(value.toLowerCase()),
-                      )
-                      .toList();
-          });
-        });
-      },
-      onRefresh: () async {
-        await Future.delayed(const Duration(seconds: 2));
-      },
+      onSearchToggle: (_) => _toggleSearch(),
+      onRefresh: _onRefresh,
       trailing: Row(
         children: [
-          PullDownButton(
-            itemBuilder: (context) => [
-              PullDownMenuItem(
-                title: 'Photo Library',
-                icon: CupertinoIcons.photo_on_rectangle,
-                iconColor: CupertinoColors.systemBlue,
-                itemTheme: PullDownMenuItemTheme(
-                  textStyle: TextStyle(
-                    fontFamily: 'SF Pro Display',
-                    letterSpacing: 0.25,
-                  ),
-                ),
-                onTap: () {},
-              ),
-              PullDownMenuDivider.large(),
-              PullDownMenuItem(
-                title: 'Take Photo or Video',
-                icon: CupertinoIcons.camera,
-                iconColor: CupertinoColors.systemBlue,
-                itemTheme: PullDownMenuItemTheme(
-                  textStyle: TextStyle(
-                    fontFamily: 'SF Pro Display',
-                    letterSpacing: 0.25,
-                  ),
-                ),
-                onTap: () {},
-              ),
-              PullDownMenuItem(
-                title: 'Choose File',
-                icon: CupertinoIcons.folder,
-                iconColor: CupertinoColors.systemBlue,
-                itemTheme: PullDownMenuItemTheme(
-                  textStyle: TextStyle(
-                    fontFamily: 'SF Pro Display',
-                    letterSpacing: 0.25,
-                  ),
-                ),
-                onTap: () {},
-              ),
-            ],
-            buttonBuilder: (context, showMenu) => CupertinoButton(
-              onPressed: showMenu,
-              padding: EdgeInsets.zero,
-              child: const Icon(CupertinoIcons.ellipsis_circle, size: 25),
-            ),
-          ),
           CupertinoButton(
             onPressed: () {
-              // showCupertinoSheet<void>(
-              //   context: context,
-              //   useNestedNavigation: true,
-              //   pageBuilder: (BuildContext context) => const _SheetScaffold(),
-              // );
-              context.go('/employee/add');
+              showEmployeeAddSheet(context);
             },
             padding: EdgeInsets.zero,
             child: const Icon(CupertinoIcons.plus, size: 25),
           ),
         ],
       ),
-      sliverList: CustomSwipableRow(
-        isLoading: isloading,
-        items: _filteredItems,
-        onDelete: _deleteItem,
-        onEdit: (index) => context.go('/employee/profile/$index'),
-        childBuilder: (context, index, item) {
-          return CupertinoListTile(
-            backgroundColor: CupertinoColors.systemBackground,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 12.0,
-            ),
-            leadingSize: 47,
-            leading: FlutterLogo(size: 50),
-            title: Text(
-              item,
-              style: TextStyle(
-                fontFamily: 'SF Pro Display',
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.25,
-              ),
-            ),
-            subtitle: Text(
-              'Description for $item',
-              style: TextStyle(
-                fontFamily: 'SF Pro Display',
-                fontSize: 16,
-                letterSpacing: 0.25,
-              ),
-            ),
-            trailing: const CupertinoListTileChevron(),
-            onTap: () => context.go('/employee/profile/123'),
-          );
-        },
+      sliverList: employeeListState.when(
+        data: (employeeData) => CustomSwipableRow(
+          isLoading: _isLoading,
+          items: employeeData.employees,
+          onTap: (id) => context.go('/employee/profile/$id'),
+          onDelete: (id) => _deleteEmployee(id),
+          onEdit: (id) => context.go('/employee/profile/$id'),
+          titleKey: 'name',
+          subtitleKey: 'personalEmail',
+          leadingKey: 'photo',
+        ),
+        loading: () => BuildShimmerTile(),
+        error: (error, stack) =>
+            BuildErrorState(error: error, onRefresh: _onRefresh),
       ),
-    );
-  }
-}
-
-class _SheetScaffold extends StatelessWidget {
-  const _SheetScaffold();
-
-  @override
-  Widget build(BuildContext context) {
-    return const CupertinoPageScaffold(
-      child: _SheetBody(title: 'CupertinoSheetRoute'),
-    );
-  }
-}
-
-class _SheetBody extends StatelessWidget {
-  const _SheetBody({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Text(title),
-          CupertinoButton.filled(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('Go Back'),
-          ),
-          CupertinoButton.filled(
-            onPressed: () {
-              CupertinoSheetRoute.popSheet(context);
-            },
-            child: const Text('Pop Whole Sheet'),
-          ),
-          CupertinoButton.filled(
-            onPressed: () {
-              Navigator.of(context).push(
-                CupertinoPageRoute<void>(
-                  builder: (BuildContext context) => const _SheetNextPage(),
-                ),
-              );
-            },
-            child: const Text('Push Nested Page'),
-          ),
-          CupertinoButton.filled(
-            onPressed: () {
-              showCupertinoSheet<void>(
-                context: context,
-                useNestedNavigation: true,
-                pageBuilder: (BuildContext context) => const _SheetScaffold(),
-              );
-            },
-            child: const Text('Push Another Sheet'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SheetNextPage extends StatelessWidget {
-  const _SheetNextPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.activeOrange,
-      child: _SheetBody(title: 'Next Page'),
     );
   }
 }

@@ -8,6 +8,7 @@ class CustomPageScaffold extends StatelessWidget {
   final Future<void> Function()? onRefresh;
   final Widget sliverList;
   final bool isLoading;
+  final ScrollController? scrollController;
 
   final TextEditingController searchController;
   final bool showSearchField;
@@ -25,12 +26,14 @@ class CustomPageScaffold extends StatelessWidget {
     this.showSearchField = false,
     this.onSearchToggle,
     required this.isLoading,
+    this.scrollController,
   });
 
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       child: CustomScrollView(
+        controller: scrollController,
         slivers: <Widget>[
           CupertinoSliverNavigationBar.search(
             largeTitle: Text(heading),
@@ -50,6 +53,7 @@ class CustomPageScaffold extends StatelessWidget {
               suffixMode: OverlayVisibilityMode.editing,
               onSuffixTap: () {
                 searchController.clear();
+                onSearchChange?.call('');
               },
               onChanged: onSearchChange,
             ),
@@ -68,7 +72,7 @@ class CustomPageScaffold extends StatelessWidget {
               children: [if (trailing != null) trailing!],
             ),
           ),
-          if (!isLoading)
+          if (!isLoading && !showSearchField)
             CupertinoSliverRefreshControl(onRefresh: onRefresh ?? () async {}),
           sliverList,
         ],
