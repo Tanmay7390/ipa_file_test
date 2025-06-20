@@ -34,6 +34,8 @@ class FormFieldWidgets {
                 '$label $required',
                 style: TextStyle(
                   fontSize: 16,
+                  fontFamily: 'SF Pro Display',
+                  letterSpacing: 0.25,
                   color: hasError
                       ? CupertinoColors.systemRed
                       : CupertinoColors.black,
@@ -46,12 +48,24 @@ class FormFieldWidgets {
               itemBuilder: (context) => [
                 PullDownMenuItem(
                   title: 'Open Camera',
+                  itemTheme: PullDownMenuItemTheme(
+                    textStyle: TextStyle(
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.25,
+                    ),
+                  ),
                   icon: CupertinoIcons.camera,
                   onTap: () =>
                       _pickImage(context, key, onChanged, ImageSource.camera),
                 ),
                 PullDownMenuItem(
                   title: 'Open Gallery',
+                  itemTheme: PullDownMenuItemTheme(
+                    textStyle: TextStyle(
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.25,
+                    ),
+                  ),
                   icon: CupertinoIcons.photo,
                   onTap: () =>
                       _pickImage(context, key, onChanged, ImageSource.gallery),
@@ -59,11 +73,23 @@ class FormFieldWidgets {
                 PullDownMenuItem(
                   title: 'Choose from Files',
                   icon: CupertinoIcons.folder,
+                  itemTheme: PullDownMenuItemTheme(
+                    textStyle: TextStyle(
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.25,
+                    ),
+                  ),
                   onTap: () => _pickImageFromFiles(context, key, onChanged),
                 ),
                 if (formData[key] != null)
                   PullDownMenuItem(
                     title: 'Remove Photo',
+                    itemTheme: PullDownMenuItemTheme(
+                      textStyle: TextStyle(
+                        fontFamily: 'SF Pro Display',
+                        letterSpacing: 0.25,
+                      ),
+                    ),
                     icon: CupertinoIcons.trash,
                     isDestructive: true,
                     onTap: () => onChanged(key, null),
@@ -98,6 +124,8 @@ class FormFieldWidgets {
                                 initials,
                                 style: TextStyle(
                                   color: CupertinoColors.white,
+                                  fontFamily: 'SF Pro Display',
+                                  letterSpacing: 0.25,
                                   fontSize: size * 0.24,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -114,6 +142,8 @@ class FormFieldWidgets {
                                 child: Text(
                                   'Add Photo',
                                   style: TextStyle(
+                                    fontFamily: 'SF Pro Display',
+                                    letterSpacing: 0.25,
                                     color: CupertinoColors.systemGrey,
                                     fontSize: 12,
                                   ),
@@ -132,6 +162,8 @@ class FormFieldWidgets {
               child: Text(
                 validationErrors[key]!,
                 style: TextStyle(
+                  fontFamily: 'SF Pro Display',
+                  letterSpacing: 0.25,
                   color: CupertinoColors.systemRed,
                   fontSize: 14,
                 ),
@@ -208,7 +240,8 @@ class FormFieldWidgets {
   static Widget buildTextField(
     String key,
     String label,
-    String type, {
+    String type,
+    BuildContext context, {
     required Function(String, dynamic) onChanged,
     required Map<String, dynamic> formData,
     required Map<String, String> validationErrors,
@@ -222,6 +255,7 @@ class FormFieldWidgets {
       padding: compact
           ? EdgeInsets.symmetric(horizontal: 2, vertical: 16)
           : EdgeInsets.all(16),
+      color: CupertinoColors.systemBackground.resolveFrom(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -235,7 +269,9 @@ class FormFieldWidgets {
                     label,
                     style: TextStyle(
                       fontSize: 16,
-                      color: CupertinoColors.black,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.25,
+                      color: CupertinoColors.label.resolveFrom(context),
                     ),
                   ),
                 ),
@@ -245,15 +281,41 @@ class FormFieldWidgets {
                   onChanged: (value) => onChanged(key, value),
                   placeholder: 'Enter $label $required',
                   placeholderStyle: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.25,
                     color: hasError
                         ? CupertinoColors.systemRed
                         : CupertinoColors.systemGrey,
                   ),
                   decoration: BoxDecoration(),
-                  prefix: type == 'phone' ? Text('+91  ') : null,
-                  suffix: type == 'email' ? Text('@gmail.com') : null,
+                  prefix: type == 'phone'
+                      ? Text(
+                          '+91  ',
+                          style: TextStyle(
+                            fontFamily: 'SF Pro Display',
+                            letterSpacing: 0.25,
+                            fontSize: 16,
+                          ),
+                        )
+                      : null,
+                  suffix: type == 'email'
+                      ? Text(
+                          '@gmail.com',
+                          style: TextStyle(
+                            fontFamily: 'SF Pro Display',
+                            letterSpacing: 0.25,
+                            fontSize: 16,
+                          ),
+                        )
+                      : null,
                   padding: EdgeInsets.zero,
-                  style: TextStyle(fontSize: 16, color: CupertinoColors.black),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: CupertinoColors.black,
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.25,
+                  ),
                   keyboardType: type == 'phone'
                       ? TextInputType.phone
                       : type == 'email'
@@ -294,7 +356,12 @@ class FormFieldWidgets {
                 width: 100,
                 child: Text(
                   label,
-                  style: TextStyle(fontSize: 16, color: CupertinoColors.black),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.25,
+                    color: CupertinoColors.black,
+                  ),
                 ),
               ),
               SizedBox(width: 16),
@@ -303,13 +370,20 @@ class FormFieldWidgets {
                   onChanged: (value) => onChanged(key, value),
                   placeholder: 'Enter $label $required',
                   placeholderStyle: TextStyle(
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.25,
                     color: hasError
                         ? CupertinoColors.systemRed
                         : CupertinoColors.systemGrey,
                   ),
                   decoration: BoxDecoration(),
                   padding: EdgeInsets.zero,
-                  style: TextStyle(fontSize: 16, color: CupertinoColors.black),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.25,
+                    color: CupertinoColors.black,
+                  ),
                   maxLines: maxLines,
                   minLines: minLines,
                   keyboardType: TextInputType.multiline,
@@ -348,7 +422,12 @@ class FormFieldWidgets {
                 width: 100,
                 child: Text(
                   label,
-                  style: TextStyle(fontSize: 16, color: CupertinoColors.black),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.25,
+                    color: CupertinoColors.black,
+                  ),
                 ),
               ),
               SizedBox(width: 16),
@@ -358,6 +437,12 @@ class FormFieldWidgets {
                       .map(
                         (option) => PullDownMenuItem.selectable(
                           title: option,
+                          itemTheme: PullDownMenuItemTheme(
+                            textStyle: TextStyle(
+                              fontFamily: 'SF Pro Display',
+                              letterSpacing: 0.25,
+                            ),
+                          ),
                           selected: formData[key] == option,
                           onTap: () => onChanged(key, option),
                         ),
@@ -377,6 +462,8 @@ class FormFieldWidgets {
                             formData[key] ?? 'Select $label $required',
                             style: TextStyle(
                               fontSize: 16,
+                              fontFamily: 'SF Pro Display',
+                              letterSpacing: 0.25,
                               color: formData[key] != null
                                   ? CupertinoColors.black
                                   : hasError
@@ -430,7 +517,12 @@ class FormFieldWidgets {
                 width: 100,
                 child: Text(
                   label,
-                  style: TextStyle(fontSize: 16, color: CupertinoColors.black),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.25,
+                    color: CupertinoColors.black,
+                  ),
                 ),
               ),
               SizedBox(width: 16),
@@ -440,6 +532,12 @@ class FormFieldWidgets {
                       .map(
                         (option) => PullDownMenuItem.selectable(
                           title: option,
+                          itemTheme: PullDownMenuItemTheme(
+                            textStyle: TextStyle(
+                              fontFamily: 'SF Pro Display',
+                              letterSpacing: 0.25,
+                            ),
+                          ),
                           selected: selectedValues.contains(option),
                           onTap: () {
                             List<String> newSelection = List<String>.from(
@@ -471,6 +569,8 @@ class FormFieldWidgets {
                                     'Select $label $required',
                                     style: TextStyle(
                                       fontSize: 16,
+                                      fontFamily: 'SF Pro Display',
+                                      letterSpacing: 0.25,
                                       color: CupertinoColors.systemGrey,
                                     ),
                                     overflow: TextOverflow.ellipsis,
@@ -502,6 +602,8 @@ class FormFieldWidgets {
                                               item,
                                               style: TextStyle(
                                                 fontSize: 14,
+                                                fontFamily: 'SF Pro Display',
+                                                letterSpacing: 0.25,
                                                 color: CupertinoColors.black,
                                               ),
                                             ),
@@ -576,7 +678,12 @@ class FormFieldWidgets {
                 width: 100,
                 child: Text(
                   label,
-                  style: TextStyle(fontSize: 16, color: CupertinoColors.black),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.25,
+                    color: CupertinoColors.black,
+                  ),
                 ),
               ),
               SizedBox(width: 16),
@@ -606,6 +713,8 @@ class FormFieldWidgets {
                                   : 'Select $label $required',
                               style: TextStyle(
                                 fontSize: 16,
+                                fontFamily: 'SF Pro Display',
+                                letterSpacing: 0.25,
                                 color: selectedDate != null
                                     ? CupertinoColors.black
                                     : hasError
@@ -613,7 +722,7 @@ class FormFieldWidgets {
                                     : CupertinoColors.systemGrey,
                               ),
                             ),
-                            Icon(CupertinoIcons.calendar, size: 18),
+                            Icon(CupertinoIcons.calendar, size: 19),
                           ],
                         ),
                       ),
@@ -630,6 +739,8 @@ class FormFieldWidgets {
                 validationErrors[key]!,
                 style: TextStyle(
                   color: CupertinoColors.systemRed,
+                  fontFamily: 'SF Pro Display',
+                  letterSpacing: 0.25,
                   fontSize: 14,
                 ),
               ),
@@ -662,6 +773,14 @@ class FormFieldWidgets {
     final initialDate = formData[key] ?? nowDate;
     final renderBox = context.findRenderObject() as RenderBox?;
 
+    TextStyle applyFontFamily(BuildContext context, TextStyle? baseStyle) {
+      final resolved = baseStyle ?? const TextStyle();
+      return resolved.copyWith(
+        fontFamily: 'SF Pro Display',
+        letterSpacing: 0.25,
+      );
+    }
+
     final DateTime? selectedDate = await showCupertinoCalendarPicker(
       context,
       widgetRenderBox: renderBox,
@@ -670,6 +789,53 @@ class FormFieldWidgets {
       maximumDateTime: maxDate,
       mode: CupertinoCalendarMode.date,
       dismissBehavior: CalendarDismissBehavior.onOusideTapOrDateSelect,
+
+      weekdayDecoration: CalendarWeekdayDecoration(
+        textStyle: applyFontFamily(
+          context,
+          CalendarWeekdayDecoration().textStyle,
+        ),
+      ),
+
+      headerDecoration: CalendarHeaderDecoration(
+        monthDateStyle: applyFontFamily(
+          context,
+          CalendarHeaderDecoration().monthDateStyle,
+        ),
+      ),
+
+      monthPickerDecoration: CalendarMonthPickerDecoration(
+        disabledDayStyle: CalendarMonthPickerDisabledDayStyle(
+          textStyle: applyFontFamily(
+            context,
+            CalendarMonthPickerDisabledDayStyle().textStyle,
+          ),
+        ),
+        selectedCurrentDayStyle: CalendarMonthPickerSelectedCurrentDayStyle(
+          textStyle: applyFontFamily(
+            context,
+            CalendarMonthPickerSelectedCurrentDayStyle().textStyle,
+          ),
+        ),
+        selectedDayStyle: CalendarMonthPickerSelectedDayStyle(
+          textStyle: applyFontFamily(
+            context,
+            CalendarMonthPickerSelectedDayStyle().textStyle,
+          ),
+        ),
+        currentDayStyle: CalendarMonthPickerCurrentDayStyle(
+          textStyle: applyFontFamily(
+            context,
+            CalendarMonthPickerCurrentDayStyle().textStyle,
+          ),
+        ),
+        defaultDayStyle: CalendarMonthPickerDefaultDayStyle(
+          textStyle: applyFontFamily(
+            context,
+            CalendarMonthPickerDefaultDayStyle().textStyle,
+          ),
+        ),
+      ),
     );
 
     if (selectedDate != null) {
@@ -707,7 +873,12 @@ class FormFieldWidgets {
             width: 100,
             child: Text(
               label,
-              style: TextStyle(fontSize: 16, color: CupertinoColors.black),
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'SF Pro Display',
+                letterSpacing: 0.25,
+                color: CupertinoColors.black,
+              ),
             ),
           ),
           SizedBox(width: 16),

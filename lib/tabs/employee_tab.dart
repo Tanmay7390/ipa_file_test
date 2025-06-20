@@ -2,7 +2,6 @@ import 'dart:developer';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test_22/forms/employee_form.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:async';
 import '../components/page_scaffold.dart';
@@ -188,12 +187,14 @@ class _EmployeeTabState extends ConsumerState<EmployeeTab> {
       searchController: _searchController,
       showSearchField: _showSearchField,
       onSearchToggle: (_) => _toggleSearch(),
+      onBottomRefresh: () => _onRefresh(),
       onRefresh: _onRefresh,
       trailing: Row(
         children: [
           CupertinoButton(
             onPressed: () {
-              showEmployeeAddSheet(context);
+              // showInvoiceFormSheet(context);
+              context.go('/invoice/add');
             },
             padding: EdgeInsets.zero,
             child: const Icon(CupertinoIcons.plus, size: 25),
@@ -204,9 +205,9 @@ class _EmployeeTabState extends ConsumerState<EmployeeTab> {
         data: (employeeData) => CustomSwipableRow(
           isLoading: _isLoading,
           items: employeeData.employees,
-          onTap: (id) => context.go('/employee/profile/$id'),
+          onTap: (id) => context.go('/invoice/profile/$id'),
           onDelete: (id) => _deleteEmployee(id),
-          onEdit: (id) => context.go('/employee/profile/$id'),
+          onEdit: (id) => context.go('/invoice/profile/$id'),
           titleKey: 'name',
           subtitleKey: 'personalEmail',
           leadingKey: 'photo',

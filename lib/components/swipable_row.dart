@@ -53,7 +53,9 @@ class CustomSwipableRow extends StatelessWidget {
           ),
         ],
         child: CupertinoListTile(
-          backgroundColor: CupertinoColors.systemBackground,
+          backgroundColor: CupertinoColors.systemBackground.resolveFrom(
+            context,
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           leadingSize: 47,
           leading: item[leadingKey] != null
@@ -87,7 +89,7 @@ class CustomSwipableRow extends StatelessWidget {
             ),
           ),
           trailing: const CupertinoListTileChevron(),
-          onTap: () => onEdit(item?._id ?? item['_id'] ?? ''),
+          onTap: () => onEdit(item['_id'] ?? item['_id'] ?? ''),
         ),
       );
     }).toList();

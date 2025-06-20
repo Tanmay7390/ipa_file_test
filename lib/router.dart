@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test_22/drawer.dart';
+import 'package:flutter_test_22/forms/invoice_form.dart';
 // import 'package:flutter_test_22/forms/employee_form.dart';
 import 'package:flutter_test_22/tabs/employee_tab.dart';
 import 'package:flutter_test_22/tabs/home_tab.dart';
@@ -40,14 +41,14 @@ final appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/employee',
+              path: '/invoice',
               builder: (context, state) => const EmployeeTab(),
               routes: [
-                // GoRoute(
-                //   path: 'add',
-                //   parentNavigatorKey: _rootNavigatorKey,
-                //   builder: (context, state) => EmployeeAddPage(),
-                // ),
+                GoRoute(
+                  path: 'add',
+                  parentNavigatorKey: _rootNavigatorKey,
+                  builder: (context, state) => InvoiceFormSheet(),
+                ),
                 GoRoute(
                   path: 'profile/:id',
                   builder: (context, state) => EmployeeProfilePage(

@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test_22/theme_provider.dart'; // Add this import
 import 'package:go_router/go_router.dart';
 
 // Shared drawer mixin - Fixed to properly constrain the mixin
@@ -78,136 +80,215 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
   }
 
   Widget buildDrawer() {
-    return Container(
-      decoration: BoxDecoration(
-        color: CupertinoColors.systemBackground,
-        boxShadow: [
-          BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.1),
-            blurRadius: 10,
-            offset: Offset(2, 0),
+    return Consumer(
+      builder: (context, ref, child) {
+        final isDarkMode = ref.watch(isDarkModeProvider);
+
+        return Container(
+          decoration: BoxDecoration(
+            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+            boxShadow: [
+              BoxShadow(
+                color: isDarkMode
+                    ? Color.fromRGBO(0, 0, 0, 0.3)
+                    : Color.fromRGBO(0, 0, 0, 0.1),
+                blurRadius: 10,
+                offset: Offset(2, 0),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundImage: NetworkImage(
-                      'https://i.imgur.com/QCNbOAo.png',
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    'iJustine',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: CupertinoColors.label,
-                    ),
-                  ),
-                  Text(
-                    '@ijustine',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: CupertinoColors.secondaryLabel,
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  Row(
+          child: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      CircleAvatar(
+                        radius: 30,
+                        backgroundImage: NetworkImage(
+                          'https://i.imgur.com/QCNbOAo.png',
+                        ),
+                      ),
+                      SizedBox(height: 12),
                       Text(
-                        '3.1K ',
+                        'iJustine',
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 20,
                           fontWeight: FontWeight.w600,
-                          color: CupertinoColors.label,
+                          color: CupertinoTheme.of(
+                            context,
+                          ).textTheme.textStyle.color,
                         ),
                       ),
                       Text(
-                        'Following  ',
+                        '@ijustine',
                         style: TextStyle(
                           fontSize: 15,
-                          color: CupertinoColors.secondaryLabel,
+                          color: CupertinoColors.secondaryLabel.resolveFrom(
+                            context,
+                          ),
                         ),
                       ),
-                      Text(
-                        '1.8M ',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: CupertinoColors.label,
-                        ),
-                      ),
-                      Text(
-                        'Followers',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: CupertinoColors.secondaryLabel,
-                        ),
+                      SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Text(
+                            '3.1K ',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: CupertinoTheme.of(
+                                context,
+                              ).textTheme.textStyle.color,
+                            ),
+                          ),
+                          Text(
+                            'Following  ',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: CupertinoColors.secondaryLabel.resolveFrom(
+                                context,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '1.8M ',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: CupertinoTheme.of(
+                                context,
+                              ).textTheme.textStyle.color,
+                            ),
+                          ),
+                          Text(
+                            'Followers',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: CupertinoColors.secondaryLabel.resolveFrom(
+                                context,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      (CupertinoIcons.home, 'Home'),
+                      (CupertinoIcons.search_circle_fill, 'Employee'),
+                      (CupertinoIcons.bookmark, 'Bookmarks'),
+                      (CupertinoIcons.globe, 'Global Home'),
+                      // ...{}.map((item) => drawerItem(item.$1, item.$2)).toList(),
+                    ].map((item) => drawerItem(item.$1, item.$2)).toList(),
+                  ),
+                ),
+                // Dark mode toggle section
+                Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(
+                        color: CupertinoColors.separator.resolveFrom(context),
+                        width: 0.5,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            isDarkMode
+                                ? CupertinoIcons.moon_fill
+                                : CupertinoIcons.sun_max_fill,
+                            color: CupertinoColors.secondaryLabel.resolveFrom(
+                              context,
+                            ),
+                            size: 24,
+                          ),
+                          SizedBox(width: 16),
+                          Text(
+                            'Dark Mode',
+                            style: TextStyle(
+                              color: CupertinoTheme.of(
+                                context,
+                              ).textTheme.textStyle.color,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                      CupertinoSwitch(
+                        value: isDarkMode,
+                        onChanged: (value) {
+                          ref.read(themeProvider.notifier).toggleTheme();
+                        },
+                        activeTrackColor: CupertinoColors.systemBlue,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  (CupertinoIcons.home, 'Home'),
-                  (CupertinoIcons.search_circle_fill, 'Employee'),
-                  (CupertinoIcons.bookmark, 'Bookmarks'),
-                  (CupertinoIcons.globe, 'Global Home'),
-                ].map((item) => drawerItem(item.$1, item.$2)).toList(),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   Widget drawerItem(IconData icon, String title) {
-    bool isSelected = getCurrentPageName() == title;
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      child: CupertinoButton(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        alignment: Alignment.centerLeft,
-        borderRadius: BorderRadius.circular(12),
-        color: isSelected ? CupertinoColors.systemBlue.withOpacity(0.1) : null,
-        onPressed: () => navigateToPage(title),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isSelected
-                  ? CupertinoColors.systemBlue
-                  : CupertinoColors.secondaryLabel,
-              size: 24,
+    return Consumer(
+      builder: (context, ref, child) {
+        bool isSelected = getCurrentPageName() == title;
+        // final isDarkMode = ref.watch(isDarkModeProvider);
+
+        return Container(
+          margin: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          child: CupertinoButton(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            alignment: Alignment.centerLeft,
+            borderRadius: BorderRadius.circular(12),
+            color: isSelected
+                ? CupertinoColors.systemBlue
+                      .resolveFrom(context)
+                      .withOpacity(0.1)
+                : null,
+            onPressed: () => navigateToPage(title),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected
+                      ? CupertinoColors.systemBlue.resolveFrom(context)
+                      : CupertinoColors.secondaryLabel.resolveFrom(context),
+                  size: 24,
+                ),
+                SizedBox(width: 16),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: isSelected
+                        ? CupertinoColors.systemBlue.resolveFrom(context)
+                        : CupertinoTheme.of(context).textTheme.textStyle.color,
+                    fontSize: 17,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+              ],
             ),
-            SizedBox(width: 16),
-            Text(
-              title,
-              style: TextStyle(
-                color: isSelected
-                    ? CupertinoColors.systemBlue
-                    : CupertinoColors.label,
-                fontSize: 17,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -335,7 +416,9 @@ class ScaffoldWithNavBar extends StatelessWidget {
                 label: 'Employee',
               ),
             ],
-            backgroundColor: CupertinoColors.systemBackground.withOpacity(0.8),
+            backgroundColor: CupertinoTheme.of(
+              context,
+            ).scaffoldBackgroundColor.withOpacity(0.8),
             activeColor: CupertinoColors.activeBlue,
             inactiveColor: CupertinoColors.inactiveGray,
           ),

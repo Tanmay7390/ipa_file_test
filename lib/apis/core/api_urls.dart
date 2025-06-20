@@ -10,6 +10,13 @@ class ApiUrls {
   static const String deleteEmployee = 'employee/{id}';
   static const String getEmployee = 'employee/{id}';
 
+  // Customer endpoints
+  static const String customerList = 'customers/{accountId}/search';
+  static const String createCustomer = 'customer/create';
+  static const String updateCustomer = 'customer/{id}';
+  static const String deleteCustomer = 'customer/{id}';
+  static const String getCustomer = 'customer/{id}';
+
   // Auth endpoints
   static const String login = 'auth/login';
   static const String logout = 'auth/logout';

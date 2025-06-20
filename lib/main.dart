@@ -1,11 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test_22/router.dart';
+import 'package:flutter_test_22/theme_provider.dart'; // Add this import
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() => runApp(const ProviderScope(child: MyApp()));
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   TextStyle _applyFontFamily(TextStyle style) {
@@ -13,8 +14,10 @@ class MyApp extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final brightness = ref.watch(themeProvider);
     final defaultTextTheme = const CupertinoTextThemeData();
+
     return CupertinoApp.router(
       routerConfig: appRouter,
       localizationsDelegates: const [
@@ -24,7 +27,7 @@ class MyApp extends StatelessWidget {
       ],
       title: 'Wareozo',
       theme: CupertinoThemeData(
-        brightness: Brightness.light,
+        brightness: brightness,
         textTheme: CupertinoTextThemeData(
           textStyle: _applyFontFamily(defaultTextTheme.textStyle),
           actionTextStyle: _applyFontFamily(defaultTextTheme.actionTextStyle),
