@@ -10,12 +10,24 @@ class ApiUrls {
   static const String deleteEmployee = 'employee/{id}';
   static const String getEmployee = 'employee/{id}';
 
+  // Inventory endpoints
+  static const String inventoryList = 'sku/account/{accountId}';
+
   // Customer endpoints
   static const String customerList = 'customers/{accountId}/search';
   static const String createCustomer = 'customer/create';
   static const String updateCustomer = 'customer/{id}';
   static const String deleteCustomer = 'customer/{id}';
   static const String getCustomer = 'customer/{id}';
+
+  // Customer Address endpoints
+  static const String createCustomerAddress = 'customer/{customerId}/address';
+  static const String updateCustomerAddress =
+      'customer/{customerId}/address/{addressId}';
+  static const String deleteCustomerAddress =
+      'customer/{customerId}/address/{addressId}';
+  static const String getCountries = 'countries';
+  static const String getStates = 'states';
 
   // Auth endpoints
   static const String login = 'auth/login';
@@ -25,6 +37,11 @@ class ApiUrls {
   // Other endpoints (add as needed)
   static const String departments = 'departments';
   static const String roles = 'roles';
+
+  // Invoice endpoints
+  static const String invoiceTemplates = 'invoice/templates';
+  static const String bankAccounts = 'account/bankaccounts/{accountId}';
+  static const String invoiceSeqNumber = 'invoice/seq-number';
 
   // Helper method to replace path parameters
   static String replaceParams(String url, Map<String, String> params) {

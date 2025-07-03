@@ -1,47 +1,5 @@
 import 'package:flutter/cupertino.dart';
 
-// Item model
-class Item {
-  final String id;
-  final String name;
-  final String description;
-  final String hsnSac;
-  final double mrp;
-
-  Item({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.hsnSac,
-    required this.mrp,
-  });
-}
-
-// Invoice Item model
-class InvoiceItem {
-  final String id;
-  final dynamic item;
-  int quantity;
-  double price;
-  double discount;
-  double tax;
-
-  InvoiceItem({
-    required this.id,
-    required this.item,
-    this.quantity = 1,
-    double? price,
-    this.discount = 0.0,
-    this.tax = 0.0,
-  }) : price = price ?? item.mrp;
-
-  double get amount => quantity * price;
-  double get discountAmount => amount * (discount / 100);
-  double get taxableAmount => amount - discountAmount;
-  double get taxAmount => taxableAmount * (tax / 100);
-  double get finalAmount => taxableAmount + taxAmount;
-}
-
 class ItemsSection extends StatelessWidget {
   final List<dynamic> invoiceItems;
   final List<dynamic> availableItems;
@@ -68,7 +26,7 @@ class ItemsSection extends StatelessWidget {
     );
   }
 
-  void _showItemEditSheet(BuildContext context, InvoiceItem invoiceItem) {
+  void _showItemEditSheet(BuildContext context, dynamic invoiceItem) {
     showCupertinoSheet(
       context: context,
       pageBuilder: (context) => ItemEditSheet(
@@ -93,7 +51,7 @@ class ItemsSection extends StatelessWidget {
 
   Widget _buildInvoiceItemTile(
     BuildContext context,
-    InvoiceItem invoiceItem,
+    dynamic invoiceItem,
     int index,
   ) {
     return GestureDetector(
@@ -133,15 +91,15 @@ class ItemsSection extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        invoiceItem.item.name,
+                        invoiceItem['name'],
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (invoiceItem.item.description.isNotEmpty)
+                      if (invoiceItem['description'].isNotEmpty)
                         Text(
-                          invoiceItem.item.description,
+                          invoiceItem['description'],
                           style: TextStyle(
                             fontSize: 13,
                             color: CupertinoColors.secondaryLabel.resolveFrom(
@@ -154,7 +112,7 @@ class ItemsSection extends StatelessWidget {
                 ),
                 CupertinoButton(
                   padding: EdgeInsets.zero,
-                  onPressed: () => onItemRemoved(invoiceItem.id),
+                  onPressed: () => onItemRemoved(invoiceItem['_id']),
                   child: const Icon(
                     CupertinoIcons.trash,
                     color: CupertinoColors.destructiveRed,
@@ -168,20 +126,18 @@ class ItemsSection extends StatelessWidget {
               children: [
                 _buildItemDetailChip(
                   'HSN/SAC',
-                  invoiceItem.item.hsnSac.isEmpty
-                      ? '-'
-                      : invoiceItem.item.hsnSac,
+                  invoiceItem['hsnCode'].isEmpty ? '-' : invoiceItem['hsnCode'],
                 ),
                 const SizedBox(width: 8),
-                _buildItemDetailChip('QTY', invoiceItem.quantity.toString()),
+                _buildItemDetailChip('QTY', invoiceItem['quantity'].toString()),
                 const SizedBox(width: 8),
                 _buildItemDetailChip(
                   'Price',
-                  '₹${invoiceItem.price.toStringAsFixed(2)}',
+                  '₹${invoiceItem['sale']['price'].toStringAsFixed(2)}',
                 ),
                 const Spacer(),
                 Text(
-                  '₹${invoiceItem.finalAmount.toStringAsFixed(2)}',
+                  '₹${invoiceItem['sale']['price'].toStringAsFixed(2)}',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -199,30 +155,27 @@ class ItemsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoListSection(
-      header: Transform.translate(
-        offset: const Offset(-4, 0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'ITEMS',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontFamily: 'SF Pro Display',
-                letterSpacing: 0.25,
-              ),
+      header: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'ITEMS',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontFamily: 'SF Pro Display',
+              letterSpacing: 0.25,
             ),
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () => _showItemSelection(context),
-              child: const Text('Add Items', style: TextStyle(fontSize: 14)),
-            ),
-          ],
-        ),
+          ),
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () => _showItemSelection(context),
+            child: const Text('Add Items', style: TextStyle(fontSize: 14)),
+          ),
+        ],
       ),
-      backgroundColor: CupertinoColors.systemBackground,
+      backgroundColor: CupertinoColors.systemGrey6,
       margin: EdgeInsets.zero,
-      topMargin: 10,
+      topMargin: 0,
       children: [
         if (invoiceItems.isEmpty)
           CupertinoListTile(
@@ -292,7 +245,7 @@ class _ItemSelectionSheetState extends State<ItemSelectionSheet> {
     showCupertinoDialog(
       context: context,
       builder: (context) => CupertinoAlertDialog(
-        title: Text('Add ${item.name}'),
+        title: Text('Add ${item['name']}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -424,15 +377,15 @@ class _ItemSelectionSheetState extends State<ItemSelectionSheet> {
                       ),
                     ),
                     title: Text(
-                      item.name,
+                      item['name'],
                       style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (item.description.isNotEmpty)
+                        if (item['description'].isNotEmpty)
                           Text(
-                            item.description,
+                            item['description'],
                             style: TextStyle(
                               fontSize: 13,
                               color: CupertinoColors.secondaryLabel.resolveFrom(
@@ -443,24 +396,22 @@ class _ItemSelectionSheetState extends State<ItemSelectionSheet> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            if (item.hsnSac.isNotEmpty) ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: CupertinoColors.systemGrey6
-                                      .resolveFrom(context),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  'HSN: ${item.hsnSac}',
-                                  style: const TextStyle(fontSize: 10),
-                                ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
                               ),
-                              const SizedBox(width: 8),
-                            ],
+                              decoration: BoxDecoration(
+                                color: CupertinoColors.systemGrey6.resolveFrom(
+                                  context,
+                                ),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'HSN: ${item['hsnCode']}',
+                                style: const TextStyle(fontSize: 10),
+                              ),
+                            ),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 6,
@@ -473,7 +424,7 @@ class _ItemSelectionSheetState extends State<ItemSelectionSheet> {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                '₹${item.mrp.toStringAsFixed(2)}',
+                                '₹${item['mrp']}',
                                 style: const TextStyle(
                                   fontSize: 10,
                                   color: CupertinoColors.activeBlue,
@@ -501,7 +452,7 @@ class _ItemSelectionSheetState extends State<ItemSelectionSheet> {
 }
 
 class ItemEditSheet extends StatefulWidget {
-  final InvoiceItem invoiceItem;
+  final dynamic invoiceItem;
   final Function(int, double) onItemUpdated;
 
   const ItemEditSheet({
@@ -522,10 +473,10 @@ class _ItemEditSheetState extends State<ItemEditSheet> {
   void initState() {
     super.initState();
     quantityController = TextEditingController(
-      text: widget.invoiceItem.quantity.toString(),
+      text: widget.invoiceItem['quantity'].toString(),
     );
     priceController = TextEditingController(
-      text: widget.invoiceItem.price.toStringAsFixed(2),
+      text: widget.invoiceItem['sale']['price'].toStringAsFixed(2),
     );
   }
 
@@ -609,16 +560,16 @@ class _ItemEditSheetState extends State<ItemEditSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.invoiceItem.item.name,
+                          widget.invoiceItem['name'],
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        if (widget.invoiceItem.item.description.isNotEmpty) ...[
+                        if (widget.invoiceItem['description'].isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(
-                            widget.invoiceItem.item.description,
+                            widget.invoiceItem['description'],
                             style: TextStyle(
                               fontSize: 14,
                               color: CupertinoColors.secondaryLabel.resolveFrom(
@@ -630,7 +581,7 @@ class _ItemEditSheetState extends State<ItemEditSheet> {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            if (widget.invoiceItem.item.hsnSac.isNotEmpty) ...[
+                            if (widget.invoiceItem['hsnCode'].isNotEmpty) ...[
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
@@ -642,7 +593,7 @@ class _ItemEditSheetState extends State<ItemEditSheet> {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  'HSN/SAC: ${widget.invoiceItem.item.hsnSac}',
+                                  'HSN/SAC: ${widget.invoiceItem['hsnCode']}',
                                   style: const TextStyle(fontSize: 12),
                                 ),
                               ),
@@ -660,7 +611,7 @@ class _ItemEditSheetState extends State<ItemEditSheet> {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                'MRP: ₹${widget.invoiceItem.item.mrp.toStringAsFixed(2)}',
+                                'MRP: ₹${widget.invoiceItem['mrp'].toStringAsFixed(2)}',
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: CupertinoColors.activeBlue,
