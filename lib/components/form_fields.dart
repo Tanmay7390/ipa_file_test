@@ -7,6 +7,36 @@ import 'dart:io';
 
 /// A collection of reusable form field widgets with Cupertino design
 class FormFieldWidgets {
+  // Static controller storage to persist controllers across rebuilds
+  static final Map<String, TextEditingController> _controllers = {};
+
+  /// Get or create a controller for a specific field
+  static TextEditingController _getController(
+    String key, {
+    String? initialValue,
+  }) {
+    if (!_controllers.containsKey(key)) {
+      _controllers[key] = TextEditingController(text: initialValue ?? '');
+    }
+    return _controllers[key]!;
+  }
+
+  /// Clean up controllers (call this when disposing forms)
+  static void disposeController(String key) {
+    if (_controllers.containsKey(key)) {
+      _controllers[key]!.dispose();
+      _controllers.remove(key);
+    }
+  }
+
+  /// Clean up all controllers
+  static void disposeAllControllers() {
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
+    _controllers.clear();
+  }
+
   /// Builds an avatar photo selection field with profile picture display
   static Widget buildAvatarField(
     String key,
@@ -219,6 +249,316 @@ class FormFieldWidgets {
     }
   }
 
+  /// Builds a multiple photos selection field with horizontal scrollable display
+  static Widget buildMultiplePhotosField(
+    String key,
+    String label, {
+    required Function(String, dynamic) onChanged,
+    required Map<String, dynamic> formData,
+    required Map<String, String> validationErrors,
+    required BuildContext context,
+    double photoSize = 80,
+    bool isRequired = false,
+  }) {
+    bool hasError = validationErrors.containsKey(key);
+    String required = isRequired ? '*' : '';
+    List<File> photos = List<File>.from(formData[key] ?? []);
+
+    return Container(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 100,
+                child: Text(
+                  '$label $required',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.25,
+                    color: hasError
+                        ? CupertinoColors.systemRed
+                        : CupertinoColors.black,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Container(
+                  height: photoSize + 20,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        // Add Photo Button
+                        GestureDetector(
+                          onTap: () => _showMultiplePhotoOptions(
+                            context,
+                            key,
+                            onChanged,
+                            photos,
+                          ),
+                          child: Container(
+                            width: photoSize,
+                            height: photoSize,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              color: hasError
+                                  ? CupertinoColors.systemRed.withOpacity(0.1)
+                                  : CupertinoColors.systemGrey6,
+                              border: hasError
+                                  ? Border.all(
+                                      color: CupertinoColors.systemRed,
+                                      width: 2,
+                                    )
+                                  : Border.all(
+                                      color: CupertinoColors.systemGrey4,
+                                    ),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  CupertinoIcons.plus,
+                                  size: photoSize * 0.3,
+                                  color: CupertinoColors.systemGrey,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Add',
+                                  style: TextStyle(
+                                    fontFamily: 'SF Pro Display',
+                                    letterSpacing: 0.25,
+                                    color: CupertinoColors.systemGrey,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // Display selected photos
+                        ...photos.asMap().entries.map((entry) {
+                          int index = entry.key;
+                          File photo = entry.value;
+                          return Container(
+                            margin: EdgeInsets.only(left: 12),
+                            child: Stack(
+                              children: [
+                                Container(
+                                  width: photoSize,
+                                  height: photoSize,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    image: DecorationImage(
+                                      image: FileImage(photo),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: -8,
+                                  right: -8,
+                                  child: GestureDetector(
+                                    onTap: () => _removePhotoAt(
+                                      index,
+                                      key,
+                                      onChanged,
+                                      photos,
+                                    ),
+                                    child: Container(
+                                      width: 24,
+                                      height: 24,
+                                      decoration: BoxDecoration(
+                                        color: CupertinoColors.systemRed,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        CupertinoIcons.xmark,
+                                        size: 16,
+                                        color: CupertinoColors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (hasError && validationErrors[key] != null)
+            Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                validationErrors[key]!,
+                style: TextStyle(
+                  fontFamily: 'SF Pro Display',
+                  letterSpacing: 0.25,
+                  color: CupertinoColors.systemRed,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Shows photo selection options for multiple photos
+  static void _showMultiplePhotoOptions(
+    BuildContext context,
+    String key,
+    Function(String, dynamic) onChanged,
+    List<File> currentPhotos,
+  ) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: Text('Add Photos'),
+        actions: [
+          CupertinoActionSheetAction(
+            child: Text('Camera'),
+            onPressed: () {
+              Navigator.pop(context);
+              _pickMultipleImages(
+                context,
+                key,
+                onChanged,
+                currentPhotos,
+                ImageSource.camera,
+              );
+            },
+          ),
+          CupertinoActionSheetAction(
+            child: Text('Gallery'),
+            onPressed: () {
+              Navigator.pop(context);
+              _pickMultipleImages(
+                context,
+                key,
+                onChanged,
+                currentPhotos,
+                ImageSource.gallery,
+              );
+            },
+          ),
+          CupertinoActionSheetAction(
+            child: Text('Files'),
+            onPressed: () {
+              Navigator.pop(context);
+              _pickMultipleImagesFromFiles(
+                context,
+                key,
+                onChanged,
+                currentPhotos,
+              );
+            },
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          child: Text('Cancel'),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+    );
+  }
+
+  /// Private helper method to pick multiple images from camera or gallery
+  static Future<void> _pickMultipleImages(
+    BuildContext context,
+    String key,
+    Function(String, dynamic) onChanged,
+    List<File> currentPhotos,
+    ImageSource source,
+  ) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+
+      if (source == ImageSource.camera) {
+        // Camera can only pick one image at a time
+        final XFile? image = await picker.pickImage(
+          source: source,
+          maxWidth: 800,
+          maxHeight: 800,
+          imageQuality: 85,
+        );
+
+        if (image != null) {
+          List<File> updatedPhotos = List<File>.from(currentPhotos);
+          updatedPhotos.add(File(image.path));
+          onChanged(key, updatedPhotos);
+        }
+      } else {
+        // Gallery can pick multiple images
+        final List<XFile> images = await picker.pickMultiImage(
+          maxWidth: 800,
+          maxHeight: 800,
+          imageQuality: 85,
+        );
+
+        if (images.isNotEmpty) {
+          List<File> updatedPhotos = List<File>.from(currentPhotos);
+          for (XFile image in images) {
+            updatedPhotos.add(File(image.path));
+          }
+          onChanged(key, updatedPhotos);
+        }
+      }
+    } catch (e) {
+      _showErrorDialog(context, 'Failed to pick images');
+    }
+  }
+
+  /// Private helper method to pick multiple images from files
+  static Future<void> _pickMultipleImagesFromFiles(
+    BuildContext context,
+    String key,
+    Function(String, dynamic) onChanged,
+    List<File> currentPhotos,
+  ) async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: true,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        List<File> updatedPhotos = List<File>.from(currentPhotos);
+        for (PlatformFile file in result.files) {
+          if (file.path != null) {
+            updatedPhotos.add(File(file.path!));
+          }
+        }
+        onChanged(key, updatedPhotos);
+      }
+    } catch (e) {
+      _showErrorDialog(context, 'Failed to pick images from files');
+    }
+  }
+
+  /// Remove photo at specific index
+  static void _removePhotoAt(
+    int index,
+    String key,
+    Function(String, dynamic) onChanged,
+    List<File> currentPhotos,
+  ) {
+    List<File> updatedPhotos = List<File>.from(currentPhotos);
+    updatedPhotos.removeAt(index);
+    onChanged(key, updatedPhotos);
+  }
+
   /// Private helper method to show error dialog
   static void _showErrorDialog(BuildContext context, String message) {
     showCupertinoDialog(
@@ -247,9 +587,28 @@ class FormFieldWidgets {
     required Map<String, String> validationErrors,
     bool isRequired = false,
     bool compact = false,
+    bool compactFull = false,
+    bool enabled = true,
+    TextEditingController? controller,
   }) {
     bool hasError = validationErrors.containsKey(key);
     String required = isRequired ? '*' : '';
+
+    // Use provided controller or get/create a persistent one
+    final textController =
+        controller ??
+        _getController(key, initialValue: formData[key]?.toString() ?? '');
+
+    // Sync controller with formData only if they differ (avoid cursor jumping)
+    final currentFormValue = formData[key]?.toString() ?? '';
+    if (controller == null && textController.text != currentFormValue) {
+      // Preserve cursor position when updating
+      final selection = textController.selection;
+      textController.text = currentFormValue;
+      if (selection.isValid && selection.end <= currentFormValue.length) {
+        textController.selection = selection;
+      }
+    }
 
     return Container(
       padding: compact
@@ -278,6 +637,7 @@ class FormFieldWidgets {
               if (!compact) SizedBox(width: 16),
               Expanded(
                 child: CupertinoTextField(
+                  controller: textController,
                   onChanged: (value) => onChanged(key, value),
                   placeholder: 'Enter $label $required',
                   placeholderStyle: TextStyle(
@@ -299,16 +659,16 @@ class FormFieldWidgets {
                           ),
                         )
                       : null,
-                  suffix: type == 'email'
-                      ? Text(
-                          '@gmail.com',
-                          style: TextStyle(
-                            fontFamily: 'SF Pro Display',
-                            letterSpacing: 0.25,
-                            fontSize: 16,
-                          ),
-                        )
-                      : null,
+                  // suffix: type == 'email'
+                  //     ? Text(
+                  //         '@gmail.com',
+                  //         style: TextStyle(
+                  //           fontFamily: 'SF Pro Display',
+                  //           letterSpacing: 0.25,
+                  //           fontSize: 16,
+                  //         ),
+                  //       )
+                  //     : null,
                   padding: EdgeInsets.zero,
                   style: TextStyle(
                     fontSize: 16,
@@ -320,11 +680,26 @@ class FormFieldWidgets {
                       ? TextInputType.phone
                       : type == 'email'
                       ? TextInputType.emailAddress
+                      : type == 'number'
+                      ? TextInputType.number
                       : TextInputType.text,
                 ),
               ),
             ],
           ),
+          if (hasError && validationErrors[key] != null)
+            Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                validationErrors[key]!,
+                style: TextStyle(
+                  color: CupertinoColors.systemRed,
+                  fontFamily: 'SF Pro Display',
+                  letterSpacing: 0.25,
+                  fontSize: 14,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -340,9 +715,27 @@ class FormFieldWidgets {
     bool isRequired = false,
     int maxLines = 4,
     int minLines = 3,
+    TextEditingController? controller,
+    bool compactFull = false,
   }) {
     bool hasError = validationErrors.containsKey(key);
     String required = isRequired ? '*' : '';
+
+    // Use provided controller or get/create a persistent one
+    final textController =
+        controller ??
+        _getController(key, initialValue: formData[key]?.toString() ?? '');
+
+    // Sync controller with formData only if they differ (avoid cursor jumping)
+    final currentFormValue = formData[key]?.toString() ?? '';
+    if (controller == null && textController.text != currentFormValue) {
+      // Preserve cursor position when updating
+      final selection = textController.selection;
+      textController.text = currentFormValue;
+      if (selection.isValid && selection.end <= currentFormValue.length) {
+        textController.selection = selection;
+      }
+    }
 
     return Container(
       padding: EdgeInsets.all(16),
@@ -367,6 +760,7 @@ class FormFieldWidgets {
               SizedBox(width: 16),
               Expanded(
                 child: CupertinoTextField(
+                  controller: textController,
                   onChanged: (value) => onChanged(key, value),
                   placeholder: 'Enter $label $required',
                   placeholderStyle: TextStyle(
@@ -392,6 +786,19 @@ class FormFieldWidgets {
               ),
             ],
           ),
+          if (hasError && validationErrors[key] != null)
+            Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                validationErrors[key]!,
+                style: TextStyle(
+                  color: CupertinoColors.systemRed,
+                  fontFamily: 'SF Pro Display',
+                  letterSpacing: 0.25,
+                  fontSize: 14,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -459,7 +866,8 @@ class FormFieldWidgets {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            formData[key] ?? 'Select $label $required',
+                            formData[key]?.toString() ??
+                                'Select $label $required',
                             style: TextStyle(
                               fontSize: 16,
                               fontFamily: 'SF Pro Display',
@@ -484,12 +892,24 @@ class FormFieldWidgets {
               ),
             ],
           ),
+          if (hasError && validationErrors[key] != null)
+            Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                validationErrors[key]!,
+                style: TextStyle(
+                  color: CupertinoColors.systemRed,
+                  fontFamily: 'SF Pro Display',
+                  letterSpacing: 0.25,
+                  fontSize: 14,
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  /// Builds a multi-select field using PullDownButton with persistent selection
   /// Builds a multi-select field with chip display
   static Widget buildMultiSelectField(
     String key,
@@ -891,4 +1311,151 @@ class FormFieldWidgets {
       ),
     );
   }
+}
+class CollapsibleSection extends StatefulWidget {
+  final List<Widget> fields;
+  final String title;
+  final bool compact;
+  final bool initiallyExpanded;
+
+  const CollapsibleSection({
+    super.key,
+    required this.fields,
+    this.title = '',
+    this.compact = false,
+    this.initiallyExpanded = true,
+  });
+
+  @override
+  State<CollapsibleSection> createState() => _CollapsibleSectionState();
+}
+
+class _CollapsibleSectionState extends State<CollapsibleSection>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _expandAnimation;
+  late Animation<double> _iconAnimation;
+  bool _isExpanded = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _isExpanded = widget.initiallyExpanded;
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _expandAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+    _iconAnimation = Tween<double>(
+      begin: 0.0,
+      end: 0.5,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    if (_isExpanded) {
+      _controller.value = 1.0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _toggleExpansion() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+      if (_isExpanded) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.title.isNotEmpty)
+          GestureDetector(
+            onTap: _toggleExpansion,
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              color: CupertinoColors.systemGrey6,
+              padding: const EdgeInsets.only(
+                left: 20,
+                right: 16,
+                bottom: 10,
+                top: 10,
+              ),
+              child: Transform.translate(
+                offset: const Offset(-4, 0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'SF Pro Display',
+                          letterSpacing: 0.25,
+                          fontSize: 14,
+                          color: CupertinoColors.systemGrey,
+                        ),
+                      ),
+                    ),
+                    AnimatedBuilder(
+                      animation: _iconAnimation,
+                      builder: (context, child) {
+                        return Transform.rotate(
+                          angle: _iconAnimation.value * 3.14159,
+                          child: const Icon(
+                            CupertinoIcons.chevron_right,
+                            size: 16,
+                            color: CupertinoColors.systemGrey2,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        SizeTransition(
+          sizeFactor: _expandAnimation,
+          axisAlignment: -1.0,
+          child: CupertinoListSection(
+            backgroundColor: CupertinoColors.systemBackground.resolveFrom(
+              context,
+            ),
+            dividerMargin: widget.compact ? 0 : 110,
+            margin: EdgeInsets.zero,
+            topMargin: 0,
+            additionalDividerMargin: widget.compact ? 0 : 30,
+            children: widget.fields,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+Widget BuildSection(
+  List<Widget> fields, {
+  String title = '',
+  bool compact = false,
+  bool initiallyExpanded = true,
+}) {
+  return CollapsibleSection(
+    fields: fields,
+    title: title,
+    compact: compact,
+    initiallyExpanded: initiallyExpanded,
+  );
 }

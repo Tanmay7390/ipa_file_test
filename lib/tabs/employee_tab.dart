@@ -1,5 +1,4 @@
 import 'dart:developer';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +6,7 @@ import 'dart:async';
 import '../components/page_scaffold.dart';
 import '../components/swipable_row.dart';
 import '../apis/providers/employee_provider.dart';
+import '../theme_provider.dart';
 
 class EmployeeTab extends ConsumerStatefulWidget {
   const EmployeeTab({super.key});
@@ -137,6 +137,8 @@ class _EmployeeTabState extends ConsumerState<EmployeeTab> {
   }
 
   void _deleteEmployee(String employeeId) async {
+    final colors = ref.read(colorProvider);
+
     try {
       await ref.read(employeeActionsProvider).deleteEmployee(employeeId);
 
@@ -147,12 +149,15 @@ class _EmployeeTabState extends ConsumerState<EmployeeTab> {
         showCupertinoDialog(
           context: context,
           builder: (context) => CupertinoAlertDialog(
-            title: const Text('Success'),
-            content: const Text('Employee deleted successfully'),
+            title: Text('Success', style: TextStyle(color: colors.textPrimary)),
+            content: Text(
+              'Employee deleted successfully',
+              style: TextStyle(color: colors.textSecondary),
+            ),
             actions: [
               CupertinoDialogAction(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
+                child: Text('OK', style: TextStyle(color: colors.primary)),
               ),
             ],
           ),
@@ -163,12 +168,15 @@ class _EmployeeTabState extends ConsumerState<EmployeeTab> {
         showCupertinoDialog(
           context: context,
           builder: (context) => CupertinoAlertDialog(
-            title: const Text('Error'),
-            content: Text('Failed to delete employee: $e'),
+            title: Text('Error', style: TextStyle(color: colors.error)),
+            content: Text(
+              'Failed to delete employee: $e',
+              style: TextStyle(color: colors.textSecondary),
+            ),
             actions: [
               CupertinoDialogAction(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
+                child: Text('OK', style: TextStyle(color: colors.primary)),
               ),
             ],
           ),
@@ -180,6 +188,7 @@ class _EmployeeTabState extends ConsumerState<EmployeeTab> {
   @override
   Widget build(BuildContext context) {
     final employeeListState = ref.watch(employeeListProvider);
+    final colors = ref.watch(colorProvider);
 
     return CustomPageScaffold(
       isLoading: _isLoading,
@@ -189,28 +198,47 @@ class _EmployeeTabState extends ConsumerState<EmployeeTab> {
       onSearchToggle: (_) => _toggleSearch(),
       onBottomRefresh: () => _onRefresh(),
       onRefresh: _onRefresh,
-      trailing: Row(
-        children: [
-          CupertinoButton(
-            onPressed: () {
-              // showInvoiceFormSheet(context);
-              context.go('/invoice/add');
-            },
-            padding: EdgeInsets.zero,
-            child: const Icon(CupertinoIcons.plus, size: 25),
+
+      // Add this floating action button
+      floatingActionButton: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: Color(0xFF4C9656),
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: CupertinoColors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () {
+            // Navigate to add form based on selected segment
+            context.go('/employee/add');
+          },
+          child: Icon(
+            CupertinoIcons.add,
+            color: CupertinoColors.white,
+            size: 24,
           ),
-        ],
+        ),
       ),
+
       sliverList: employeeListState.when(
         data: (employeeData) => CustomSwipableRow(
           isLoading: _isLoading,
           items: employeeData.employees,
-          onTap: (id) => context.go('/invoice/profile/$id'),
+          onTap: (id) => context.go('/employee/profile/$id'),
           onDelete: (id) => _deleteEmployee(id),
-          onEdit: (id) => context.go('/invoice/profile/$id'),
+          onEdit: (id) => context.go('/employee/edit/$id'),
           titleKey: 'name',
           subtitleKey: 'personalEmail',
           leadingKey: 'photo',
+          idKey: '_id', // Optional: explicitly specify the ID field
         ),
         loading: () => BuildShimmerTile(),
         error: (error, stack) =>

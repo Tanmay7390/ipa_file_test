@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test_22/theme_provider.dart'; // Add this import
+import 'package:flutter/services.dart';
+import 'package:flutter_test_22/theme_provider.dart';
+import 'package:flutter_test_22/auth/components/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 
 // Shared drawer mixin - Fixed to properly constrain the mixin
@@ -30,6 +32,21 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
     drawerOpen ? controller.forward() : controller.reverse();
   }
 
+  static void openDrawerFromContext(BuildContext context) {
+    final homeDrawerState = context
+        .findAncestorStateOfType<_HomeScreenWithDrawerState>();
+    if (homeDrawerState != null) {
+      homeDrawerState.toggleDrawer(true);
+      return;
+    }
+
+    final standaloneDrawerState = context
+        .findAncestorStateOfType<_StandaloneDrawerWrapperState>();
+    if (standaloneDrawerState != null) {
+      standaloneDrawerState.toggleDrawer(true);
+    }
+  }
+
   void navigateToPage(String pageName) {
     toggleDrawer(false);
     final routes = {
@@ -37,6 +54,9 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
       'Bookmarks': '/bookmarks',
       'Employee': '/employee',
       'Global Home': '/global-home',
+      'Inventory': '/inventory-list',
+      'Invoice': '/invoice',
+      'Testing': '/testing',
     };
     context.go(routes[pageName]!);
   }
@@ -50,6 +70,8 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
         ![
           '/home',
           '/employee',
+          '/inventory-list',
+          '/invoice',
         ].contains(GoRouterState.of(context).matchedLocation)) {
       return;
     }
@@ -76,22 +98,58 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
     if (location.startsWith('/employee')) return 'Employee';
     if (location.startsWith('/bookmarks')) return 'Bookmarks';
     if (location.startsWith('/global-home')) return 'Global Home';
+    if (location.startsWith('/inventory-list')) return 'Inventory';
+    if (location.startsWith('/invoice')) return 'Invoice';
+    if (location.startsWith('/testing')) return 'Testing';
     return 'Home';
+  }
+
+  //  logout functionality
+  void _handleLogout(WidgetRef ref) {
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text('Logout'),
+        content: Text('Are you sure you want to logout?'),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () async {
+              Navigator.pop(context);
+              toggleDrawer(false);
+              await ref.read(authProvider.notifier).signOut();
+
+              // Add explicit navigation to onboarding after logout
+              if (mounted) {
+                context.go('/onboarding');
+              }
+            },
+            child: Text('Logout'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget buildDrawer() {
     return Consumer(
       builder: (context, ref, child) {
-        final isDarkMode = ref.watch(isDarkModeProvider);
+        final colors = ref.watch(
+          colorProvider,
+        ); // Use color provider instead of theme
+        final userProfileAsync = ref.watch(userProfileProvider);
 
         return Container(
           decoration: BoxDecoration(
-            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+            color: colors.surface, // Use theme colors
             boxShadow: [
               BoxShadow(
-                color: isDarkMode
-                    ? Color.fromRGBO(0, 0, 0, 0.3)
-                    : Color.fromRGBO(0, 0, 0, 0.1),
+                color: colors.textPrimary.withOpacity(0.1),
                 blurRadius: 10,
                 offset: Offset(2, 0),
               ),
@@ -106,74 +164,114 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        radius: 30,
-                        backgroundImage: NetworkImage(
-                          'https://i.imgur.com/QCNbOAo.png',
-                        ),
-                      ),
-                      SizedBox(height: 12),
-                      Text(
-                        'iJustine',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: CupertinoTheme.of(
-                            context,
-                          ).textTheme.textStyle.color,
-                        ),
-                      ),
-                      Text(
-                        '@ijustine',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: CupertinoColors.secondaryLabel.resolveFrom(
-                            context,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Text(
-                            '3.1K ',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: CupertinoTheme.of(
-                                context,
-                              ).textTheme.textStyle.color,
-                            ),
-                          ),
-                          Text(
-                            'Following  ',
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: CupertinoColors.secondaryLabel.resolveFrom(
-                                context,
+                      userProfileAsync.when(
+                        data: (profile) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                radius: 30,
+                                backgroundImage: profile?['avatar'] != null
+                                    ? NetworkImage(profile!['avatar'])
+                                    : NetworkImage(
+                                        'https://i.imgur.com/QCNbOAo.png',
+                                      ),
+                                backgroundColor: colors.primary,
+                                child: profile?['avatar'] == null
+                                    ? Text(
+                                        profile?['name']
+                                                ?.substring(0, 1)
+                                                .toUpperCase() ??
+                                            'U',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              SizedBox(height: 12),
+                              Text(
+                                profile?['name'] ?? 'User',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                '@${profile?['username'] ?? profile?['email']?.split('@')[0] ?? 'user'}',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                        loading: () => Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 30,
+                              backgroundColor: colors.primary,
+                              child: Icon(
+                                CupertinoIcons.person,
+                                color: Colors.white,
+                                size: 30,
                               ),
                             ),
-                          ),
-                          Text(
-                            '1.8M ',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: CupertinoTheme.of(
-                                context,
-                              ).textTheme.textStyle.color,
-                            ),
-                          ),
-                          Text(
-                            'Followers',
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: CupertinoColors.secondaryLabel.resolveFrom(
-                                context,
+                            SizedBox(height: 12),
+                            Container(
+                              width: 120,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: colors.textSecondary.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(4),
                               ),
                             ),
-                          ),
-                        ],
+                            SizedBox(height: 4),
+                            Container(
+                              width: 80,
+                              height: 15,
+                              decoration: BoxDecoration(
+                                color: colors.textSecondary.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ],
+                        ),
+                        error: (error, stack) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 30,
+                              backgroundColor: colors.primary,
+                              child: Icon(
+                                CupertinoIcons.person,
+                                color: Colors.white,
+                                size: 30,
+                              ),
+                            ),
+                            SizedBox(height: 12),
+                            Text(
+                              'User',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              '@user',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -186,7 +284,10 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                       (CupertinoIcons.search_circle_fill, 'Employee'),
                       (CupertinoIcons.bookmark, 'Bookmarks'),
                       (CupertinoIcons.globe, 'Global Home'),
-                      // ...{}.map((item) => drawerItem(item.$1, item.$2)).toList(),
+                      (CupertinoIcons.person_2, 'Supplier'),
+                      (CupertinoIcons.bag, 'Inventory'),
+                      (CupertinoIcons.doc, 'Invoice'),
+                      (CupertinoIcons.settings, 'Testing'),
                     ].map((item) => drawerItem(item.$1, item.$2)).toList(),
                   ),
                 ),
@@ -195,10 +296,7 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                   padding: EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     border: Border(
-                      top: BorderSide(
-                        color: CupertinoColors.separator.resolveFrom(context),
-                        width: 0.5,
-                      ),
+                      top: BorderSide(color: colors.border, width: 0.5),
                     ),
                   ),
                   child: Row(
@@ -207,21 +305,17 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                       Row(
                         children: [
                           Icon(
-                            isDarkMode
+                            ref.watch(isDarkModeProvider)
                                 ? CupertinoIcons.moon_fill
                                 : CupertinoIcons.sun_max_fill,
-                            color: CupertinoColors.secondaryLabel.resolveFrom(
-                              context,
-                            ),
+                            color: colors.textSecondary,
                             size: 24,
                           ),
                           SizedBox(width: 16),
                           Text(
                             'Dark Mode',
                             style: TextStyle(
-                              color: CupertinoTheme.of(
-                                context,
-                              ).textTheme.textStyle.color,
+                              color: colors.textPrimary,
                               fontSize: 17,
                               fontWeight: FontWeight.w400,
                             ),
@@ -229,13 +323,45 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                         ],
                       ),
                       CupertinoSwitch(
-                        value: isDarkMode,
+                        value: ref.watch(isDarkModeProvider),
                         onChanged: (value) {
                           ref.read(themeProvider.notifier).toggleTheme();
                         },
-                        activeTrackColor: CupertinoColors.systemBlue,
+                        activeTrackColor: colors.primary,
                       ),
                     ],
+                  ),
+                ),
+                // Logout button section
+                Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: colors.border, width: 0.5),
+                    ),
+                  ),
+                  child: CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    alignment: Alignment.centerLeft,
+                    onPressed: () => _handleLogout(ref),
+                    child: Row(
+                      children: [
+                        Icon(
+                          CupertinoIcons.square_arrow_right,
+                          color: colors.error,
+                          size: 24,
+                        ),
+                        SizedBox(width: 16),
+                        Text(
+                          'Logout',
+                          style: TextStyle(
+                            color: colors.error,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -250,7 +376,7 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
     return Consumer(
       builder: (context, ref, child) {
         bool isSelected = getCurrentPageName() == title;
-        // final isDarkMode = ref.watch(isDarkModeProvider);
+        final colors = ref.watch(colorProvider); // Use color provider
 
         return Container(
           margin: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -258,28 +384,20 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             alignment: Alignment.centerLeft,
             borderRadius: BorderRadius.circular(12),
-            color: isSelected
-                ? CupertinoColors.systemBlue
-                      .resolveFrom(context)
-                      .withOpacity(0.1)
-                : null,
+            color: isSelected ? colors.primary.withOpacity(0.1) : null,
             onPressed: () => navigateToPage(title),
             child: Row(
               children: [
                 Icon(
                   icon,
-                  color: isSelected
-                      ? CupertinoColors.systemBlue.resolveFrom(context)
-                      : CupertinoColors.secondaryLabel.resolveFrom(context),
+                  color: isSelected ? colors.primary : colors.textSecondary,
                   size: 24,
                 ),
                 SizedBox(width: 16),
                 Text(
                   title,
                   style: TextStyle(
-                    color: isSelected
-                        ? CupertinoColors.systemBlue.resolveFrom(context)
-                        : CupertinoTheme.of(context).textTheme.textStyle.color,
+                    color: isSelected ? colors.primary : colors.textPrimary,
                     fontSize: 17,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                   ),
@@ -381,48 +499,394 @@ class _HomeScreenWithDrawerState extends State<HomeScreenWithDrawer>
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      child: buildDrawerLayout(
-        ScaffoldWithNavBar(navigationShell: widget.navigationShell),
-        checkMainRoute: true, // This parameter is set to true
+    // Check if we're on a main tab route
+    final location = GoRouterState.of(context).matchedLocation;
+    final isMainTabRoute = [
+      '/home',
+      '/employee',
+      '/customersuppliers',
+    ].contains(location);
+
+    return PopScope(
+      canPop:
+          !drawerOpen && (!isMainTabRoute || Navigator.of(context).canPop()),
+      onPopInvokedWithResult: (didPop, result) async {
+        if (!didPop) {
+          if (drawerOpen) {
+            // If drawer is open, close it
+            toggleDrawer(false);
+          } else if (isMainTabRoute && !Navigator.of(context).canPop()) {
+            // Exit the app only on main tab routes with no navigation stack
+            SystemNavigator.pop();
+          }
+          // For other cases, let normal navigation handle it
+        }
+      },
+      child: CupertinoPageScaffold(
+        child: buildDrawerLayout(
+          ScaffoldWithNavBar(navigationShell: widget.navigationShell),
+          checkMainRoute: true,
+        ),
       ),
     );
   }
 }
 
-class ScaffoldWithNavBar extends StatelessWidget {
+class ScaffoldWithNavBar extends ConsumerWidget {
   const ScaffoldWithNavBar({required this.navigationShell, super.key});
   final StatefulNavigationShell navigationShell;
 
-  @override
-  Widget build(BuildContext context) {
+  void _showBottomSheet(BuildContext context, WidgetRef ref) {
+    final colors = ref.watch(colorProvider);
+
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (BuildContext context) => Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        padding: const EdgeInsets.only(top: 6.0),
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                width: 36,
+                height: 5,
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: CupertinoColors.systemGrey4.resolveFrom(context),
+                  borderRadius: BorderRadius.circular(2.5),
+                ),
+              ),
+              // Browse title
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Browse',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: colors.textPrimary,
+                  ),
+                ),
+              ),
+              // Grid items
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: [
+                      // First row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildGridItem(
+                              context,
+                              colors,
+                              CupertinoIcons.cube_box,
+                              'Products',
+                              () => context.go('/inventory-list'),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildGridItem(
+                              context,
+                              colors,
+                              CupertinoIcons.tag,
+                              'Categories',
+                              () {},
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildGridItem(
+                              context,
+                              colors,
+                              CupertinoIcons.person,
+                              'Suppliers',
+                              () => context.go('/customersuppliers'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // Second row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildGridItem(
+                              context,
+                              colors,
+                              CupertinoIcons.square_stack,
+                              'Stock',
+                              () {},
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildGridItem(
+                              context,
+                              colors,
+                              CupertinoIcons.cart,
+                              'Orders',
+                              () {},
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildGridItem(
+                              context,
+                              colors,
+                              CupertinoIcons.chart_bar,
+                              'Reports',
+                              () {},
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      // Wareozo section
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'wareozo',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildListItem(
+                              context,
+                              colors,
+                              CupertinoIcons.download_circle,
+                              'employee',
+                              () => context.go('/employee'),
+                            ),
+                            _buildListItem(
+                              context,
+                              colors,
+                              CupertinoIcons.chart_bar_square,
+                              'sales',
+                              () {},
+                            ),
+                            _buildListItem(
+                              context,
+                              colors,
+                              CupertinoIcons.gift,
+                              'purchase',
+                              () {},
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGridItem(
+    BuildContext context,
+    WareozeColorScheme colors,
+    IconData icon,
+    String title,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context);
+        onTap();
+      },
+      child: Container(
+        height: 80,
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colors.border),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 24, color: colors.textPrimary),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListItem(
+    BuildContext context,
+    WareozeColorScheme colors,
+    IconData icon,
+    String title,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context);
+        onTap();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: colors.textSecondary),
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = ref.watch(colorProvider);
+
     return CupertinoPageScaffold(
       child: Column(
         children: [
           Expanded(child: navigationShell),
-          CupertinoTabBar(
-            currentIndex: navigationShell.currentIndex,
-            onTap: (index) => navigationShell.goBranch(
-              index,
-              initialLocation: index == navigationShell.currentIndex,
+          Container(
+            decoration: BoxDecoration(
+              color: colors.surface,
+              border: Border(top: BorderSide(color: colors.border, width: 0.5)),
             ),
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(CupertinoIcons.home),
-                label: 'Home',
+            child: SafeArea(
+              top: false,
+              child: Container(
+                height: 60,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem(
+                      context,
+                      colors,
+                      CupertinoIcons.home,
+                      'Home',
+                      0,
+                      navigationShell.currentIndex == 0,
+                      () => navigationShell.goBranch(0),
+                    ),
+                    _buildNavItem(
+                      context,
+                      colors,
+                      CupertinoIcons.cube_box,
+                      'Items',
+                      3,
+                      false,
+                      () => context.go('/inventory-list'),
+                    ),
+                    // Middle arrow button
+                    GestureDetector(
+                      onTap: () => _showBottomSheet(context, ref),
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: colors.primary,
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: const Icon(
+                          CupertinoIcons.chevron_up,
+                          color: CupertinoColors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    _buildNavItem(
+                      context,
+                      colors,
+                      CupertinoIcons.group,
+                      'Parties',
+                      2,
+                      navigationShell.currentIndex == 2,
+                      () => navigationShell.goBranch(2),
+                    ),
+                    _buildNavItem(
+                      context,
+                      colors,
+                      CupertinoIcons.doc_text_search,
+                      'Reports',
+                      -1, // Not connected to any branch
+                      false,
+                      () {},
+                    ),
+                  ],
+                ),
               ),
-              BottomNavigationBarItem(
-                icon: Icon(CupertinoIcons.search_circle_fill),
-                label: 'Employee',
-              ),
-            ],
-            backgroundColor: CupertinoTheme.of(
-              context,
-            ).scaffoldBackgroundColor.withOpacity(0.8),
-            activeColor: CupertinoColors.activeBlue,
-            inactiveColor: CupertinoColors.inactiveGray,
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(
+    BuildContext context,
+    WareozeColorScheme colors,
+    IconData icon,
+    String label,
+    int index,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 64,
+        height: 64,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 24,
+              color: isSelected ? colors.primary : colors.textSecondary,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: isSelected ? colors.primary : colors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -446,6 +910,18 @@ class _StandaloneDrawerWrapperState extends State<StandaloneDrawerWrapper>
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(child: buildDrawerLayout(widget.child));
+    return PopScope(
+      canPop: !drawerOpen,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (!didPop) {
+          if (drawerOpen) {
+            // If drawer is open, close it
+            toggleDrawer(false);
+          }
+          // If drawer is closed, let normal navigation handle the back action
+        }
+      },
+      child: CupertinoPageScaffold(child: buildDrawerLayout(widget.child)),
+    );
   }
 }

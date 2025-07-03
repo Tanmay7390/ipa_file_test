@@ -11,9 +11,7 @@ class CustomSwipableRow extends StatelessWidget {
   final String titleKey;
   final String subtitleKey;
   final String leadingKey;
-
-  /// Builder to provide the main content of each list tile
-  // final Widget Function(BuildContext context, int index) childBuilder;
+  final String? idKey; // Add this optional parameter
 
   const CustomSwipableRow({
     super.key,
@@ -25,12 +23,50 @@ class CustomSwipableRow extends StatelessWidget {
     required this.titleKey,
     required this.subtitleKey,
     required this.leadingKey,
+    this.idKey, // Add this parameter
   });
+  bool _isValidImageUrl(String? url) {
+    if (url == null || url.isEmpty) return false;
+    if (url.toLowerCase() == 'null') return false;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) return false;
+    return true;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final children = items.asMap().entries.map((entry) {
+    // Filter out items that don't have required fields or have null values
+    final validItems = items.where((item) {
+      if (item == null) return false;
+
+      // Check if item has an ID using the improved extraction method
+      final id = _extractId(item);
+      if (id == null || id.isEmpty) return false;
+
+      // Check if required keys exist and are not null
+      final title = item is Map ? item[titleKey] : null;
+      final subtitle = item is Map ? item[subtitleKey] : null;
+
+      return title != null && subtitle != null;
+    }).toList();
+
+    final children = validItems.asMap().entries.map((entry) {
       final dynamic item = entry.value;
+
+      // Use the improved ID extraction method
+      final String itemId = _extractId(item) ?? '';
+
+      final String title = (item is Map)
+          ? (item[titleKey]?.toString() ?? 'No Title')
+          : 'No Title';
+
+      final String subtitle = (item is Map)
+          ? (item[subtitleKey]?.toString() ?? 'No Subtitle')
+          : 'No Subtitle';
+
+      final String? leadingUrl = (item is Map)
+          ? item[leadingKey]?.toString()
+          : null;
+
       return SwipeActionCell(
         key: ObjectKey(item),
         trailingActions: <SwipeAction>[
@@ -39,14 +75,18 @@ class CustomSwipableRow extends StatelessWidget {
             performsFirstActionWithFullSwipe: true,
             onTap: (handler) async {
               await handler(true);
-              onDelete(item?._id ?? item['_id'] ?? '');
+              if (itemId.isNotEmpty) {
+                onDelete(itemId);
+              }
             },
             color: CupertinoColors.systemRed,
           ),
           SwipeAction(
             title: "Edit",
             onTap: (handler) async {
-              onEdit(item?._id ?? item['_id'] ?? '');
+              if (itemId.isNotEmpty) {
+                onEdit(itemId);
+              }
               await handler(false);
             },
             color: CupertinoColors.systemOrange,
@@ -58,11 +98,11 @@ class CustomSwipableRow extends StatelessWidget {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           leadingSize: 47,
-          leading: item[leadingKey] != null
+          leading: _isValidImageUrl(leadingUrl)
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(25),
                   child: Image.network(
-                    item[leadingKey]!,
+                    leadingUrl!,
                     width: 50,
                     height: 50,
                     fit: BoxFit.cover,
@@ -72,8 +112,8 @@ class CustomSwipableRow extends StatelessWidget {
                 )
               : const FlutterLogo(size: 50),
           title: Text(
-            item[titleKey],
-            style: TextStyle(
+            title,
+            style: const TextStyle(
               fontFamily: 'SF Pro Display',
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -81,24 +121,26 @@ class CustomSwipableRow extends StatelessWidget {
             ),
           ),
           subtitle: Text(
-            item[subtitleKey],
-            style: TextStyle(
+            subtitle,
+            style: const TextStyle(
               fontFamily: 'SF Pro Display',
               fontSize: 16,
               letterSpacing: 0.25,
             ),
           ),
           trailing: const CupertinoListTileChevron(),
-          onTap: () => onEdit(item['_id'] ?? item['_id'] ?? ''),
+          onTap: () {
+            if (itemId.isNotEmpty) {
+              onTap(itemId);
+            }
+          },
         ),
       );
     }).toList();
 
     // Handle empty state - return empty container if no children and not loading
     if (children.isEmpty && !isLoading) {
-      return SliverToBoxAdapter(
-        child: _buildEmptyState(), // Or your empty state widget
-      );
+      return _buildEmptyState();
     }
 
     return SliverToBoxAdapter(
@@ -112,21 +154,42 @@ class CustomSwipableRow extends StatelessWidget {
     );
   }
 
+  // Add this helper method for robust ID extraction
+  String? _extractId(dynamic item) {
+    if (item is! Map) return null;
+
+    // If idKey is specified, use it first
+    if (idKey != null && item[idKey] != null) {
+      return item[idKey].toString();
+    }
+
+    // Fallback to common ID fields in order of preference
+    final idFields = ['_id', 'id', 'empId', 'customerId', 'supplierId'];
+
+    for (final field in idFields) {
+      if (item[field] != null) {
+        return item[field].toString();
+      }
+    }
+
+    return null;
+  }
+
   Widget _buildEmptyState() {
     return SliverFillRemaining(
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               CupertinoIcons.person_alt_circle,
               size: 64,
               color: CupertinoColors.systemGrey,
             ),
             const SizedBox(height: 16),
-            Text(
-              'No employees found',
-              style: const TextStyle(
+            const Text(
+              'No items found',
+              style: TextStyle(
                 fontSize: 17,
                 color: CupertinoColors.systemGrey,
                 fontWeight: FontWeight.w500,
@@ -134,9 +197,9 @@ class CustomSwipableRow extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            Text(
-              'Add your first employee to get started',
-              style: const TextStyle(
+            const Text(
+              'Add your first item to get started',
+              style: TextStyle(
                 fontSize: 15,
                 color: CupertinoColors.systemGrey2,
               ),

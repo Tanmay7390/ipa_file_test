@@ -1,7 +1,8 @@
 import 'dart:developer';
-
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import '../theme_provider.dart';
 
 class CustomPageScaffold extends StatefulWidget {
   final String heading;
@@ -18,6 +19,10 @@ class CustomPageScaffold extends StatefulWidget {
   final bool showSearchField;
   final Function(bool)? onSearchToggle;
 
+  final Widget? customHeaderWidget;
+  final WareozeColorScheme? colorScheme;
+  final Widget? floatingActionButton;
+
   const CustomPageScaffold({
     super.key,
     required this.heading,
@@ -32,6 +37,9 @@ class CustomPageScaffold extends StatefulWidget {
     this.onSearchToggle,
     required this.isLoading,
     this.scrollController,
+    this.customHeaderWidget,
+    this.colorScheme,
+    this.floatingActionButton,
   });
 
   @override
@@ -130,6 +138,7 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
   }
 
   Widget _buildBottomRefreshIndicator() {
+    final colors = widget.colorScheme ?? WareozeColorScheme.light();
     final progress = (_bottomDragOffset / _bottomRefreshThreshold).clamp(
       0.0,
       1.0,
@@ -141,15 +150,18 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
 
     return SliverToBoxAdapter(
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+        duration: const Duration(milliseconds: 100),
         height: indicatorHeight,
         child: indicatorHeight > 0
             ? AnimatedBuilder(
                 animation: _bottomRefreshAnimation,
                 builder: (context, child) {
                   if (_isBottomRefreshing) {
-                    return const Center(
-                      child: CupertinoActivityIndicator(radius: 15),
+                    return Center(
+                      child: CupertinoActivityIndicator(
+                        radius: 15,
+                        color: colors.primary,
+                      ),
                     );
                   }
 
@@ -158,6 +170,7 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
                       child: CupertinoActivityIndicator.partiallyRevealed(
                         progress: progress,
                         radius: 15,
+                        color: colors.primary,
                       ),
                     );
                   }
@@ -172,70 +185,86 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      child: NotificationListener<ScrollNotification>(
-        onNotification: _handleScrollNotification,
-        child: CustomScrollView(
-          controller: _scrollController,
-          // Allow overscroll at the bottom
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
+    final colors = widget.colorScheme ?? WareozeColorScheme.light();
+
+    return Builder(
+      builder: (innerContext) {
+        return CupertinoPageScaffold(
+          backgroundColor: colors.background,
+          child: Stack(
+            // Wrap with Stack
+            children: [
+              NotificationListener<ScrollNotification>(
+                onNotification: _handleScrollNotification,
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  slivers: <Widget>[
+                    CupertinoSliverNavigationBar.search(
+                      largeTitle: Text(
+                        widget.heading,
+                        style: TextStyle(color: colors.textPrimary),
+                      ),
+                      leading: widget.leading,
+                      transitionBetweenRoutes: true,
+                      searchField: CupertinoSearchTextField(
+                        controller: widget.searchController,
+                        autofocus: widget.showSearchField,
+                        placeholder: widget.showSearchField
+                            ? 'Enter search text'
+                            : 'Search',
+                        prefixIcon: Icon(
+                          CupertinoIcons.search,
+                          color: colors.textSecondary,
+                        ),
+                        suffixIcon: Icon(
+                          CupertinoIcons.xmark_circle_fill,
+                          color: colors.textSecondary,
+                        ),
+                        suffixMode: OverlayVisibilityMode.editing,
+                        onSuffixTap: () {
+                          widget.searchController.clear();
+                          widget.onSearchChange?.call('');
+                        },
+                        onChanged: widget.onSearchChange,
+                        style: TextStyle(color: colors.textPrimary),
+                        placeholderStyle: TextStyle(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                      onSearchableBottomTap: widget.onSearchToggle,
+                      bottomMode: NavigationBarBottomMode.always,
+                      backgroundColor: colors.surface.withOpacity(0.8),
+                      enableBackgroundFilterBlur: true,
+                      border: Border(
+                        bottom: BorderSide(color: colors.border, width: 0.5),
+                      ),
+                      // Remove the trailing parameter entirely
+                    ),
+                    if (!widget.isLoading && !widget.showSearchField)
+                      CupertinoSliverRefreshControl(
+                        onRefresh: widget.onRefresh ?? () async {},
+                      ),
+                    if (widget.customHeaderWidget != null)
+                      SliverToBoxAdapter(child: widget.customHeaderWidget!),
+                    widget.sliverList,
+                    _buildBottomRefreshIndicator(),
+                  ],
+                ),
+              ),
+              // Add floating action button here
+              if (widget.floatingActionButton != null)
+                Positioned(
+                  bottom: 30,
+                  right: 20,
+                  child: widget.floatingActionButton!,
+                ),
+            ],
           ),
-          slivers: <Widget>[
-            CupertinoSliverNavigationBar.search(
-              largeTitle: Text(widget.heading),
-              transitionBetweenRoutes: true,
-              searchField: CupertinoSearchTextField(
-                controller: widget.searchController,
-                autofocus: widget.showSearchField,
-                placeholder: widget.showSearchField
-                    ? 'Enter search text'
-                    : 'Search',
-                prefixIcon: const Icon(
-                  CupertinoIcons.search,
-                  color: CupertinoColors.systemGrey,
-                ),
-                suffixIcon: const Icon(
-                  CupertinoIcons.xmark_circle_fill,
-                  color: CupertinoColors.systemGrey,
-                ),
-                suffixMode: OverlayVisibilityMode.editing,
-                onSuffixTap: () {
-                  widget.searchController.clear();
-                  widget.onSearchChange?.call('');
-                },
-                onChanged: widget.onSearchChange,
-              ),
-              onSearchableBottomTap: widget.onSearchToggle,
-              bottomMode: NavigationBarBottomMode.always,
-              backgroundColor: CupertinoColors.systemBackground.withOpacity(
-                0.8,
-              ),
-              enableBackgroundFilterBlur: true,
-              border: const Border(
-                bottom: BorderSide(
-                  color: CupertinoColors.systemGrey5,
-                  width: 0.5,
-                ),
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [if (widget.trailing != null) widget.trailing!],
-              ),
-            ),
-            // Top refresh control (pull down)
-            if (!widget.isLoading && !widget.showSearchField)
-              CupertinoSliverRefreshControl(
-                onRefresh: widget.onRefresh ?? () async {},
-              ),
-
-            widget.sliverList,
-
-            // Bottom refresh indicator
-            _buildBottomRefreshIndicator(),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 }

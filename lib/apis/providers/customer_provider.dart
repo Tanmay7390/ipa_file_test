@@ -1,9 +1,11 @@
 // lib/apis/providers/customer_provider.dart
 import 'dart:developer';
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/api_urls.dart';
 import '../core/dio_provider.dart';
+import '../../auth/components/auth_provider.dart';
 
 // Customer data model - flexible to handle any API response structure
 class CustomerData {
@@ -73,72 +75,58 @@ class CustomerRepository {
   // Get customer list with pagination and search
   Future<ApiResponse<CustomerData>> getCustomerList({
     required String accountId,
-    int page = 0,
+    int page = 1,
     int limit = 10,
     String? searchQuery,
   }) async {
     try {
       final url = ApiUrls.replaceParams(ApiUrls.customerList, {
-        'accountId': '6434642d86b9bb6018ef2528',
+        'accountId': accountId,
       });
 
       // Build query parameters
       final queryParams = <String, dynamic>{'page': page, 'limit': limit};
 
       if (searchQuery != null && searchQuery.isNotEmpty) {
-        queryParams['name'] = searchQuery;
+        queryParams['search'] = searchQuery;
       }
 
+      log('Making request to: $url with params: $queryParams');
+
       final response = await dio.get(url, queryParameters: queryParams);
+
+      log('Raw API Response: ${response.data}');
 
       if (response.statusCode == 200) {
         final responseData = response.data;
 
-        // Handle different API response structures
+        // Extract customers and total from API response
         List<Map<String, dynamic>> customers = [];
-        int totalPages = 1;
         int totalCount = 0;
-        bool hasMore = false;
 
         if (responseData is Map<String, dynamic>) {
-          // Structured response with pagination info
-          if (responseData.containsKey('data')) {
-            final data = responseData['data'];
-            if (data is List) {
-              customers = List<Map<String, dynamic>>.from(data);
-            } else if (data is Map && data.containsKey('customers')) {
-              customers = List<Map<String, dynamic>>.from(
-                data['customers'] ?? [],
-              );
-              totalPages = data['totalPages'] ?? 1;
-              totalCount = data['totalCount'] ?? customers.length;
-              hasMore = page < totalPages;
+          // Extract customers array - your API returns customers directly
+          if (responseData.containsKey('customers')) {
+            final customersData = responseData['customers'];
+            if (customersData is List) {
+              customers = List<Map<String, dynamic>>.from(customersData);
+              log('Extracted ${customers.length} customers');
             }
-          } else if (responseData.containsKey('customers')) {
-            customers = List<Map<String, dynamic>>.from(
-              responseData['customers'] ?? [],
-            );
-            totalPages = responseData['totalPages'] ?? 1;
-            totalCount = responseData['totalCount'] ?? customers.length;
-            hasMore = page < totalPages;
-          } else {
-            // Direct list response
-            customers = [responseData];
           }
 
-          // Extract pagination info if available
-          if (responseData.containsKey('pagination')) {
-            final pagination = responseData['pagination'];
-            totalPages = pagination['totalPages'] ?? 1;
-            totalCount = pagination['totalCount'] ?? customers.length;
-            hasMore = pagination['hasMore'] ?? (page < totalPages);
+          // Extract total count
+          if (responseData.containsKey('total')) {
+            totalCount = responseData['total'] ?? 0;
           }
-        } else if (responseData is List) {
-          // Direct array response
-          customers = List<Map<String, dynamic>>.from(responseData);
-          totalCount = customers.length;
-          hasMore = false; // No pagination info available
         }
+
+        // Calculate pagination info
+        final totalPages = totalCount > 0 ? (totalCount / limit).ceil() : 1;
+        final hasMore = page < totalPages;
+
+        log(
+          'Total customers: $totalCount, Current page: $page, Has more: $hasMore',
+        );
 
         final customerData = CustomerData(
           customers: customers,
@@ -146,6 +134,8 @@ class CustomerRepository {
           totalPages: totalPages,
           totalCount: totalCount,
           hasMore: hasMore,
+          isLoading: false,
+          isLoadingMore: false,
         );
 
         return ApiResponse.success(
@@ -203,32 +193,46 @@ class CustomerRepository {
     }
   }
 
-  // Create customer
+  // Create customer/supplier
   Future<ApiResponse<Map<String, dynamic>>> createCustomer(
     Map<String, dynamic> customerData,
   ) async {
     try {
-      final response = await dio.post(
-        ApiUrls.createCustomer,
-        data: FormData.fromMap(customerData),
+      final url = ApiUrls.createCustomer; // 'account/buyer-seller'
+
+      // Ensure isClient is set to true for customer/buyer
+      // customerData['isClient'] = true;
+      // customerData['isVendor'] = false;
+
+      log('Creating customer with data: $customerData');
+
+      final response = await dio.post(url, data: customerData);
+
+      log(
+        'Create customer response: ${response.statusCode} - ${response.data}',
       );
 
-      if (response.statusCode == 201 || response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = response.data;
-        Map<String, dynamic> customer = {};
+        Map<String, dynamic> createdCustomer = {};
 
         if (responseData is Map<String, dynamic>) {
+          // Handle different response structures
           if (responseData.containsKey('data')) {
-            customer = Map<String, dynamic>.from(responseData['data']);
+            createdCustomer = Map<String, dynamic>.from(responseData['data']);
+          } else if (responseData.containsKey('customer')) {
+            createdCustomer = Map<String, dynamic>.from(
+              responseData['customer'],
+            );
           } else {
-            customer = responseData;
+            createdCustomer = responseData;
           }
         }
 
         return ApiResponse.success(
-          customer,
+          createdCustomer,
           responseData is Map
-              ? (responseData['message'] ?? 'Customer created successfully')
+              ? responseData['message']
               : 'Customer created successfully',
         );
       } else {
@@ -236,41 +240,56 @@ class CustomerRepository {
       }
     } on DioException catch (e) {
       log('Error creating customer: ${e.message}');
+      if (e.response?.data != null) {
+        log('Error response data: ${e.response!.data}');
+      }
       return ApiResponse.error(_handleDioError(e));
     } catch (e) {
-      log('Unexpected error: $e');
+      log('Unexpected error creating customer: $e');
       return ApiResponse.error('An unexpected error occurred');
     }
   }
 
-  // Update customer
+  //Update customer
   Future<ApiResponse<Map<String, dynamic>>> updateCustomer(
     String customerId,
     Map<String, dynamic> customerData,
   ) async {
     try {
       final url = ApiUrls.replaceParams(ApiUrls.updateCustomer, {
-        'id': customerId,
+        'customerId': customerId,
       });
 
-      final response = await dio.put(url, data: FormData.fromMap(customerData));
+      log('Updating customer $customerId with URL: $url');
+      log('Full URL will be: ${ApiUrls.baseUrl}$url');
+      log('Update data: $customerData');
+
+      final response = await dio.post(url, data: customerData);
+
+      log(
+        'Update customer response: ${response.statusCode} - ${response.data}',
+      );
 
       if (response.statusCode == 200) {
         final responseData = response.data;
-        Map<String, dynamic> customer = {};
+        Map<String, dynamic> updatedCustomer = {};
 
         if (responseData is Map<String, dynamic>) {
           if (responseData.containsKey('data')) {
-            customer = Map<String, dynamic>.from(responseData['data']);
+            updatedCustomer = Map<String, dynamic>.from(responseData['data']);
+          } else if (responseData.containsKey('customer')) {
+            updatedCustomer = Map<String, dynamic>.from(
+              responseData['customer'],
+            );
           } else {
-            customer = responseData;
+            updatedCustomer = responseData;
           }
         }
 
         return ApiResponse.success(
-          customer,
+          updatedCustomer,
           responseData is Map
-              ? (responseData['message'] ?? 'Customer updated successfully')
+              ? responseData['message']
               : 'Customer updated successfully',
         );
       } else {
@@ -278,9 +297,12 @@ class CustomerRepository {
       }
     } on DioException catch (e) {
       log('Error updating customer: ${e.message}');
+      if (e.response?.data != null) {
+        log('Error response data: ${e.response!.data}');
+      }
       return ApiResponse.error(_handleDioError(e));
     } catch (e) {
-      log('Unexpected error: $e');
+      log('Unexpected error updating customer: $e');
       return ApiResponse.error('An unexpected error occurred');
     }
   }
@@ -368,7 +390,7 @@ final customerListProvider =
       ref,
     ) {
       final repository = ref.watch(customerRepositoryProvider);
-      return CustomerListNotifier(repository);
+      return CustomerListNotifier(repository, ref); // Pass ref here
     });
 
 // Customer actions provider for CRUD operations
@@ -380,9 +402,11 @@ final customerActionsProvider = Provider<CustomerActions>((ref) {
 // Customer list state notifier
 class CustomerListNotifier extends StateNotifier<AsyncValue<CustomerData>> {
   final CustomerRepository _repository;
+  final Ref _ref; // Add this line
   String _currentAccountId = '';
 
-  CustomerListNotifier(this._repository) : super(const AsyncValue.loading());
+  CustomerListNotifier(this._repository, this._ref)
+    : super(const AsyncValue.loading());
 
   // Load customers with pagination and search
   Future<void> loadCustomers({
@@ -392,14 +416,16 @@ class CustomerListNotifier extends StateNotifier<AsyncValue<CustomerData>> {
     String? accountId,
   }) async {
     try {
-      // Use provided accountId or keep current one
-      if (accountId != null) {
-        _currentAccountId = accountId;
+      // Use provided accountId or get from auth token
+      String? targetAccountId = accountId;
+      if (targetAccountId == null) {
+        final authState = _ref.read(authProvider);
+        targetAccountId = _getAccountIdFromAuth(authState);
       }
 
-      if (_currentAccountId.isEmpty) {
-        // Set default account ID if needed
-        _currentAccountId = 'default_account'; // Replace with actual logic
+      if (targetAccountId == null || targetAccountId.isEmpty) {
+        state = AsyncValue.error('No account ID found', StackTrace.current);
+        return;
       }
 
       if (refresh || page == 1) {
@@ -412,13 +438,17 @@ class CustomerListNotifier extends StateNotifier<AsyncValue<CustomerData>> {
       }
 
       final result = await _repository.getCustomerList(
-        accountId: _currentAccountId,
+        accountId: targetAccountId,
         page: page,
         searchQuery: searchQuery,
       );
 
       if (result.success && result.data != null) {
         final newData = result.data!;
+        log('Loaded customers: ${newData.customers.length}');
+        log(
+          'First customer: ${newData.customers.isNotEmpty ? newData.customers.first : 'none'}',
+        );
 
         if (page == 1 || refresh) {
           // First page or refresh - replace all data
@@ -447,6 +477,34 @@ class CustomerListNotifier extends StateNotifier<AsyncValue<CustomerData>> {
       }
     } catch (e) {
       state = AsyncValue.error(e.toString(), StackTrace.current);
+    }
+  }
+
+  // Helper method to extract account ID from auth state
+  String? _getAccountIdFromAuth(AuthState authState) {
+    // Method 1: If you store account ID in your auth token, decode it
+    if (authState.token != null) {
+      try {
+        return _extractAccountIdFromToken(authState.token!);
+      } catch (e) {
+        print('Error extracting account ID from token: $e');
+      }
+    }
+
+    // Method 2: If you have a separate field in AuthState for account ID
+    // Add accountId field to your AuthState class and return it here
+    // return authState.accountId;
+
+    return null;
+  }
+
+  String? _extractAccountIdFromToken(String token) {
+    try {
+      // For now, get it from the auth state if available
+      final authState = _ref.read(authProvider);
+      return authState.accountId;
+    } catch (e) {
+      return null;
     }
   }
 
@@ -479,13 +537,22 @@ class CustomerListNotifier extends StateNotifier<AsyncValue<CustomerData>> {
   }
 
   // Update customer in local state (optimistic update)
-  void updateCustomer(String customerId, Map<String, dynamic> updatedCustomer) {
+  void updateCustomer(Map<String, dynamic> updatedCustomer) {
     state.whenData((currentData) {
-      final updatedCustomers = currentData.customers.map((emp) {
-        return emp['_id'] == customerId ? updatedCustomer : emp;
+      final updatedList = currentData.customers.map((customer) {
+        if (customer['_id'] == updatedCustomer['_id']) {
+          return updatedCustomer;
+        }
+        return customer;
       }).toList();
+
       state = AsyncValue.data(
-        currentData.copyWith(customers: updatedCustomers),
+        currentData.copyWith(
+          customers: updatedList,
+          currentPage: currentData.currentPage,
+          hasMore: currentData.hasMore,
+          isLoadingMore: currentData.isLoadingMore,
+        ),
       );
     });
   }

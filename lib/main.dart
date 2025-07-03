@@ -1,10 +1,18 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test_22/router.dart';
-import 'package:flutter_test_22/theme_provider.dart'; // Add this import
+import 'package:flutter_test_22/theme_provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
-void main() => runApp(const ProviderScope(child: MyApp()));
+// Create a global container for router access
+final globalContainer = ProviderContainer();
+
+void main() {
+  runApp(
+    UncontrolledProviderScope(container: globalContainer, child: const MyApp()),
+  );
+}
 
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
@@ -19,6 +27,7 @@ class MyApp extends ConsumerWidget {
     final defaultTextTheme = const CupertinoTextThemeData();
 
     return CupertinoApp.router(
+      debugShowCheckedModeBanner: false,
       routerConfig: appRouter,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

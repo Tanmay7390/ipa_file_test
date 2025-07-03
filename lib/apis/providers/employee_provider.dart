@@ -1,9 +1,11 @@
 // lib/apis/providers/employee_provider.dart
 import 'dart:developer';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/api_urls.dart';
 import '../core/dio_provider.dart';
+import '../../auth/components/auth_provider.dart';
 
 // Employee data model - flexible to handle any API response structure
 class EmployeeData {
@@ -67,19 +69,42 @@ class ApiResponse<T> {
 // Employee repository
 class EmployeeRepository {
   final Dio dio;
+  final Ref ref; // Add ref to access auth state
 
-  EmployeeRepository(this.dio);
+  EmployeeRepository(this.dio, this.ref);
+
+  // Get current account ID from auth state
+  String? _getCurrentAccountId() {
+    final authState = ref.read(authProvider);
+    return authState.accountId;
+  }
+
+  // Get current auth token
+  String? _getCurrentToken() {
+    final authState = ref.read(authProvider);
+    return authState.token;
+  }
 
   // Get employee list with pagination and search
   Future<ApiResponse<EmployeeData>> getEmployeeList({
-    required String accountId,
+    String?
+    accountId, // Make optional - will use auth account ID if not provided
     int page = 1,
     int limit = 20,
     String? searchQuery,
   }) async {
     try {
+      // Use provided accountId or get from auth state
+      final currentAccountId = accountId ?? _getCurrentAccountId();
+
+      if (currentAccountId == null || currentAccountId.isEmpty) {
+        return ApiResponse.error(
+          'No account ID available. Please login again.',
+        );
+      }
+
       final url = ApiUrls.replaceParams(ApiUrls.employeeList, {
-        'accountId': '6434642d86b9bb6018ef2528',
+        'accountId': currentAccountId,
       });
 
       // Build query parameters
@@ -89,6 +114,7 @@ class EmployeeRepository {
         queryParams['filter'] = searchQuery;
       }
 
+      log('Fetching employees for account: $currentAccountId');
       final response = await dio.get(url, queryParameters: queryParams);
 
       if (response.statusCode == 200) {
@@ -203,14 +229,62 @@ class EmployeeRepository {
     }
   }
 
-  // Create employee
+  // Create employee - WITH PROPER FORM DATA HANDLING
   Future<ApiResponse<Map<String, dynamic>>> createEmployee(
     Map<String, dynamic> employeeData,
   ) async {
     try {
+      // Add account ID to employee data if not present
+      final currentAccountId = _getCurrentAccountId();
+      final currentToken = _getCurrentToken();
+
+      if (currentAccountId != null && !employeeData.containsKey('accountId')) {
+        employeeData['accountId'] = currentAccountId;
+      }
+
+      // Create FormData for proper file upload
+      final formData = FormData();
+
+      // Add all fields to FormData
+      employeeData.forEach((key, value) {
+        if (value != null) {
+          if (value is MultipartFile) {
+            // Handle file uploads
+            formData.files.add(MapEntry(key, value));
+          } else if (value is List) {
+            // For arrays, convert to JSON string
+            formData.fields.add(MapEntry(key, jsonEncode(value)));
+          } else if (value is Map) {
+            // For nested objects, convert to JSON string
+            formData.fields.add(MapEntry(key, jsonEncode(value)));
+          } else {
+            // For primitive types
+            formData.fields.add(MapEntry(key, value.toString()));
+          }
+        }
+      });
+
+      // Log the data being sent for debugging
+      print('Sending employee FormData:');
+      for (var field in formData.fields) {
+        print('${field.key}: ${field.value}');
+      }
+      for (var file in formData.files) {
+        print('File: ${file.key}');
+      }
+
       final response = await dio.post(
         ApiUrls.createEmployee,
-        data: FormData.fromMap(employeeData),
+        data: formData,
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': currentToken != null
+                ? 'Bearer $currentToken'
+                : null,
+            // Don't set Content-Type - let Dio handle it for FormData
+          }..removeWhere((key, value) => value == null),
+        ),
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
@@ -235,11 +309,13 @@ class EmployeeRepository {
         return ApiResponse.error('Failed to create employee');
       }
     } on DioException catch (e) {
-      log('Error creating employee: ${e.message}');
+      print('Error creating employee: ${e.message}');
+      print('Response status: ${e.response?.statusCode}');
+      print('Response data: ${e.response?.data}');
       return ApiResponse.error(_handleDioError(e));
     } catch (e) {
-      log('Unexpected error: $e');
-      return ApiResponse.error('An unexpected error occurred');
+      print('Unexpected error: $e');
+      return ApiResponse.error('An unexpected error occurred: ${e.toString()}');
     }
   }
 
@@ -253,7 +329,53 @@ class EmployeeRepository {
         'id': employeeId,
       });
 
-      final response = await dio.put(url, data: FormData.fromMap(employeeData));
+      // Get current auth token
+      final currentToken = _getCurrentToken();
+
+      // Create FormData for proper file upload handling (same as createEmployee)
+      final formData = FormData();
+
+      // Add all fields to FormData
+      employeeData.forEach((key, value) {
+        if (value != null) {
+          if (value is MultipartFile) {
+            // Handle file uploads
+            formData.files.add(MapEntry(key, value));
+          } else if (value is List) {
+            // For arrays, convert to JSON string
+            formData.fields.add(MapEntry(key, jsonEncode(value)));
+          } else if (value is Map) {
+            // For nested objects, convert to JSON string
+            formData.fields.add(MapEntry(key, jsonEncode(value)));
+          } else {
+            // For primitive types
+            formData.fields.add(MapEntry(key, value.toString()));
+          }
+        }
+      });
+
+      // Log the data being sent for debugging
+      print('Updating employee FormData:');
+      for (var field in formData.fields) {
+        print('${field.key}: ${field.value}');
+      }
+      for (var file in formData.files) {
+        print('File: ${file.key}');
+      }
+
+      final response = await dio.put(
+        url,
+        data: formData,
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': currentToken != null
+                ? 'Bearer $currentToken'
+                : null,
+            // Don't set Content-Type - let Dio handle it for FormData
+          }..removeWhere((key, value) => value == null),
+        ),
+      );
 
       if (response.statusCode == 200) {
         final responseData = response.data;
@@ -277,11 +399,13 @@ class EmployeeRepository {
         return ApiResponse.error('Failed to update employee');
       }
     } on DioException catch (e) {
-      log('Error updating employee: ${e.message}');
+      print('Error updating employee: ${e.message}');
+      print('Response status: ${e.response?.statusCode}');
+      print('Response data: ${e.response?.data}');
       return ApiResponse.error(_handleDioError(e));
     } catch (e) {
-      log('Unexpected error: $e');
-      return ApiResponse.error('An unexpected error occurred');
+      print('Unexpected error: $e');
+      return ApiResponse.error('An unexpected error occurred: ${e.toString()}');
     }
   }
 
@@ -339,7 +463,7 @@ class EmployeeRepository {
           case 422:
             return message ?? 'Validation error. Please check your input.';
           case 500:
-            return 'Server error. Please try again later.';
+            return message ?? 'Server error. Please try again later.';
           default:
             return message ?? 'An error occurred. Please try again.';
         }
@@ -353,10 +477,10 @@ class EmployeeRepository {
   }
 }
 
-// Repository provider
+// Repository provider - Updated to pass ref
 final employeeRepositoryProvider = Provider<EmployeeRepository>((ref) {
   final dio = ref.watch(dioProvider);
-  return EmployeeRepository(dio);
+  return EmployeeRepository(dio, ref);
 });
 
 // Search provider
@@ -368,7 +492,7 @@ final employeeListProvider =
       ref,
     ) {
       final repository = ref.watch(employeeRepositoryProvider);
-      return EmployeeListNotifier(repository);
+      return EmployeeListNotifier(repository, ref);
     });
 
 // Employee actions provider for CRUD operations
@@ -380,26 +504,34 @@ final employeeActionsProvider = Provider<EmployeeActions>((ref) {
 // Employee list state notifier
 class EmployeeListNotifier extends StateNotifier<AsyncValue<EmployeeData>> {
   final EmployeeRepository _repository;
-  String _currentAccountId = '';
+  final Ref _ref;
 
-  EmployeeListNotifier(this._repository) : super(const AsyncValue.loading());
+  EmployeeListNotifier(this._repository, this._ref)
+    : super(const AsyncValue.loading());
+
+  // Get current account ID from auth state
+  String? _getCurrentAccountId() {
+    final authState = _ref.read(authProvider);
+    return authState.accountId;
+  }
 
   // Load employees with pagination and search
   Future<void> loadEmployees({
-    required int page,
+    int page = 1,
     bool refresh = false,
     String? searchQuery,
-    String? accountId,
+    String? accountId, // Optional override
   }) async {
     try {
-      // Use provided accountId or keep current one
-      if (accountId != null) {
-        _currentAccountId = accountId;
-      }
+      // Use provided accountId or get from auth state
+      final currentAccountId = accountId ?? _getCurrentAccountId();
 
-      if (_currentAccountId.isEmpty) {
-        // Set default account ID if needed
-        _currentAccountId = 'default_account'; // Replace with actual logic
+      if (currentAccountId == null || currentAccountId.isEmpty) {
+        state = AsyncValue.error(
+          'No account ID available. Please login again.',
+          StackTrace.current,
+        );
+        return;
       }
 
       if (refresh || page == 1) {
@@ -412,7 +544,7 @@ class EmployeeListNotifier extends StateNotifier<AsyncValue<EmployeeData>> {
       }
 
       final result = await _repository.getEmployeeList(
-        accountId: _currentAccountId,
+        accountId: currentAccountId,
         page: page,
         searchQuery: searchQuery,
       );
@@ -488,6 +620,11 @@ class EmployeeListNotifier extends StateNotifier<AsyncValue<EmployeeData>> {
         currentData.copyWith(employees: updatedEmployees),
       );
     });
+  }
+
+  // Refresh employees for current account
+  Future<void> refresh() async {
+    await loadEmployees(page: 1, refresh: true);
   }
 }
 
