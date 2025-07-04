@@ -5,7 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/api_urls.dart';
 import '../core/dio_provider.dart';
-import '../../auth/components/auth_provider.dart';
+import 'auth_provider.dart';
 
 // Employee data model - flexible to handle any API response structure
 class EmployeeData {

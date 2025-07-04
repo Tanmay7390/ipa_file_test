@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test_22/theme_provider.dart';
-import 'package:flutter_test_22/auth/components/auth_provider.dart';
+import 'package:flutter_test_22/apis/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 
 // Shared drawer mixin - Fixed to properly constrain the mixin
@@ -56,7 +56,6 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
       'Global Home': '/global-home',
       'Inventory': '/inventory-list',
       'Invoice': '/invoice',
-      'Testing': '/testing',
     };
     context.go(routes[pageName]!);
   }
@@ -100,7 +99,6 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
     if (location.startsWith('/global-home')) return 'Global Home';
     if (location.startsWith('/inventory-list')) return 'Inventory';
     if (location.startsWith('/invoice')) return 'Invoice';
-    if (location.startsWith('/testing')) return 'Testing';
     return 'Home';
   }
 
@@ -284,10 +282,8 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                       (CupertinoIcons.search_circle_fill, 'Employee'),
                       (CupertinoIcons.bookmark, 'Bookmarks'),
                       (CupertinoIcons.globe, 'Global Home'),
-                      (CupertinoIcons.person_2, 'Supplier'),
                       (CupertinoIcons.bag, 'Inventory'),
                       (CupertinoIcons.doc, 'Invoice'),
-                      (CupertinoIcons.settings, 'Testing'),
                     ].map((item) => drawerItem(item.$1, item.$2)).toList(),
                   ),
                 ),
@@ -831,9 +827,9 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                       colors,
                       CupertinoIcons.group,
                       'Parties',
-                      2,
-                      navigationShell.currentIndex == 2,
-                      () => navigationShell.goBranch(2),
+                      4,
+                      navigationShell.currentIndex == 4,
+                      () => navigationShell.goBranch(4),
                     ),
                     _buildNavItem(
                       context,

@@ -146,60 +146,60 @@ class _InvoiceFormSheetState extends State<InvoiceFormSheet> {
         child: Column(
           children: [
             const SizedBox(height: 120),
-            // const Padding(
-            //   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-            //   child: Row(
-            //     mainAxisAlignment: MainAxisAlignment.start,
-            //     children: [
-            //       Text('Code : #1024', style: TextStyle(fontSize: 15)),
-            //     ],
-            //   ),
-            // ),
-            // const SizedBox(height: 30),
-            // Row(
-            //   crossAxisAlignment: CrossAxisAlignment.start,
-            //   children: [
-            //     SizedBox(
-            //       width: 130,
-            //       child: FormFieldWidgets.buildAvatarField(
-            //         'profileImage',
-            //         '',
-            //         context: context,
-            //         onChanged: _updateFormData,
-            //         formData: formData,
-            //         validationErrors: validationErrors,
-            //         initials: _getInitials(),
-            //         size: 100,
-            //       ),
-            //     ),
-            //     Expanded(
-            //       child: _buildSection(compact: true, [
-            //         FormFieldWidgets.buildTextField(
-            //           'firstName',
-            //           'First Name',
-            //           'text',
-            //           context,
-            //           isRequired: true,
-            //           onChanged: _updateFormData,
-            //           formData: formData,
-            //           validationErrors: validationErrors,
-            //           compact: true,
-            //         ),
-            //         FormFieldWidgets.buildTextField(
-            //           'lastName',
-            //           'Last Name',
-            //           'text',
-            //           context,
-            //           isRequired: true,
-            //           onChanged: _updateFormData,
-            //           formData: formData,
-            //           validationErrors: validationErrors,
-            //           compact: true,
-            //         ),
-            //       ]),
-            //     ),
-            //   ],
-            // ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Text('Code : #1024', style: TextStyle(fontSize: 15)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 30),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 130,
+                  child: FormFieldWidgets.buildAvatarField(
+                    'profileImage',
+                    '',
+                    context: context,
+                    onChanged: _updateFormData,
+                    formData: formData,
+                    validationErrors: validationErrors,
+                    initials: _getInitials(),
+                    size: 100,
+                  ),
+                ),
+                Expanded(
+                  child: _buildSection(compact: true, [
+                    FormFieldWidgets.buildTextField(
+                      'firstName',
+                      'First Name',
+                      'text',
+                      context,
+                      isRequired: true,
+                      onChanged: _updateFormData,
+                      formData: formData,
+                      validationErrors: validationErrors,
+                      compact: true,
+                    ),
+                    FormFieldWidgets.buildTextField(
+                      'lastName',
+                      'Last Name',
+                      'text',
+                      context,
+                      isRequired: true,
+                      onChanged: _updateFormData,
+                      formData: formData,
+                      validationErrors: validationErrors,
+                      compact: true,
+                    ),
+                  ]),
+                ),
+              ],
+            ),
             _buildSection([
               FormFieldWidgets.buildTextField(
                 'invoiceNumber',

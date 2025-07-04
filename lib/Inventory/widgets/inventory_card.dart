@@ -683,7 +683,7 @@ class InventoryGridCard extends ConsumerWidget {
       case 'edit':
         if (inventoryId != null) {
           // Navigate to edit form
-          context.push('/inventory-form/$inventoryId');
+          context.push('/inventory-list/edit/$inventoryId');
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

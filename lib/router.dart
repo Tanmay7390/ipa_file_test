@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'package:flutter_test_22/drawer.dart';
-import 'package:flutter_test_22/auth/components/auth_provider.dart';
+import 'package:flutter_test_22/apis/providers/auth_provider.dart';
 import 'package:flutter_test_22/forms/invoice_form.dart';
 import 'package:flutter_test_22/tabs/employee_tab.dart';
 import 'package:flutter_test_22/forms/employee_form.dart';
@@ -194,24 +194,6 @@ final appRouter = GoRouter(
       },
     ),
 
-    // Inventory routes
-    GoRoute(
-      path: '/inventory-list',
-      parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const InventoryList(),
-    ),
-    GoRoute(
-      path: '/inventory-form',
-      parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const CreateInventory(),
-    ),
-    GoRoute(
-      path: '/inventory-form/:id',
-      parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) =>
-          CreateInventory(inventoryId: state.pathParameters['id']),
-    ),
-
     // Invoice routes
     // GoRoute(
     //   path: '/invoice',
@@ -233,6 +215,28 @@ final appRouter = GoRouter(
                 GoRoute(
                   path: 'details',
                   builder: (context, state) => const HomeDetailsPage(),
+                ),
+              ],
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/inventory-list',
+
+              builder: (context, state) => const InventoryList(),
+              routes: [
+                GoRoute(
+                  path: 'add',
+                  parentNavigatorKey: _rootNavigatorKey,
+                  builder: (context, state) => CreateInventory(),
+                ),
+                GoRoute(
+                  path: 'edit/:id',
+                  parentNavigatorKey: _rootNavigatorKey,
+                  builder: (context, state) =>
+                      CreateInventory(inventoryId: state.pathParameters['id']),
                 ),
               ],
             ),

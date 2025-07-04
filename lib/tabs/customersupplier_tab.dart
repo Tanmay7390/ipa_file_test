@@ -8,7 +8,7 @@ import '../components/page_scaffold.dart';
 import '../components/swipable_row.dart';
 import '../apis/providers/customer_provider.dart';
 import '../apis/providers/supplier_provider.dart';
-import '../../auth/components/auth_provider.dart';
+
 
 class CustomerSupplierTab extends ConsumerStatefulWidget {
   const CustomerSupplierTab({super.key});

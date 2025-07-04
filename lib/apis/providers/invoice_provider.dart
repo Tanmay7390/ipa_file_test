@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../core/dio_provider.dart';
 import '../core/api_urls.dart';
-import '../../auth/components/auth_provider.dart'; 
+import 'package:flutter_test_22/apis/providers/auth_provider.dart';
 
 // Invoice list provider - now depends on auth provider
 final invoiceListProvider = StateNotifierProvider<InvoiceListNotifier, AsyncValue<List<Map<String, dynamic>>>>((ref) {

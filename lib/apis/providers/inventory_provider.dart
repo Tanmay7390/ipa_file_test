@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../core/dio_provider.dart';
 import '../core/api_urls.dart';
-import '../../auth/components/auth_provider.dart'; // Import auth provider
+import 'package:flutter_test_22/apis/providers/auth_provider.dart';
 
 // Inventory state
 class InventoryState {

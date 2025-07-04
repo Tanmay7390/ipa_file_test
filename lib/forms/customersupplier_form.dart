@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:flutter_test_22/components/form_fields.dart';
 import '../../apis/providers/customer_provider.dart';
-import '../../auth/components/auth_provider.dart';
+import 'package:flutter_test_22/apis/providers/auth_provider.dart';
 import '../../apis/core/dio_provider.dart';
 import '../../apis/core/api_urls.dart';
 import '../components/addresses_bottom_sheet.dart';

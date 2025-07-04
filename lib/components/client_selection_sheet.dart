@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../apis/core/dio_provider.dart';
-import '../auth/components/auth_provider.dart';
+import '../apis/providers/auth_provider.dart';
 
 class ClientSelectionService {
   static void showClientSelector({

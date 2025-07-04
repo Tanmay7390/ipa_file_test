@@ -7,36 +7,6 @@ import 'dart:io';
 
 /// A collection of reusable form field widgets with Cupertino design
 class FormFieldWidgets {
-  // Static controller storage to persist controllers across rebuilds
-  static final Map<String, TextEditingController> _controllers = {};
-
-  /// Get or create a controller for a specific field
-  static TextEditingController _getController(
-    String key, {
-    String? initialValue,
-  }) {
-    if (!_controllers.containsKey(key)) {
-      _controllers[key] = TextEditingController(text: initialValue ?? '');
-    }
-    return _controllers[key]!;
-  }
-
-  /// Clean up controllers (call this when disposing forms)
-  static void disposeController(String key) {
-    if (_controllers.containsKey(key)) {
-      _controllers[key]!.dispose();
-      _controllers.remove(key);
-    }
-  }
-
-  /// Clean up all controllers
-  static void disposeAllControllers() {
-    for (final controller in _controllers.values) {
-      controller.dispose();
-    }
-    _controllers.clear();
-  }
-
   /// Builds an avatar photo selection field with profile picture display
   static Widget buildAvatarField(
     String key,
@@ -46,20 +16,23 @@ class FormFieldWidgets {
     required Map<String, String> validationErrors,
     required BuildContext context,
     String? initials,
-    double size = 100,
+    double size = 110,
     bool isRequired = false,
+    bool compact = false,
   }) {
     bool hasError = validationErrors.containsKey(key);
     String required = isRequired ? '*' : '';
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 20),
+      padding: compact
+          ? EdgeInsets.symmetric(horizontal: 2, vertical: 8)
+          : EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (label.isNotEmpty)
             Padding(
-              padding: EdgeInsets.only(bottom: 12),
+              padding: EdgeInsets.only(bottom: compact ? 8 : 12),
               child: Text(
                 '$label $required',
                 style: TextStyle(
@@ -128,8 +101,8 @@ class FormFieldWidgets {
               buttonBuilder: (context, showMenu) => GestureDetector(
                 onTap: showMenu,
                 child: Container(
-                  width: size,
-                  height: size,
+                  width: compact ? size * 0.8 : size,
+                  height: compact ? size * 0.8 : size,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: hasError
@@ -156,26 +129,27 @@ class FormFieldWidgets {
                                   color: CupertinoColors.white,
                                   fontFamily: 'SF Pro Display',
                                   letterSpacing: 0.25,
-                                  fontSize: size * 0.24,
+                                  fontSize:
+                                      (compact ? size * 0.8 : size) * 0.24,
                                   fontWeight: FontWeight.bold,
                                 ),
                               )
                             else
                               Icon(
                                 CupertinoIcons.camera,
-                                size: size * 0.3,
+                                size: (compact ? size * 0.8 : size) * 0.3,
                                 color: CupertinoColors.systemGrey,
                               ),
                             if (initials == null || initials.isEmpty)
                               Padding(
-                                padding: EdgeInsets.only(top: 4),
+                                padding: EdgeInsets.only(top: compact ? 2 : 4),
                                 child: Text(
                                   'Add Photo',
                                   style: TextStyle(
                                     fontFamily: 'SF Pro Display',
                                     letterSpacing: 0.25,
                                     color: CupertinoColors.systemGrey,
-                                    fontSize: 12,
+                                    fontSize: compact ? 10 : 12,
                                   ),
                                 ),
                               ),
@@ -188,14 +162,14 @@ class FormFieldWidgets {
           ),
           if (hasError && validationErrors[key] != null)
             Padding(
-              padding: EdgeInsets.only(top: 8),
+              padding: EdgeInsets.only(top: compact ? 4 : 8),
               child: Text(
                 validationErrors[key]!,
                 style: TextStyle(
                   fontFamily: 'SF Pro Display',
                   letterSpacing: 0.25,
                   color: CupertinoColors.systemRed,
-                  fontSize: 14,
+                  fontSize: compact ? 12 : 14,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -249,316 +223,6 @@ class FormFieldWidgets {
     }
   }
 
-  /// Builds a multiple photos selection field with horizontal scrollable display
-  static Widget buildMultiplePhotosField(
-    String key,
-    String label, {
-    required Function(String, dynamic) onChanged,
-    required Map<String, dynamic> formData,
-    required Map<String, String> validationErrors,
-    required BuildContext context,
-    double photoSize = 80,
-    bool isRequired = false,
-  }) {
-    bool hasError = validationErrors.containsKey(key);
-    String required = isRequired ? '*' : '';
-    List<File> photos = List<File>.from(formData[key] ?? []);
-
-    return Container(
-      padding: EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 100,
-                child: Text(
-                  '$label $required',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'SF Pro Display',
-                    letterSpacing: 0.25,
-                    color: hasError
-                        ? CupertinoColors.systemRed
-                        : CupertinoColors.black,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              SizedBox(width: 16),
-              Expanded(
-                child: Container(
-                  height: photoSize + 20,
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        // Add Photo Button
-                        GestureDetector(
-                          onTap: () => _showMultiplePhotoOptions(
-                            context,
-                            key,
-                            onChanged,
-                            photos,
-                          ),
-                          child: Container(
-                            width: photoSize,
-                            height: photoSize,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              color: hasError
-                                  ? CupertinoColors.systemRed.withOpacity(0.1)
-                                  : CupertinoColors.systemGrey6,
-                              border: hasError
-                                  ? Border.all(
-                                      color: CupertinoColors.systemRed,
-                                      width: 2,
-                                    )
-                                  : Border.all(
-                                      color: CupertinoColors.systemGrey4,
-                                    ),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  CupertinoIcons.plus,
-                                  size: photoSize * 0.3,
-                                  color: CupertinoColors.systemGrey,
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Add',
-                                  style: TextStyle(
-                                    fontFamily: 'SF Pro Display',
-                                    letterSpacing: 0.25,
-                                    color: CupertinoColors.systemGrey,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        // Display selected photos
-                        ...photos.asMap().entries.map((entry) {
-                          int index = entry.key;
-                          File photo = entry.value;
-                          return Container(
-                            margin: EdgeInsets.only(left: 12),
-                            child: Stack(
-                              children: [
-                                Container(
-                                  width: photoSize,
-                                  height: photoSize,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    image: DecorationImage(
-                                      image: FileImage(photo),
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: -8,
-                                  right: -8,
-                                  child: GestureDetector(
-                                    onTap: () => _removePhotoAt(
-                                      index,
-                                      key,
-                                      onChanged,
-                                      photos,
-                                    ),
-                                    child: Container(
-                                      width: 24,
-                                      height: 24,
-                                      decoration: BoxDecoration(
-                                        color: CupertinoColors.systemRed,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        CupertinoIcons.xmark,
-                                        size: 16,
-                                        color: CupertinoColors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (hasError && validationErrors[key] != null)
-            Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Text(
-                validationErrors[key]!,
-                style: TextStyle(
-                  fontFamily: 'SF Pro Display',
-                  letterSpacing: 0.25,
-                  color: CupertinoColors.systemRed,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// Shows photo selection options for multiple photos
-  static void _showMultiplePhotoOptions(
-    BuildContext context,
-    String key,
-    Function(String, dynamic) onChanged,
-    List<File> currentPhotos,
-  ) {
-    showCupertinoModalPopup(
-      context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: Text('Add Photos'),
-        actions: [
-          CupertinoActionSheetAction(
-            child: Text('Camera'),
-            onPressed: () {
-              Navigator.pop(context);
-              _pickMultipleImages(
-                context,
-                key,
-                onChanged,
-                currentPhotos,
-                ImageSource.camera,
-              );
-            },
-          ),
-          CupertinoActionSheetAction(
-            child: Text('Gallery'),
-            onPressed: () {
-              Navigator.pop(context);
-              _pickMultipleImages(
-                context,
-                key,
-                onChanged,
-                currentPhotos,
-                ImageSource.gallery,
-              );
-            },
-          ),
-          CupertinoActionSheetAction(
-            child: Text('Files'),
-            onPressed: () {
-              Navigator.pop(context);
-              _pickMultipleImagesFromFiles(
-                context,
-                key,
-                onChanged,
-                currentPhotos,
-              );
-            },
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          child: Text('Cancel'),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-    );
-  }
-
-  /// Private helper method to pick multiple images from camera or gallery
-  static Future<void> _pickMultipleImages(
-    BuildContext context,
-    String key,
-    Function(String, dynamic) onChanged,
-    List<File> currentPhotos,
-    ImageSource source,
-  ) async {
-    try {
-      final ImagePicker picker = ImagePicker();
-
-      if (source == ImageSource.camera) {
-        // Camera can only pick one image at a time
-        final XFile? image = await picker.pickImage(
-          source: source,
-          maxWidth: 800,
-          maxHeight: 800,
-          imageQuality: 85,
-        );
-
-        if (image != null) {
-          List<File> updatedPhotos = List<File>.from(currentPhotos);
-          updatedPhotos.add(File(image.path));
-          onChanged(key, updatedPhotos);
-        }
-      } else {
-        // Gallery can pick multiple images
-        final List<XFile> images = await picker.pickMultiImage(
-          maxWidth: 800,
-          maxHeight: 800,
-          imageQuality: 85,
-        );
-
-        if (images.isNotEmpty) {
-          List<File> updatedPhotos = List<File>.from(currentPhotos);
-          for (XFile image in images) {
-            updatedPhotos.add(File(image.path));
-          }
-          onChanged(key, updatedPhotos);
-        }
-      }
-    } catch (e) {
-      _showErrorDialog(context, 'Failed to pick images');
-    }
-  }
-
-  /// Private helper method to pick multiple images from files
-  static Future<void> _pickMultipleImagesFromFiles(
-    BuildContext context,
-    String key,
-    Function(String, dynamic) onChanged,
-    List<File> currentPhotos,
-  ) async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        allowMultiple: true,
-      );
-
-      if (result != null && result.files.isNotEmpty) {
-        List<File> updatedPhotos = List<File>.from(currentPhotos);
-        for (PlatformFile file in result.files) {
-          if (file.path != null) {
-            updatedPhotos.add(File(file.path!));
-          }
-        }
-        onChanged(key, updatedPhotos);
-      }
-    } catch (e) {
-      _showErrorDialog(context, 'Failed to pick images from files');
-    }
-  }
-
-  /// Remove photo at specific index
-  static void _removePhotoAt(
-    int index,
-    String key,
-    Function(String, dynamic) onChanged,
-    List<File> currentPhotos,
-  ) {
-    List<File> updatedPhotos = List<File>.from(currentPhotos);
-    updatedPhotos.removeAt(index);
-    onChanged(key, updatedPhotos);
-  }
-
   /// Private helper method to show error dialog
   static void _showErrorDialog(BuildContext context, String message) {
     showCupertinoDialog(
@@ -589,32 +253,15 @@ class FormFieldWidgets {
     bool compact = false,
     bool compactFull = false,
     bool enabled = true,
-    TextEditingController? controller,
   }) {
     bool hasError = validationErrors.containsKey(key);
     String required = isRequired ? '*' : '';
-
-    // Use provided controller or get/create a persistent one
-    final textController =
-        controller ??
-        _getController(key, initialValue: formData[key]?.toString() ?? '');
-
-    // Sync controller with formData only if they differ (avoid cursor jumping)
-    final currentFormValue = formData[key]?.toString() ?? '';
-    if (controller == null && textController.text != currentFormValue) {
-      // Preserve cursor position when updating
-      final selection = textController.selection;
-      textController.text = currentFormValue;
-      if (selection.isValid && selection.end <= currentFormValue.length) {
-        textController.selection = selection;
-      }
-    }
 
     return Container(
       padding: compact
           ? EdgeInsets.symmetric(horizontal: 2, vertical: 8)
           : compactFull
-          ? EdgeInsets.symmetric(horizontal: 2, vertical: 16)
+          ? EdgeInsets.symmetric(horizontal: 16, vertical: 16)
           : EdgeInsets.all(16),
       color: CupertinoColors.systemBackground.resolveFrom(context),
       child: Column(
@@ -625,7 +272,7 @@ class FormFieldWidgets {
             children: [
               if (!compact && !compactFull)
                 SizedBox(
-                  width: 100,
+                  width: 110,
                   child: Text(
                     label,
                     style: TextStyle(
@@ -639,7 +286,10 @@ class FormFieldWidgets {
               if (!compact && !compactFull) SizedBox(width: 16),
               Expanded(
                 child: CupertinoTextField(
-                  controller: textController,
+                  enabled: enabled,
+                  controller: TextEditingController(
+                    text: formData[key]?.toString() ?? '',
+                  ),
                   onChanged: (value) => onChanged(key, value),
                   placeholder: 'Enter $label $required',
                   placeholderStyle: TextStyle(
@@ -661,16 +311,16 @@ class FormFieldWidgets {
                           ),
                         )
                       : null,
-                  // suffix: type == 'email'
-                  //     ? Text(
-                  //         '@gmail.com',
-                  //         style: TextStyle(
-                  //           fontFamily: 'SF Pro Display',
-                  //           letterSpacing: 0.25,
-                  //           fontSize: 16,
-                  //         ),
-                  //       )
-                  //     : null,
+                  suffix: type == 'email'
+                      ? Text(
+                          '@gmail.com',
+                          style: TextStyle(
+                            fontFamily: 'SF Pro Display',
+                            letterSpacing: 0.25,
+                            fontSize: 16,
+                          ),
+                        )
+                      : null,
                   padding: EdgeInsets.zero,
                   style: TextStyle(
                     fontSize: 16,
@@ -682,26 +332,11 @@ class FormFieldWidgets {
                       ? TextInputType.phone
                       : type == 'email'
                       ? TextInputType.emailAddress
-                      : type == 'number'
-                      ? TextInputType.number
                       : TextInputType.text,
                 ),
               ),
             ],
           ),
-          if (hasError && validationErrors[key] != null)
-            Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Text(
-                validationErrors[key]!,
-                style: TextStyle(
-                  color: CupertinoColors.systemRed,
-                  fontFamily: 'SF Pro Display',
-                  letterSpacing: 0.25,
-                  fontSize: 14,
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -717,7 +352,6 @@ class FormFieldWidgets {
     bool isRequired = false,
     int maxLines = 4,
     int minLines = 3,
-    TextEditingController? controller,
     bool compact = false,
     bool compactFull = false,
     bool enabled = true,
@@ -725,24 +359,8 @@ class FormFieldWidgets {
     bool hasError = validationErrors.containsKey(key);
     String required = isRequired ? '*' : '';
 
-    // Use provided controller or get/create a persistent one
-    final textController =
-        controller ??
-        _getController(key, initialValue: formData[key]?.toString() ?? '');
-
-    // Sync controller with formData only if they differ (avoid cursor jumping)
-    final currentFormValue = formData[key]?.toString() ?? '';
-    if (controller == null && textController.text != currentFormValue) {
-      // Preserve cursor position when updating
-      final selection = textController.selection;
-      textController.text = currentFormValue;
-      if (selection.isValid && selection.end <= currentFormValue.length) {
-        textController.selection = selection;
-      }
-    }
-
     return Container(
-            padding: compact
+      padding: compact
           ? EdgeInsets.symmetric(horizontal: 2, vertical: 8)
           : compactFull
           ? EdgeInsets.symmetric(horizontal: 16, vertical: 16)
@@ -754,22 +372,25 @@ class FormFieldWidgets {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (!compact && !compactFull)
-              SizedBox(
-                width: 100,
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'SF Pro Display',
-                    letterSpacing: 0.25,
-                    color: CupertinoColors.black,
+                SizedBox(
+                  width: 110,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.25,
+                      color: CupertinoColors.black,
+                    ),
                   ),
                 ),
-              ),
               if (!compact && !compactFull) SizedBox(width: 16),
               Expanded(
                 child: CupertinoTextField(
-                  controller: textController,
+                  enabled: enabled,
+                  controller: TextEditingController(
+                    text: formData[key]?.toString() ?? '',
+                  ),
                   onChanged: (value) => onChanged(key, value),
                   placeholder: 'Enter $label $required',
                   placeholderStyle: TextStyle(
@@ -795,19 +416,6 @@ class FormFieldWidgets {
               ),
             ],
           ),
-          if (hasError && validationErrors[key] != null)
-            Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Text(
-                validationErrors[key]!,
-                style: TextStyle(
-                  color: CupertinoColors.systemRed,
-                  fontFamily: 'SF Pro Display',
-                  letterSpacing: 0.25,
-                  fontSize: 14,
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -817,12 +425,12 @@ class FormFieldWidgets {
   static Widget buildSelectField(
     String key,
     String label,
-    List<String> options, {
+    List<dynamic> options, {
     required Function(String, dynamic) onChanged,
     required Map<String, dynamic> formData,
     required Map<String, String> validationErrors,
     bool isRequired = false,
-        bool compact = false,
+    bool compact = false,
     bool compactFull = false,
   }) {
     bool hasError = validationErrors.containsKey(key);
@@ -841,33 +449,33 @@ class FormFieldWidgets {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (!compact && !compactFull)
-              SizedBox(
-                width: 100,
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'SF Pro Display',
-                    letterSpacing: 0.25,
-                    color: CupertinoColors.black,
+                SizedBox(
+                  width: 110,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.25,
+                      color: CupertinoColors.black,
+                    ),
                   ),
                 ),
-              ),
               if (!compact && !compactFull) SizedBox(width: 16),
               Expanded(
                 child: PullDownButton(
                   itemBuilder: (context) => options
                       .map(
                         (option) => PullDownMenuItem.selectable(
-                          title: option,
+                          title: option['name'],
                           itemTheme: PullDownMenuItemTheme(
                             textStyle: TextStyle(
                               fontFamily: 'SF Pro Display',
                               letterSpacing: 0.25,
                             ),
                           ),
-                          selected: formData[key] == option,
-                          onTap: () => onChanged(key, option),
+                          selected: formData[key] == option['_id'],
+                          onTap: () => onChanged(key, option['_id']),
                         ),
                       )
                       .toList(),
@@ -882,8 +490,14 @@ class FormFieldWidgets {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            formData[key]?.toString() ??
-                                'Select $label $required',
+                            formData[key] != null
+                                ? options
+                                      .where(
+                                        (option) =>
+                                            option['_id'] == formData[key],
+                                      )
+                                      .first['name']
+                                : 'Select $label $required',
                             style: TextStyle(
                               fontSize: 16,
                               fontFamily: 'SF Pro Display',
@@ -908,19 +522,6 @@ class FormFieldWidgets {
               ),
             ],
           ),
-          if (hasError && validationErrors[key] != null)
-            Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Text(
-                validationErrors[key]!,
-                style: TextStyle(
-                  color: CupertinoColors.systemRed,
-                  fontFamily: 'SF Pro Display',
-                  letterSpacing: 0.25,
-                  fontSize: 14,
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -953,19 +554,19 @@ class FormFieldWidgets {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (!compact)
-              SizedBox(
-                width: 100,
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'SF Pro Display',
-                    letterSpacing: 0.25,
-                    color: CupertinoColors.black,
+                SizedBox(
+                  width: 110,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.25,
+                      color: CupertinoColors.black,
+                    ),
                   ),
                 ),
-              ),
-             if (!compact)  SizedBox(width: 16),
+              if (!compact) SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -982,114 +583,124 @@ class FormFieldWidgets {
                             color: CupertinoColors.black,
                           ),
                         ),
-                      ),PullDownButton(
-                  itemBuilder: (context) => options
-                      .map(
-                        (option) => PullDownMenuItem.selectable(
-                          title: option,
-                          itemTheme: PullDownMenuItemTheme(
-                            textStyle: TextStyle(
-                              fontFamily: 'SF Pro Display',
-                              letterSpacing: 0.25,
+                      ),
+                    PullDownButton(
+                      itemBuilder: (context) => options
+                          .map(
+                            (option) => PullDownMenuItem.selectable(
+                              title: option,
+                              itemTheme: PullDownMenuItemTheme(
+                                textStyle: TextStyle(
+                                  fontFamily: 'SF Pro Display',
+                                  letterSpacing: 0.25,
+                                ),
+                              ),
+                              selected: selectedValues.contains(option),
+                              onTap: () {
+                                List<String> newSelection = List<String>.from(
+                                  selectedValues,
+                                );
+                                if (newSelection.contains(option)) {
+                                  newSelection.remove(option);
+                                } else {
+                                  newSelection.add(option);
+                                }
+                                onChanged(key, newSelection);
+                              },
                             ),
-                          ),
-                          selected: selectedValues.contains(option),
-                          onTap: () {
-                            List<String> newSelection = List<String>.from(
-                              selectedValues,
-                            );
-                            if (newSelection.contains(option)) {
-                              newSelection.remove(option);
-                            } else {
-                              newSelection.add(option);
-                            }
-                            onChanged(key, newSelection);
-                          },
-                        ),
-                      )
-                      .toList(),
-                  buttonBuilder: (context, showMenu) => CupertinoButton(
-                    onPressed: showMenu,
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.fromHeight(0),
-                    child: Container(
-                      decoration: BoxDecoration(),
-                      padding: EdgeInsets.zero,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: selectedValues.isEmpty
-                                ? Text(
-                                    'Select $label $required',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontFamily: 'SF Pro Display',
-                                      letterSpacing: 0.25,
-                                      color: CupertinoColors.systemGrey,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  )
-                                : Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: selectedValues.map((item) {
-                                      return Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
+                          )
+                          .toList(),
+                      buttonBuilder: (context, showMenu) => CupertinoButton(
+                        onPressed: showMenu,
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.fromHeight(0),
+                        child: Container(
+                          decoration: BoxDecoration(),
+                          padding: EdgeInsets.zero,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                child: selectedValues.isEmpty
+                                    ? Text(
+                                        'Select $label $required',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontFamily: 'SF Pro Display',
+                                          letterSpacing: 0.25,
+                                          color: CupertinoColors.systemGrey,
                                         ),
-                                        decoration: BoxDecoration(
-                                          color: CupertinoColors.systemGrey
-                                              .withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                          border: Border.all(
-                                            color: CupertinoColors.systemGrey
-                                                .withOpacity(0.3),
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              item,
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                fontFamily: 'SF Pro Display',
-                                                letterSpacing: 0.25,
-                                                color: CupertinoColors.black,
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                    : Wrap(
+                                        spacing: compact ? 4 : 8,
+                                        runSpacing: compact ? 4 : 8,
+                                        children: selectedValues.map((item) {
+                                          return Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: compact ? 6 : 8,
+                                              vertical: compact ? 2 : 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: CupertinoColors.systemGrey
+                                                  .withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    compact ? 8 : 10,
+                                                  ),
+                                              border: Border.all(
+                                                color: CupertinoColors
+                                                    .systemGrey
+                                                    .withOpacity(0.3),
                                               ),
                                             ),
-                                            SizedBox(width: 6),
-                                            GestureDetector(
-                                              onTap: () {
-                                                List<String> newSelection =
-                                                    List<String>.from(
-                                                      selectedValues,
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  item,
+                                                  style: TextStyle(
+                                                    fontSize: compact ? 12 : 14,
+                                                    fontFamily:
+                                                        'SF Pro Display',
+                                                    letterSpacing: 0.25,
+                                                    color:
+                                                        CupertinoColors.black,
+                                                  ),
+                                                ),
+                                                SizedBox(
+                                                  width: compact ? 4 : 6,
+                                                ),
+                                                GestureDetector(
+                                                  onTap: () {
+                                                    List<String> newSelection =
+                                                        List<String>.from(
+                                                          selectedValues,
+                                                        );
+                                                    newSelection.remove(item);
+                                                    onChanged(
+                                                      key,
+                                                      newSelection,
                                                     );
-                                                newSelection.remove(item);
-                                                onChanged(key, newSelection);
-                                              },
-                                              child: Icon(
-                                                CupertinoIcons
-                                                    .xmark_circle_fill,
-                                                size: 18,
-                                                color:
-                                                    CupertinoColors.systemGrey,
-                                              ),
+                                                  },
+                                                  child: Icon(
+                                                    CupertinoIcons
+                                                        .xmark_circle_fill,
+                                                    size: compact ? 16 : 18,
+                                                    color: CupertinoColors
+                                                        .systemGrey,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                          ),
-                          SizedBox(width: 8),
-                          Icon(
-                            CupertinoIcons.chevron_up_chevron_down,
-                            size: 18,
+                                          );
+                                        }).toList(),
+                                      ),
+                              ),
+                              SizedBox(width: 8),
+                              Icon(
+                                CupertinoIcons.chevron_up_chevron_down,
+                                size: 18,
                               ),
                             ],
                           ),
@@ -1105,7 +716,6 @@ class FormFieldWidgets {
       ),
     );
   }
-
 
   /// Builds a date picker field using cupertino_calendar_picker
   static Widget buildDateField(
@@ -1126,7 +736,7 @@ class FormFieldWidgets {
     String required = isRequired ? '*' : '';
 
     return Container(
-       padding: compact
+      padding: compact
           ? EdgeInsets.symmetric(horizontal: 2, vertical: 8)
           : EdgeInsets.all(16),
       child: Column(
@@ -1135,19 +745,19 @@ class FormFieldWidgets {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-               if (!compact)
-              SizedBox(
-                width: 100,
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'SF Pro Display',
-                    letterSpacing: 0.25,
-                    color: CupertinoColors.black,
+              if (!compact)
+                SizedBox(
+                  width: 110,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.25,
+                      color: CupertinoColors.black,
+                    ),
                   ),
                 ),
-              ),
               if (!compact) SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -1214,14 +824,14 @@ class FormFieldWidgets {
           ),
           if (hasError && validationErrors[key] != null)
             Padding(
-              padding: EdgeInsets.only(top: 8),
+              padding: EdgeInsets.only(top: compact ? 4 : 8),
               child: Text(
                 validationErrors[key]!,
                 style: TextStyle(
                   color: CupertinoColors.systemRed,
                   fontFamily: 'SF Pro Display',
                   letterSpacing: 0.25,
-                 fontSize: compact ? 12 : 14,
+                  fontSize: compact ? 12 : 14,
                 ),
               ),
             ),
@@ -1363,7 +973,7 @@ class FormFieldWidgets {
     required Map<String, dynamic> formData,
     required Map<String, String> validationErrors,
     bool isRequired = false,
-     bool compact = false,
+    bool compact = false,
   }) {
     return Container(
       padding: compact
@@ -1373,18 +983,18 @@ class FormFieldWidgets {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           if (!compact)
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'SF Pro Display',
-                letterSpacing: 0.25,
-                color: CupertinoColors.black,
+            SizedBox(
+              width: 110,
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'SF Pro Display',
+                  letterSpacing: 0.25,
+                  color: CupertinoColors.black,
+                ),
               ),
             ),
-          ),
           if (compact)
             Expanded(
               child: Text(

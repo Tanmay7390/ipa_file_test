@@ -8,7 +8,7 @@ import 'package:dio/dio.dart';
 import '../../components/form_fields.dart';
 import '../../apis/providers/employee_provider.dart';
 import '../../apis/core/dio_provider.dart';
-import '../../auth/components/auth_provider.dart';
+import '../apis/providers/auth_provider.dart';
 import '../components/addresses_bottom_sheet.dart';
 import '../components/client_selection_sheet.dart';
 import 'package:image_picker/image_picker.dart';
@@ -282,7 +282,8 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
 
   void _initializeControllers() {
     final fieldsToControl = [
-      'name',
+      'firstName',
+      'lastName',
       'personalEmail',
       'primaryPhone',
       'grossSalary',
@@ -297,8 +298,15 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
   }
 
   void _updateControllers() {
+    // Split the name into first and last name
+    final fullName = _formData['name']?.toString() ?? '';
+    final nameParts = fullName.split(' ');
+    final firstName = nameParts.isNotEmpty ? nameParts.first : '';
+    final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+
     // Ensure controllers exist before updating them
-    _controllers['name']?.text = _formData['name']?.toString() ?? '';
+    _controllers['firstName']?.text = firstName;
+    _controllers['lastName']?.text = lastName;
     _controllers['personalEmail']?.text =
         _formData['personalEmail']?.toString() ?? '';
     _controllers['primaryPhone']?.text =
@@ -313,7 +321,8 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
 
     // Debug: Print controller values to verify they're set correctly
     print('=== CONTROLLER VALUES AFTER UPDATE ===');
-    print('Name controller: ${_controllers['name']?.text}');
+    print('First Name controller: ${_controllers['firstName']?.text}');
+    print('Last Name controller: ${_controllers['lastName']?.text}');
     print('Email controller: ${_controllers['personalEmail']?.text}');
     print('Phone controller: ${_controllers['primaryPhone']?.text}');
     print('Gross Salary controller: ${_controllers['grossSalary']?.text}');
@@ -463,7 +472,17 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
 
       _formData[key] = value;
       _validationErrors.remove(key);
-
+      // Combine first and last name into the 'name' field
+      if (key == 'firstName' || key == 'lastName') {
+        final firstName = key == 'firstName'
+            ? value
+            : (_formData['firstName'] ?? '');
+        final lastName = key == 'lastName'
+            ? value
+            : (_formData['lastName'] ?? '');
+        _formData['name'] = '$firstName $lastName'.trim();
+        _validationErrors.remove('name'); // Remove name validation error too
+      }
       // IMPORTANT: Update the corresponding controller when form data changes
       if (_controllers.containsKey(key) && value is String) {
         _controllers[key]?.text = value;
@@ -477,10 +496,13 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
     print('Current form data: $_formData');
     print('Employee ID: $_employeeId');
 
-    if (_formData['name']?.toString().trim().isEmpty ?? true) {
-      _validationErrors['name'] = 'Name is required';
+    if (_formData['firstName']?.toString().trim().isEmpty ?? true) {
+      _validationErrors['firstName'] = 'First Name is required';
     }
 
+    if (_formData['lastName']?.toString().trim().isEmpty ?? true) {
+      _validationErrors['lastName'] = 'Last Name is required';
+    }
     if (_formData['clientId']?.toString().trim().isEmpty ?? true) {
       _validationErrors['client'] = 'Client is required';
     }
@@ -969,21 +991,38 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                       ),
                     ),
 
-                    SizedBox(width: 16),
+                    SizedBox(width: 36),
 
                     // Name field on right
                     Expanded(
-                      child: FormFieldWidgets.buildTextField(
-                        'name',
-                        'Full Name',
-                        'text',
-                        context,
-                        onChanged: _onFieldChanged,
-                        formData: _formData,
-                        validationErrors: _validationErrors,
-                        isRequired: true,
-                        compact: true,
-                        controller: _controllers['name'],
+                      child: Column(
+                        children: [
+                          FormFieldWidgets.buildTextField(
+                            'firstName',
+                            'First Name',
+                            'text',
+                            context,
+                            onChanged: _onFieldChanged,
+                            formData: _formData,
+                            validationErrors: _validationErrors,
+                            isRequired: true,
+                            compact: true,
+                            controller: _controllers['firstName'],
+                          ),
+                          // SizedBox(height: 12),
+                          FormFieldWidgets.buildTextField(
+                            'lastName',
+                            'Last Name',
+                            'text',
+                            context,
+                            onChanged: _onFieldChanged,
+                            formData: _formData,
+                            validationErrors: _validationErrors,
+                            isRequired: true,
+                            compact: true,
+                            controller: _controllers['lastName'],
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -1505,11 +1544,24 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
   }
 
   Widget _buildInitialsAvatar() {
+    String initials = 'UU';
+
+    final firstName = _formData['firstName']?.toString().trim() ?? '';
+    final lastName = _formData['lastName']?.toString().trim() ?? '';
+
+    if (firstName.isNotEmpty && lastName.isNotEmpty) {
+      initials = '${firstName[0].toUpperCase()}${lastName[0].toUpperCase()}';
+    } else if (firstName.isNotEmpty) {
+      initials =
+          '${firstName[0].toUpperCase()}${firstName.length > 1 ? firstName[1].toUpperCase() : 'U'}';
+    } else if (lastName.isNotEmpty) {
+      initials =
+          '${lastName[0].toUpperCase()}${lastName.length > 1 ? lastName[1].toUpperCase() : 'U'}';
+    }
+
     return Center(
       child: Text(
-        (_formData['name']?.isNotEmpty ?? false)
-            ? _formData['name']![0].toUpperCase()
-            : 'UU',
+        initials,
         style: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.bold,

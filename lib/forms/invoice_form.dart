@@ -1,9 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test_22/apis/providers/customer_address_provider.dart';
-import '../apis/providers/new_inventory_provider.dart';
+import 'package:flutter_test_22/apis/providers/new_inventory_provider.dart';
+import 'package:flutter_test_22/apis/providers/auth_provider.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
-import 'package:flutter_test_22/components/form_fields.dart';
+import 'package:flutter_test_22/components/form_fields_2.dart';
 import 'package:flutter_test_22/forms/buyer_section.dart';
 import 'package:flutter_test_22/forms/address_section.dart';
 import 'package:flutter_test_22/forms/items_section.dart';
@@ -121,14 +122,19 @@ class _InvoiceFormSheetState extends ConsumerState<InvoiceFormSheet> {
     });
 
     try {
-      // Use the correct provider name from new_inventory_provider.dart
-      final itemData = await ref.read(
-        inventoryListProvider('6434642d86b9bb6018ef2528').future,
-      );
+      // Get accountId from auth provider
+      final authState = ref.read(authProvider);
+      final accountId = authState.accountId;
+
+      if (accountId == null) {
+        throw Exception('Account ID not available');
+      }
+
+      final itemData = await ref.read(inventoryListProvider(accountId).future);
 
       if (mounted) {
         setState(() {
-          // Handle the data properly with type safety
+          // Ensure we handle the data properly
           items = itemData.map((item) {
             return Map<String, dynamic>.from(item);
           }).toList();
@@ -141,7 +147,7 @@ class _InvoiceFormSheetState extends ConsumerState<InvoiceFormSheet> {
           items = <Map<String, dynamic>>[];
           isLoadingItems = false;
         });
-        _showErrorDialog('Failed to load items: $e');
+        _showErrorDialog('Failed to load inventory items: $e');
       }
     }
   }
@@ -214,11 +220,15 @@ class _InvoiceFormSheetState extends ConsumerState<InvoiceFormSheet> {
     });
 
     try {
-      // You might need to get the actual account ID dynamically
-      // For now, using the hardcoded one, but consider making this dynamic
-      final banksData = await ref.read(
-        bankAccountsProvider('6434642d86b9bb6018ef2528').future,
-      );
+      // Get accountId from auth provider
+      final authState = ref.read(authProvider);
+      final accountId = authState.accountId;
+
+      if (accountId == null) {
+        throw Exception('Account ID not available');
+      }
+
+      final banksData = await ref.read(bankAccountsProvider(accountId).future);
 
       if (mounted) {
         setState(() {
@@ -227,7 +237,9 @@ class _InvoiceFormSheetState extends ConsumerState<InvoiceFormSheet> {
             return Map<String, dynamic>.from(bank);
           }).toList();
           isLoadingBankAccounts = false;
-          formData['bank'] = banksData[0]['_id'];
+          if (banksData.isNotEmpty) {
+            formData['bank'] = banksData[0]['_id'];
+          }
         });
       }
     } catch (e) {
@@ -761,6 +773,22 @@ class _InvoiceFormSheetState extends ConsumerState<InvoiceFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // Get accountId from auth provider
+    final authState = ref.watch(authProvider);
+    final accountId = authState.accountId;
+
+    // Handle case where user is not authenticated or accountId is null
+    if (!authState.isAuthenticated || accountId == null) {
+      return CupertinoPageScaffold(
+        navigationBar: const CupertinoNavigationBar(
+          middle: Text('New Invoice'),
+        ),
+        child: const Center(
+          child: Text('Please log in to access this feature'),
+        ),
+      );
+    }
+
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('New Invoice'),
@@ -885,6 +913,7 @@ class _InvoiceFormSheetState extends ConsumerState<InvoiceFormSheet> {
                   onChanged: _updateFormData,
                   formData: formData,
                   validationErrors: validationErrors,
+                  enabled: false,
                 ),
                 FormFieldWidgets.buildTextField(
                   'paymentTerm',
@@ -895,6 +924,7 @@ class _InvoiceFormSheetState extends ConsumerState<InvoiceFormSheet> {
                   onChanged: _updateFormData,
                   formData: formData,
                   validationErrors: validationErrors,
+                  enabled: false,
                 ),
                 FormFieldWidgets.buildDateField(
                   'invoiceDate',
@@ -993,19 +1023,13 @@ class _InvoiceFormSheetState extends ConsumerState<InvoiceFormSheet> {
                     'Place of Supply',
                     states
                         .map(
-                          (state) =>
-                              state['name']?.toString() ?? 'Unknown State',
+                          (state) => {
+                            'name': state['name'] ?? 'Unknown State',
+                            '_id': state['_id'] ?? '',
+                          },
                         )
                         .toList(),
-                    onChanged: (key, value) {
-                      // Find the state ID based on the selected name and store it
-                      final selectedState = states.firstWhere(
-                        (state) => state['name'] == value,
-                        orElse: () => {},
-                      );
-                      _updateFormData('placeOfSupplyId', selectedState['_id']);
-                      _updateFormData(key, value);
-                    },
+                    onChanged: _updateFormData,
                     formData: formData,
                     validationErrors: validationErrors,
                     isRequired: false,
@@ -1019,20 +1043,13 @@ class _InvoiceFormSheetState extends ConsumerState<InvoiceFormSheet> {
                     'Voucher Type',
                     templates
                         .map(
-                          (template) =>
-                              template['template']?.toString() ??
-                              'Unknown Template',
+                          (template) => {
+                            'name': template['template'] ?? 'Unknown Template',
+                            '_id': template['_id'] ?? '',
+                          },
                         )
                         .toList(),
-                    onChanged: (key, value) {
-                      // Find the template ID based on the selected name and store it
-                      final selectedTemplate = templates.firstWhere(
-                        (template) => template['template'] == value,
-                        orElse: () => {},
-                      );
-                      _updateFormData('voucherTypeId', selectedTemplate['_id']);
-                      _updateFormData(key, value);
-                    },
+                    onChanged: _updateFormData,
                     formData: formData,
                     validationErrors: validationErrors,
                     isRequired: false,
@@ -1055,22 +1072,17 @@ class _InvoiceFormSheetState extends ConsumerState<InvoiceFormSheet> {
                     'Bank',
                     bankAccounts
                         .map(
-                          (bank) =>
-                              bank['bankName']?.toString() ?? 'Unknown Bank',
+                          (bank) => {
+                            'name': bank['bankName'] ?? 'Unknown Bank',
+                            '_id': bank['_id'] ?? '',
+                          },
                         )
                         .toList(),
-                    onChanged: (key, value) {
-                      // Find the bank ID based on the selected name and store it
-                      final selectedBank = bankAccounts.firstWhere(
-                        (bank) => bank['bankName'] == value,
-                        orElse: () => {},
-                      );
-                      _updateFormData('bankId', selectedBank['_id']);
-                      _updateFormData(key, value);
-                    },
+                    onChanged: _updateFormData,
                     formData: formData,
                     validationErrors: validationErrors,
                     isRequired: false,
+                    compactFull: true,
                   ),
               ]),
 
