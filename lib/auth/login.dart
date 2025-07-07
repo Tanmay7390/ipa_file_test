@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_test_22/auth/components/auth_widgets.dart';
-import 'package:flutter_test_22/apis/providers/auth_provider.dart';
-import 'package:flutter_test_22/theme_provider.dart';
+import 'package:Wareozo/auth/components/auth_widgets.dart';
+import 'package:Wareozo/apis/providers/auth_provider.dart';
+import 'package:Wareozo/theme_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});

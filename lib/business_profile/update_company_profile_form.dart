@@ -1,9 +1,9 @@
 // update_company_profile_form.dart
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test_22/apis/providers/business_commonprofile_provider.dart';
-import 'package:flutter_test_22/theme_provider.dart';
-import 'package:flutter_test_22/components/form_fields.dart';
+import 'package:Wareozo/apis/providers/business_commonprofile_provider.dart';
+import 'package:Wareozo/theme_provider.dart';
+import 'package:Wareozo/components/form_fields.dart';
 
 class UpdateCompanyProfileForm extends ConsumerStatefulWidget {
   const UpdateCompanyProfileForm({Key? key}) : super(key: key);
@@ -29,7 +29,7 @@ class _UpdateCompanyProfileFormState
     'Education',
     'Finance',
     'Retail',
-    'Other'
+    'Other',
   ];
 
   final List<String> industryVerticalOptions = [
@@ -44,7 +44,7 @@ class _UpdateCompanyProfileFormState
     'Transportation',
     'Energy',
     'Agriculture',
-    'Other'
+    'Other',
   ];
 
   @override
@@ -134,12 +134,15 @@ class _UpdateCompanyProfileFormState
   }
 
   bool _isValidWebsite(String website) {
-    return RegExp(r'^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$')
-        .hasMatch(website);
+    return RegExp(
+      r'^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$',
+    ).hasMatch(website);
   }
 
   bool _isValidPhoneNumber(String phone) {
-    return RegExp(r'^\d{10,15}$').hasMatch(phone.replaceAll(RegExp(r'[^\d]'), ''));
+    return RegExp(
+      r'^\d{10,15}$',
+    ).hasMatch(phone.replaceAll(RegExp(r'[^\d]'), ''));
   }
 
   Future<void> _submitForm() async {
@@ -151,7 +154,7 @@ class _UpdateCompanyProfileFormState
 
     try {
       final businessProfileHelper = ref.read(businessProfileHelperProvider);
-      
+
       final success = await businessProfileHelper.updateCompanyProfile(
         name: formData['name'],
         legalName: formData['legalName'],
@@ -239,14 +242,13 @@ class _UpdateCompanyProfileFormState
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () => Navigator.of(context).pop(),
-          child: Icon(
-            CupertinoIcons.back,
-            color: colors.primary,
-          ),
+          child: Icon(CupertinoIcons.back, color: colors.primary),
         ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: isSubmitting || businessProfile.isUpdating ? null : _submitForm,
+          onPressed: isSubmitting || businessProfile.isUpdating
+              ? null
+              : _submitForm,
           child: isSubmitting || businessProfile.isUpdating
               ? CupertinoActivityIndicator()
               : Text(
@@ -306,10 +308,7 @@ class _UpdateCompanyProfileFormState
                       validationErrors: validationErrors,
                       isRequired: true,
                     ),
-                    Container(
-                      height: 0.5,
-                      color: colors.border,
-                    ),
+                    Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildTextField(
                       'legalName',
                       'Legal Name',
@@ -320,10 +319,7 @@ class _UpdateCompanyProfileFormState
                       validationErrors: validationErrors,
                       isRequired: true,
                     ),
-                    Container(
-                      height: 0.5,
-                      color: colors.border,
-                    ),
+                    Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildTextField(
                       'displayName',
                       'Display Name',
@@ -334,10 +330,7 @@ class _UpdateCompanyProfileFormState
                       validationErrors: validationErrors,
                       isRequired: true,
                     ),
-                    Container(
-                      height: 0.5,
-                      color: colors.border,
-                    ),
+                    Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildTextAreaField(
                       'companyDesc',
                       'Company Description',
@@ -389,10 +382,7 @@ class _UpdateCompanyProfileFormState
                       formData: formData,
                       validationErrors: validationErrors,
                     ),
-                    Container(
-                      height: 0.5,
-                      color: colors.border,
-                    ),
+                    Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildMultiSelectField(
                       'businessType',
                       'Business Type',
@@ -402,10 +392,7 @@ class _UpdateCompanyProfileFormState
                       validationErrors: validationErrors,
                       isRequired: true,
                     ),
-                    Container(
-                      height: 0.5,
-                      color: colors.border,
-                    ),
+                    Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildTextField(
                       'website',
                       'Website',
@@ -459,10 +446,7 @@ class _UpdateCompanyProfileFormState
                       validationErrors: validationErrors,
                       isRequired: true,
                     ),
-                    Container(
-                      height: 0.5,
-                      color: colors.border,
-                    ),
+                    Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildTextField(
                       'email',
                       'Email',
@@ -473,10 +457,7 @@ class _UpdateCompanyProfileFormState
                       validationErrors: validationErrors,
                       isRequired: true,
                     ),
-                    Container(
-                      height: 0.5,
-                      color: colors.border,
-                    ),
+                    Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildTextField(
                       'whatsAppNumber',
                       'WhatsApp Number',
@@ -529,10 +510,7 @@ class _UpdateCompanyProfileFormState
                       formData: formData,
                       validationErrors: validationErrors,
                     ),
-                    Container(
-                      height: 0.5,
-                      color: colors.border,
-                    ),
+                    Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildTextField(
                       'taxIdentificationNumber2',
                       'Tax ID Number 2',
@@ -583,10 +561,7 @@ class _UpdateCompanyProfileFormState
                       formData: formData,
                       validationErrors: validationErrors,
                     ),
-                    Container(
-                      height: 0.5,
-                      color: colors.border,
-                    ),
+                    Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildSwitchField(
                       'showSignatureOnInvoice',
                       'Show Signature on Invoice',

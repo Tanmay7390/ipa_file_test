@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test_22/apis/providers/customer_provider.dart';
+import 'package:Wareozo/apis/providers/customer_provider.dart';
 
 // Updated Buyer Selection Section Component - Now focused only on client selection
 class BuyerSelectionSection extends ConsumerStatefulWidget {

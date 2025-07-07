@@ -2,19 +2,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test_22/apis/providers/address_provider.dart';
-import 'package:flutter_test_22/apis/core/dio_provider.dart';
-import 'package:flutter_test_22/apis/core/api_urls.dart';
-import 'package:flutter_test_22/theme_provider.dart';
-import 'package:flutter_test_22/components/form_fields.dart';
+import 'package:Wareozo/apis/providers/address_provider.dart';
+import 'package:Wareozo/apis/core/dio_provider.dart';
+import 'package:Wareozo/apis/core/api_urls.dart';
+import 'package:Wareozo/theme_provider.dart';
+import 'package:Wareozo/components/form_fields.dart';
 
 class AddressForm extends ConsumerStatefulWidget {
   final String? addressId; // null for Add, has value for Update
-  
-  const AddressForm({
-    Key? key,
-    this.addressId,
-  }) : super(key: key);
+
+  const AddressForm({Key? key, this.addressId}) : super(key: key);
 
   @override
   ConsumerState<AddressForm> createState() => _AddressFormState();
@@ -37,12 +34,12 @@ class _AddressFormState extends ConsumerState<AddressForm> {
   // Address type options
   final List<String> _addressTypeOptions = [
     'Registered',
-    'Office', 
+    'Office',
     'Shipping',
     'Billing',
     'Warehouse',
     'Branch',
-    'Head Office'
+    'Head Office',
   ];
 
   bool get _isEditMode => widget.addressId != null;
@@ -63,15 +60,15 @@ class _AddressFormState extends ConsumerState<AddressForm> {
   Future<void> _initializeForm() async {
     // First load countries
     await _loadCountries();
-    
+
     if (_isEditMode) {
       setState(() => _isLoading = true);
-      
+
       try {
         final address = await ref
             .read(addressProvider.notifier)
             .getAddressById(widget.addressId!);
-            
+
         if (address != null) {
           setState(() {
             _formData.addAll({
@@ -88,7 +85,7 @@ class _AddressFormState extends ConsumerState<AddressForm> {
             });
             _isInitialized = true;
           });
-          
+
           // Load states for the selected country
           if (address['country']?['_id'] != null) {
             await _loadStates(address['country']['_id']);
@@ -116,7 +113,7 @@ class _AddressFormState extends ConsumerState<AddressForm> {
         });
         _isInitialized = true;
       });
-      
+
       // Load states for India by default
       final indiaCountry = _countries.firstWhere(
         (country) => country['name'] == 'India',
@@ -130,14 +127,14 @@ class _AddressFormState extends ConsumerState<AddressForm> {
 
   Future<void> _loadCountries() async {
     setState(() => _isLoadingCountries = true);
-    
+
     try {
       final dio = ref.read(dioProvider);
       final response = await dio.get(ApiUrls.countries);
-      
+
       if (response.statusCode == 200) {
         final List<dynamic> countriesData = response.data['countries'] ?? [];
-        
+
         setState(() {
           _countries = countriesData.cast<Map<String, dynamic>>();
           _countryOptions = _countries
@@ -155,14 +152,14 @@ class _AddressFormState extends ConsumerState<AddressForm> {
 
   Future<void> _loadStates(String countryId) async {
     setState(() => _isLoadingStates = true);
-    
+
     try {
       final dio = ref.read(dioProvider);
       final response = await dio.get('${ApiUrls.states}?country_id=$countryId');
-      
+
       if (response.statusCode == 200) {
         final List<dynamic> statesData = response.data['states'] ?? [];
-        
+
         setState(() {
           _states = statesData.cast<Map<String, dynamic>>();
           _stateOptions = _states
@@ -249,7 +246,7 @@ class _AddressFormState extends ConsumerState<AddressForm> {
         (country) => country['name'] == _formData['country'],
         orElse: () => {},
       );
-      
+
       final selectedState = _states.firstWhere(
         (state) => state['name'] == _formData['state'],
         orElse: () => {},
@@ -282,9 +279,11 @@ class _AddressFormState extends ConsumerState<AddressForm> {
       }
 
       if (success) {
-        _showSuccessDialog(_isEditMode 
-            ? 'Address updated successfully' 
-            : 'Address created successfully');
+        _showSuccessDialog(
+          _isEditMode
+              ? 'Address updated successfully'
+              : 'Address created successfully',
+        );
       } else {
         final error = ref.read(addressProvider).error;
         _showErrorDialog(error ?? 'Failed to save address');
@@ -340,9 +339,7 @@ class _AddressFormState extends ConsumerState<AddressForm> {
     if ((_isLoading && !_isInitialized) || _isLoadingCountries) {
       return Scaffold(
         backgroundColor: colors.background,
-        body: Center(
-          child: CupertinoActivityIndicator(),
-        ),
+        body: Center(child: CupertinoActivityIndicator()),
       );
     }
 
@@ -507,9 +504,7 @@ class _AddressFormState extends ConsumerState<AddressForm> {
                       ),
                       SizedBox(width: 16),
                       Expanded(
-                        child: Center(
-                          child: CupertinoActivityIndicator(),
-                        ),
+                        child: Center(child: CupertinoActivityIndicator()),
                       ),
                     ],
                   ),

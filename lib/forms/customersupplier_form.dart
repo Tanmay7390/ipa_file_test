@@ -1,11 +1,13 @@
 import 'dart:developer';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
-import 'package:flutter_test_22/components/form_fields.dart';
+import 'package:Wareozo/components/form_fields.dart';
 import '../../apis/providers/customer_provider.dart';
-import 'package:flutter_test_22/apis/providers/auth_provider.dart';
+import 'package:Wareozo/apis/providers/auth_provider.dart';
 import '../../apis/core/dio_provider.dart';
 import '../../apis/core/api_urls.dart';
 import '../components/addresses_bottom_sheet.dart';
@@ -110,7 +112,13 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
     }
 
     // Basic information
-    formData['name'] = customerData['name'] ?? '';
+    // Split name into first and last name
+    final fullName = customerData['name']?.toString() ?? '';
+    final nameParts = fullName.split(' ');
+    formData['firstName'] = nameParts.isNotEmpty ? nameParts.first : '';
+    formData['lastName'] = nameParts.length > 1
+        ? nameParts.sublist(1).join(' ')
+        : '';
     formData['legalName'] = customerData['legalName'] ?? '';
     formData['contactName'] = customerData['contactName'] ?? '';
     formData['whatsAppNumber'] = customerData['whatsAppNumber'] ?? '';
@@ -120,6 +128,8 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
     if (customerData['email'] is List &&
         (customerData['email'] as List).isNotEmpty) {
       formData['email'] = customerData['email'][0];
+    } else {
+      formData['email'] = ''; // Initialize as empty string
     }
 
     // Registration details
@@ -266,7 +276,13 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
       }
 
       // Basic information
-      formData['name'] = data['name'] ?? '';
+      final fullName = data['name']?.toString() ?? '';
+      final nameParts = fullName.split(' ');
+      formData['firstName'] = nameParts.isNotEmpty ? nameParts.first : '';
+      formData['lastName'] = nameParts.length > 1
+          ? nameParts.sublist(1).join(' ')
+          : '';
+
       formData['legalName'] = data['legalName'] ?? '';
       formData['contactName'] = data['contactName'] ?? '';
       formData['whatsAppNumber'] = data['whatsAppNumber'] ?? '';
@@ -275,8 +291,9 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
       // Handle email array
       if (data['email'] is List && (data['email'] as List).isNotEmpty) {
         formData['email'] = data['email'][0];
+      } else {
+        formData['email'] = ''; // Initialize as empty string
       }
-
       // Registration details
       formData['registrationNo'] = data['registrationNo'] ?? '';
       formData['panNumber'] = data['taxIdentificationNumber1'] ?? '';
@@ -880,45 +897,27 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
       }
     }
 
-    // Required fields validation
-    checkRequired('name', 'Name');
+    // Required fields validation - Only names and billing address
+    checkRequired('firstName', 'First Name');
+    checkRequired('lastName', 'Last Name');
 
     // Enhanced billing address validation
     log('Validating billing address...');
     if (!_hasAddressData('billingAddress')) {
       validationErrors['billingAddress'] = 'Billing address is required';
       log('Billing address validation failed - marking as required');
-
-      // Log what we actually have for debugging
-      log('Current billing address data in formData:');
-      [
-        'billingAddressLine1',
-        'billingAddressCity',
-        'billingAddressCountry',
-        'billingAddressPinCode',
-      ].forEach((key) {
-        log('  $key: "${formData[key]}"');
-      });
     } else {
       log('Billing address validation passed');
     }
 
-    // Email validation if provided
-    if (formData['email']?.toString().isNotEmpty == true) {
+    // Email validation ONLY if provided (not required)
+    final email = formData['email']?.toString().trim();
+    if (email != null && email.isNotEmpty) {
       final emailPattern = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w{2,}$');
-      if (!emailPattern.hasMatch(formData['email'])) {
+      if (!emailPattern.hasMatch(email)) {
         validationErrors['email'] = 'Please enter a valid email address';
       }
     }
-
-    // Phone validation if provided
-    // if (formData['whatsAppNumber']?.toString().isNotEmpty == true) {
-    //   final phonePattern = RegExp(r'^\d{10}$');
-    //   if (!phonePattern.hasMatch(formData['whatsAppNumber'])) {
-    //     validationErrors['whatsAppNumber'] =
-    //         'Please enter a valid 10-digit phone number';
-    //   }
-    // }
 
     log('Final validation errors: $validationErrors');
     return validationErrors.isEmpty;
@@ -951,7 +950,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
       }
 
       // Build customer data map
-      final customerData = _buildCustomerData(accountId);
+      final customerData = await _buildCustomerData(accountId);
       log('Customer data to be sent: $customerData');
 
       // Call API based on mode
@@ -1026,7 +1025,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
     }
   }
 
-  Map<String, dynamic> _buildCustomerData(String accountId) {
+  Future<Map<String, dynamic>> _buildCustomerData(String accountId) async {
     log('Building customer data with formData: $formData');
     log('Checking address data before building customer data...');
 
@@ -1048,15 +1047,20 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
     log('isSupplier: $isSupplier');
     log('isCustomer: $isCustomer');
 
+    // Combine first and last name for the API
+    final firstName = formData['firstName']?.toString().trim() ?? '';
+    final lastName = formData['lastName']?.toString().trim() ?? '';
+    final fullName = '$firstName $lastName'.trim();
+
     // Build the base customer data
     final customerData = <String, dynamic>{
       "counterPartyOfAccount": accountId,
       "isVendor": isSupplier,
       "isClient": isCustomer,
       "isAgent": false,
-      "name": formData['name'],
+      "name": fullName, // Use combined name
       "legalName": formData['legalName']?.toString().isEmpty == true
-          ? formData['name']
+          ? fullName
           : formData['legalName'],
       "isActive": true,
       "businessType": <String>[],
@@ -1065,15 +1069,13 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
       "taxIdentificationNumber2": formData['gstNumber'] ?? '',
       "contactName": formData['contactName'] ?? '',
       "website": formData['website'] ?? '',
-      "email": formData['email']?.toString().isEmpty == true
-          ? <String>[]
-          : <String>[formData['email']],
+      "email": _buildEmailArray(),
       "whatsAppNumber": formData['whatsAppNumber'] ?? '',
       "countryOfRegistration":
           formData['registrationCountryId'] ?? formData['registrationCountry'],
       "status": "Active",
       "buyerSellerAgent": isSupplier ? "Seller" : "Buyer",
-      "displayName": formData['name'] ?? '',
+      "displayName": fullName, // Use combined name
       "logo": "",
       "buyer": <String>[],
       "supplier": <String>[],
@@ -1081,6 +1083,14 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
       "documentSettings": <String>[],
       "agreedServices": <String>[],
     };
+
+    // Handle logo upload if present
+    if (formData['logo'] != null && formData['logo'] is File) {
+      customerData['logo'] = await MultipartFile.fromFile(
+        (formData['logo'] as File).path,
+        filename: 'logo.jpg',
+      );
+    }
 
     // ADD BILLING ADDRESS DATA AS FLAT FIELDS (like website)
     if (hasBillingAddress) {
@@ -1162,21 +1172,25 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
       );
     }
 
-    // Add supplier-specific fields
+    //  supplier-specific fields
     if (isSupplier) {
-      customerData["upiId"] = formData['upiId'] ?? '';
-      customerData["gPayPhone"] = formData['gPayPhone'] ?? '';
+      customerData["upiId"] = formData['upiId']?.toString().trim() ?? '';
+      customerData["gPayPhone"] =
+          formData['gPayPhone']?.toString().trim() ?? '';
 
-      // Add bank account data if provided
-      if (formData['accountName']?.toString().isNotEmpty == true ||
-          formData['accountNumber']?.toString().isNotEmpty == true) {
+      // Add bank account data only if account name or number is provided
+      final accountName = formData['accountName']?.toString().trim();
+      final accountNumber = formData['accountNumber']?.toString().trim();
+
+      if ((accountName != null && accountName.isNotEmpty) ||
+          (accountNumber != null && accountNumber.isNotEmpty)) {
         customerData["bankAccountDetails"] = {
-          "accountName": formData['accountName'] ?? '',
-          "accountNumber": formData['accountNumber'] ?? '',
-          "bankName": formData['bankName'] ?? '',
-          "branchName": formData['branchName'] ?? '',
-          "IFSC": formData['ifscCode'] ?? '',
-          "currency": formData['currencyId'] ?? '',
+          "accountName": accountName ?? '',
+          "accountNumber": accountNumber ?? '',
+          "bankName": formData['bankName']?.toString().trim() ?? '',
+          "branchName": formData['branchName']?.toString().trim() ?? '',
+          "IFSC": formData['ifscCode']?.toString().trim() ?? '',
+          "currency": formData['currencyId']?.toString().trim() ?? '',
         };
       }
     }
@@ -1208,6 +1222,14 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
     }
 
     return customerData;
+  }
+
+  List<String> _buildEmailArray() {
+    final email = formData['email']?.toString().trim();
+    if (email == null || email.isEmpty) {
+      return <String>[];
+    }
+    return <String>[email];
   }
 
   // Add this widget method for the party type selector
@@ -1391,12 +1413,37 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
 
               // Basic Information Section
               _buildSection(title: 'BASIC INFORMATION', [
+                FormFieldWidgets.buildAvatarField(
+                  'logo',
+                  'Company Logo',
+                  onChanged: _updateFormData,
+                  formData: formData,
+                  validationErrors: validationErrors,
+                  context: context,
+                  initials: formData['firstName']?.isNotEmpty == true
+                      ? formData['firstName']
+                            .toString()
+                            .substring(0, 1)
+                            .toUpperCase()
+                      : 'C',
+                ),
+
+                // Split name into First Name and Last Name
                 FormFieldWidgets.buildTextField(
-                  'name',
-                  'Name',
+                  'firstName',
+                  'First Name',
                   'text',
                   context,
                   isRequired: true,
+                  onChanged: _updateFormData,
+                  formData: formData,
+                  validationErrors: validationErrors,
+                ),
+                FormFieldWidgets.buildTextField(
+                  'lastName',
+                  'Last Name',
+                  'text',
+                  context,
                   onChanged: _updateFormData,
                   formData: formData,
                   validationErrors: validationErrors,
@@ -1529,7 +1576,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
                 [],
                 initiallyExpanded: false,
               ),
- 
+
               // Billing Address Button (outside section)
               _buildAddressButton(
                 'Add Billing Address +',

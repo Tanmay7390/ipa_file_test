@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../core/dio_provider.dart';
 import '../core/api_urls.dart';
-import 'package:flutter_test_22/apis/providers/auth_provider.dart';
+import 'package:Wareozo/apis/providers/auth_provider.dart';
 
 // Inventory state
 class InventoryState {
@@ -63,6 +63,7 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
   }
 
   // Build payload for create/update operations
+
   static Map<String, dynamic> buildPayload(
     Map<String, dynamic> formData,
     String accountId, {
@@ -115,6 +116,60 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
       payload['photos'] = formData['photos'];
     }
 
+    // PRICING FIELDS - ALL AS FLAT NUMBERS (FIXED)
+
+    // Sale price as number
+    if (formData['salePrice'] != null &&
+        formData['salePrice'].toString().isNotEmpty) {
+      payload['salePrice'] =
+          double.tryParse(formData['salePrice'].toString()) ?? 0;
+    }
+
+    // Sale unit as string ID
+    if (formData['saleUnit'] != null &&
+        formData['saleUnit'].toString().isNotEmpty) {
+      payload['saleUnit'] = formData['saleUnit'];
+    }
+
+    // Purchase price as flat number (FIXED - not as object)
+    if (formData['purchasePrice'] != null &&
+        formData['purchasePrice'].toString().isNotEmpty) {
+      payload['purchasePrice'] =
+          double.tryParse(formData['purchasePrice'].toString()) ?? 0;
+    }
+
+    // Purchase unit as string ID
+    if (formData['purchaseUnit'] != null &&
+        formData['purchaseUnit'].toString().isNotEmpty) {
+      payload['purchaseUnit'] = formData['purchaseUnit'];
+    }
+
+    // Base and secondary units
+    if (formData['baseUnit'] != null &&
+        formData['baseUnit'].toString().isNotEmpty) {
+      payload['baseUnit'] = formData['baseUnit'];
+    }
+
+    if (formData['secondaryUnit'] != null &&
+        formData['secondaryUnit'].toString().isNotEmpty) {
+      payload['secondaryUnit'] = formData['secondaryUnit'];
+    }
+
+    if (formData['conversationRate'] != null &&
+        formData['conversationRate'].toString().isNotEmpty) {
+      payload['conversationRate'] =
+          double.tryParse(formData['conversationRate'].toString()) ?? 1;
+    }
+
+    // GST and tax
+    if (formData['gst'] != null && formData['gst'].toString().isNotEmpty) {
+      payload['gst'] = formData['gst'];
+    }
+
+    if (formData['taxRate'] != null) {
+      payload['taxRate'] = double.tryParse(formData['taxRate'].toString()) ?? 0;
+    }
+
     // Product-specific fields
     if (formData['itemType'] == 'Product') {
       // MRP as number
@@ -122,33 +177,7 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
         payload['mrp'] = double.tryParse(formData['mrp'].toString()) ?? 0;
       }
 
-      // Purchase price with unit ID
-      if (formData['purchasePrice'] != null &&
-          formData['purchasePrice'].toString().isNotEmpty) {
-        payload['purchase'] = {
-          'price': double.tryParse(formData['purchasePrice'].toString()) ?? 0,
-          'unit': formData['purchaseUnitId'] ?? '',
-        };
-      }
-
-      // Base and secondary units with IDs
-      if (formData['baseUnitId'] != null &&
-          formData['baseUnitId'].toString().isNotEmpty) {
-        payload['baseUnit'] = formData['baseUnitId'];
-      }
-
-      if (formData['secondaryUnitId'] != null &&
-          formData['secondaryUnitId'].toString().isNotEmpty) {
-        payload['secondaryUnit'] = formData['secondaryUnitId'];
-      }
-
-      if (formData['conversationRate'] != null &&
-          formData['conversationRate'].toString().isNotEmpty) {
-        payload['conversationRate'] =
-            double.tryParse(formData['conversationRate'].toString()) ?? 1;
-      }
-
-      // Wholesale pricing
+      // Wholesale pricing as numbers
       if (formData['wholeSalePrice'] != null &&
           formData['wholeSalePrice'].toString().isNotEmpty) {
         payload['wholeSalePrice'] =
@@ -242,28 +271,27 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
           formData['storeLocation'].toString().isNotEmpty) {
         payload['storeLocation'] = formData['storeLocation'];
       }
-    }
 
-    // Common fields for both Product and Service
-    // Sale price with unit ID
-    if (formData['salePrice'] != null &&
-        formData['salePrice'].toString().isNotEmpty) {
-      payload['sale'] = {
-        'price': double.tryParse(formData['salePrice'].toString()) ?? 0,
-        'unit': formData['saleUnitId'] ?? '',
-      };
-    }
+      if (formData['storeName'] != null &&
+          formData['storeName'].toString().isNotEmpty) {
+        payload['storeName'] = formData['storeName'];
+      }
 
-    // GST handling - use stored GST ID
-    if (formData['gstId'] != null && formData['gstId'].toString().isNotEmpty) {
-      payload['gst'] = formData['gstId'];
+      // Only add storeLocation as an object if we have location data
+      if (formData['storeLocation'] != null &&
+          formData['storeLocation'].toString().isNotEmpty) {
+        payload['storeLocation'] = {
+          if (formData['storeName'] != null &&
+              formData['storeName'].toString().isNotEmpty)
+            'storeName': formData['storeName'],
+          'location': formData['storeLocation'],
+        };
+      } else if (formData['storeName'] != null &&
+          formData['storeName'].toString().isNotEmpty) {
+        // If we only have storeName, send it as a simple object
+        payload['storeLocation'] = {'storeName': formData['storeName']};
+      }
     }
-
-    // Tax rate as number
-    if (formData['taxRate'] != null) {
-      payload['taxRate'] = double.tryParse(formData['taxRate'].toString()) ?? 0;
-    }
-
     // Custom fields - filter out empty fields
     if (formData['customFields'] != null) {
       List<Map<String, String>> validCustomFields =
@@ -284,6 +312,11 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
     if (formData['tags'] != null && (formData['tags'] as List).isNotEmpty) {
       payload['tags'] = formData['tags'];
     }
+
+    // Debug print to see the final payload
+    print('=== FINAL API PAYLOAD (CORRECTED) ===');
+    print(payload);
+    print('=====================================');
 
     return payload;
   }

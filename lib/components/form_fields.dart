@@ -742,7 +742,7 @@ class FormFieldWidgets {
     }
 
     return Container(
-            padding: compact
+      padding: compact
           ? EdgeInsets.symmetric(horizontal: 2, vertical: 8)
           : compactFull
           ? EdgeInsets.symmetric(horizontal: 16, vertical: 16)
@@ -754,18 +754,18 @@ class FormFieldWidgets {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (!compact && !compactFull)
-              SizedBox(
-                width: 100,
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'SF Pro Display',
-                    letterSpacing: 0.25,
-                    color: CupertinoColors.black,
+                SizedBox(
+                  width: 100,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.25,
+                      color: CupertinoColors.black,
+                    ),
                   ),
                 ),
-              ),
               if (!compact && !compactFull) SizedBox(width: 16),
               Expanded(
                 child: CupertinoTextField(
@@ -817,13 +817,14 @@ class FormFieldWidgets {
   static Widget buildSelectField(
     String key,
     String label,
-    List<String> options, {
+    List<dynamic> options, {
     required Function(String, dynamic) onChanged,
     required Map<String, dynamic> formData,
     required Map<String, String> validationErrors,
     bool isRequired = false,
-        bool compact = false,
+    bool compact = false,
     bool compactFull = false,
+    bool isEnabled = true,
   }) {
     bool hasError = validationErrors.containsKey(key);
     String required = isRequired ? '*' : '';
@@ -841,33 +842,41 @@ class FormFieldWidgets {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (!compact && !compactFull)
-              SizedBox(
-                width: 100,
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'SF Pro Display',
-                    letterSpacing: 0.25,
-                    color: CupertinoColors.black,
+                SizedBox(
+                  width: 100,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.25,
+                      color: CupertinoColors.black,
+                    ),
                   ),
                 ),
-              ),
               if (!compact && !compactFull) SizedBox(width: 16),
               Expanded(
                 child: PullDownButton(
                   itemBuilder: (context) => options
                       .map(
                         (option) => PullDownMenuItem.selectable(
-                          title: option,
+                          title: option is String
+                              ? option
+                              : option['name'], // Handle both types
                           itemTheme: PullDownMenuItemTheme(
                             textStyle: TextStyle(
                               fontFamily: 'SF Pro Display',
                               letterSpacing: 0.25,
                             ),
                           ),
-                          selected: formData[key] == option,
-                          onTap: () => onChanged(key, option),
+                          selected: option is String
+                              ? formData[key] == option
+                              : formData[key] ==
+                                    option['_id'], // Handle both types
+                          onTap: () => onChanged(
+                            key,
+                            option is String ? option : option['_id'],
+                          ),
                         ),
                       )
                       .toList(),
@@ -953,19 +962,19 @@ class FormFieldWidgets {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (!compact)
-              SizedBox(
-                width: 100,
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'SF Pro Display',
-                    letterSpacing: 0.25,
-                    color: CupertinoColors.black,
+                SizedBox(
+                  width: 100,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.25,
+                      color: CupertinoColors.black,
+                    ),
                   ),
                 ),
-              ),
-             if (!compact)  SizedBox(width: 16),
+              if (!compact) SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -982,114 +991,120 @@ class FormFieldWidgets {
                             color: CupertinoColors.black,
                           ),
                         ),
-                      ),PullDownButton(
-                  itemBuilder: (context) => options
-                      .map(
-                        (option) => PullDownMenuItem.selectable(
-                          title: option,
-                          itemTheme: PullDownMenuItemTheme(
-                            textStyle: TextStyle(
-                              fontFamily: 'SF Pro Display',
-                              letterSpacing: 0.25,
+                      ),
+                    PullDownButton(
+                      itemBuilder: (context) => options
+                          .map(
+                            (option) => PullDownMenuItem.selectable(
+                              title: option,
+                              itemTheme: PullDownMenuItemTheme(
+                                textStyle: TextStyle(
+                                  fontFamily: 'SF Pro Display',
+                                  letterSpacing: 0.25,
+                                ),
+                              ),
+                              selected: selectedValues.contains(option),
+                              onTap: () {
+                                List<String> newSelection = List<String>.from(
+                                  selectedValues,
+                                );
+                                if (newSelection.contains(option)) {
+                                  newSelection.remove(option);
+                                } else {
+                                  newSelection.add(option);
+                                }
+                                onChanged(key, newSelection);
+                              },
                             ),
-                          ),
-                          selected: selectedValues.contains(option),
-                          onTap: () {
-                            List<String> newSelection = List<String>.from(
-                              selectedValues,
-                            );
-                            if (newSelection.contains(option)) {
-                              newSelection.remove(option);
-                            } else {
-                              newSelection.add(option);
-                            }
-                            onChanged(key, newSelection);
-                          },
-                        ),
-                      )
-                      .toList(),
-                  buttonBuilder: (context, showMenu) => CupertinoButton(
-                    onPressed: showMenu,
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.fromHeight(0),
-                    child: Container(
-                      decoration: BoxDecoration(),
-                      padding: EdgeInsets.zero,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: selectedValues.isEmpty
-                                ? Text(
-                                    'Select $label $required',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontFamily: 'SF Pro Display',
-                                      letterSpacing: 0.25,
-                                      color: CupertinoColors.systemGrey,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  )
-                                : Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: selectedValues.map((item) {
-                                      return Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
+                          )
+                          .toList(),
+                      buttonBuilder: (context, showMenu) => CupertinoButton(
+                        onPressed: showMenu,
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.fromHeight(0),
+                        child: Container(
+                          decoration: BoxDecoration(),
+                          padding: EdgeInsets.zero,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                child: selectedValues.isEmpty
+                                    ? Text(
+                                        'Select $label $required',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontFamily: 'SF Pro Display',
+                                          letterSpacing: 0.25,
+                                          color: CupertinoColors.systemGrey,
                                         ),
-                                        decoration: BoxDecoration(
-                                          color: CupertinoColors.systemGrey
-                                              .withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                          border: Border.all(
-                                            color: CupertinoColors.systemGrey
-                                                .withOpacity(0.3),
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              item,
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                fontFamily: 'SF Pro Display',
-                                                letterSpacing: 0.25,
-                                                color: CupertinoColors.black,
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                    : Wrap(
+                                        spacing: 8,
+                                        runSpacing: 8,
+                                        children: selectedValues.map((item) {
+                                          return Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: CupertinoColors.systemGrey
+                                                  .withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              border: Border.all(
+                                                color: CupertinoColors
+                                                    .systemGrey
+                                                    .withOpacity(0.3),
                                               ),
                                             ),
-                                            SizedBox(width: 6),
-                                            GestureDetector(
-                                              onTap: () {
-                                                List<String> newSelection =
-                                                    List<String>.from(
-                                                      selectedValues,
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  item,
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontFamily:
+                                                        'SF Pro Display',
+                                                    letterSpacing: 0.25,
+                                                    color:
+                                                        CupertinoColors.black,
+                                                  ),
+                                                ),
+                                                SizedBox(width: 6),
+                                                GestureDetector(
+                                                  onTap: () {
+                                                    List<String> newSelection =
+                                                        List<String>.from(
+                                                          selectedValues,
+                                                        );
+                                                    newSelection.remove(item);
+                                                    onChanged(
+                                                      key,
+                                                      newSelection,
                                                     );
-                                                newSelection.remove(item);
-                                                onChanged(key, newSelection);
-                                              },
-                                              child: Icon(
-                                                CupertinoIcons
-                                                    .xmark_circle_fill,
-                                                size: 18,
-                                                color:
-                                                    CupertinoColors.systemGrey,
-                                              ),
+                                                  },
+                                                  child: Icon(
+                                                    CupertinoIcons
+                                                        .xmark_circle_fill,
+                                                    size: 18,
+                                                    color: CupertinoColors
+                                                        .systemGrey,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                          ),
-                          SizedBox(width: 8),
-                          Icon(
-                            CupertinoIcons.chevron_up_chevron_down,
-                            size: 18,
+                                          );
+                                        }).toList(),
+                                      ),
+                              ),
+                              SizedBox(width: 8),
+                              Icon(
+                                CupertinoIcons.chevron_up_chevron_down,
+                                size: 18,
                               ),
                             ],
                           ),
@@ -1105,7 +1120,6 @@ class FormFieldWidgets {
       ),
     );
   }
-
 
   /// Builds a date picker field using cupertino_calendar_picker
   static Widget buildDateField(
@@ -1126,7 +1140,7 @@ class FormFieldWidgets {
     String required = isRequired ? '*' : '';
 
     return Container(
-       padding: compact
+      padding: compact
           ? EdgeInsets.symmetric(horizontal: 2, vertical: 8)
           : EdgeInsets.all(16),
       child: Column(
@@ -1135,19 +1149,19 @@ class FormFieldWidgets {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-               if (!compact)
-              SizedBox(
-                width: 100,
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'SF Pro Display',
-                    letterSpacing: 0.25,
-                    color: CupertinoColors.black,
+              if (!compact)
+                SizedBox(
+                  width: 100,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.25,
+                      color: CupertinoColors.black,
+                    ),
                   ),
                 ),
-              ),
               if (!compact) SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -1221,7 +1235,7 @@ class FormFieldWidgets {
                   color: CupertinoColors.systemRed,
                   fontFamily: 'SF Pro Display',
                   letterSpacing: 0.25,
-                 fontSize: compact ? 12 : 14,
+                  fontSize: compact ? 12 : 14,
                 ),
               ),
             ),
@@ -1363,7 +1377,7 @@ class FormFieldWidgets {
     required Map<String, dynamic> formData,
     required Map<String, String> validationErrors,
     bool isRequired = false,
-     bool compact = false,
+    bool compact = false,
   }) {
     return Container(
       padding: compact
@@ -1373,18 +1387,18 @@ class FormFieldWidgets {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           if (!compact)
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'SF Pro Display',
-                letterSpacing: 0.25,
-                color: CupertinoColors.black,
+            SizedBox(
+              width: 100,
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'SF Pro Display',
+                  letterSpacing: 0.25,
+                  color: CupertinoColors.black,
+                ),
               ),
             ),
-          ),
           if (compact)
             Expanded(
               child: Text(
@@ -1404,6 +1418,306 @@ class FormFieldWidgets {
             activeTrackColor: CupertinoColors.activeBlue,
           ),
         ],
+      ),
+    );
+  }
+
+  /// Builds a searchable unit selection field
+  static Widget buildSearchableUnitField(
+    String key,
+    String label,
+    List<Map<String, dynamic>> units,
+    BuildContext context, {
+    required Function(String, String, String, List<Map<String, dynamic>>)
+    onUnitSelection,
+    required Map<String, dynamic> formData,
+    required Map<String, String> validationErrors,
+    required String unitKey,
+    required String unitIdKey,
+    String? Function()? getCurrentValue, // Added this parameter
+    bool isRequired = false,
+    bool compact = false,
+    bool compactFull = false,
+  }) {
+    bool hasError = validationErrors.containsKey(key);
+    String required = isRequired ? '*' : '';
+
+    // Use getCurrentValue callback if provided, otherwise fallback to existing logic
+    String? getCurrentUnitDisplay() {
+      if (getCurrentValue != null) {
+        return getCurrentValue();
+      }
+
+      // Fallback to original logic
+      final currentCode = formData[unitKey];
+      if (currentCode == null) return null;
+
+      final unit = units.firstWhere(
+        (unit) => unit['code'] == currentCode,
+        orElse: () => {},
+      );
+
+      return unit.isNotEmpty ? "${unit['name']}(${unit['code']})" : null;
+    }
+
+    return Container(
+      padding: compact
+          ? EdgeInsets.symmetric(horizontal: 2, vertical: 8)
+          : compactFull
+          ? EdgeInsets.symmetric(horizontal: 16, vertical: 16)
+          : EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (!compact && !compactFull)
+                SizedBox(
+                  width: 100,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.25,
+                      color: CupertinoColors.black,
+                    ),
+                  ),
+                ),
+              if (!compact && !compactFull) SizedBox(width: 16),
+              Expanded(
+                child: CupertinoButton(
+                  onPressed: () => _showSearchableUnitPicker(
+                    context,
+                    label,
+                    units,
+                    onUnitSelection,
+                    unitKey,
+                    unitIdKey,
+                  ),
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size(0, 0),
+                  child: Container(
+                    decoration: BoxDecoration(),
+                    padding: EdgeInsets.zero,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            getCurrentUnitDisplay() ??
+                                'Select $label $required',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'SF Pro Display',
+                              letterSpacing: 0.25,
+                              color: getCurrentUnitDisplay() != null
+                                  ? CupertinoColors.black
+                                  : hasError
+                                  ? CupertinoColors.systemRed
+                                  : CupertinoColors.systemGrey,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(CupertinoIcons.chevron_up_chevron_down, size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (hasError && validationErrors[key] != null)
+            Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                validationErrors[key]!,
+                style: TextStyle(
+                  color: CupertinoColors.systemRed,
+                  fontFamily: 'SF Pro Display',
+                  letterSpacing: 0.25,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Shows searchable unit picker modal
+  static void _showSearchableUnitPicker(
+    BuildContext context, // Changed: BuildContext should be first parameter
+    String label,
+    List<Map<String, dynamic>> units,
+    Function(String, String, String, List<Map<String, dynamic>>)
+    onUnitSelection,
+    String unitKey,
+    String unitIdKey,
+  ) {
+    Navigator.of(context).push(
+      CupertinoPageRoute<void>(
+        builder: (context) => _SearchableUnitPickerPage(
+          label: label,
+          units: units,
+          onUnitSelection: onUnitSelection,
+          unitKey: unitKey,
+          unitIdKey: unitIdKey,
+        ),
+      ),
+    );
+  }
+}
+
+class _SearchableUnitPickerPage extends StatefulWidget {
+  final String label;
+  final List<Map<String, dynamic>> units;
+  final Function(String, String, String, List<Map<String, dynamic>>)
+  onUnitSelection;
+  final String unitKey;
+  final String unitIdKey;
+
+  const _SearchableUnitPickerPage({
+    required this.label,
+    required this.units,
+    required this.onUnitSelection,
+    required this.unitKey,
+    required this.unitIdKey,
+  });
+
+  @override
+  State<_SearchableUnitPickerPage> createState() =>
+      _SearchableUnitPickerPageState();
+}
+
+class _SearchableUnitPickerPageState extends State<_SearchableUnitPickerPage> {
+  late TextEditingController _searchController;
+  List<Map<String, dynamic>> _filteredUnits = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+    _filteredUnits = widget.units;
+    _searchController.addListener(_filterUnits);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterUnits() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredUnits = widget.units;
+      } else {
+        _filteredUnits = widget.units.where((unit) {
+          final name = unit['name']?.toString().toLowerCase() ?? '';
+          final code = unit['code']?.toString().toLowerCase() ?? '';
+          return name.contains(query) || code.contains(query);
+        }).toList();
+      }
+    });
+  }
+
+  String _formatUnitDisplay(Map<String, dynamic> unit) {
+    return "${unit['name']}(${unit['code']})";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: Text('Select ${widget.label}'),
+        leading: CupertinoButton(
+          padding: EdgeInsets.zero,
+          child: Text('Cancel'),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Search field
+            Container(
+              padding: EdgeInsets.all(16),
+              child: CupertinoTextField(
+                controller: _searchController,
+                placeholder: 'Search units...',
+                placeholderStyle: TextStyle(
+                  fontFamily: 'SF Pro Display',
+                  letterSpacing: 0.25,
+                  color: CupertinoColors.systemGrey,
+                ),
+                style: TextStyle(
+                  fontFamily: 'SF Pro Display',
+                  letterSpacing: 0.25,
+                ),
+                prefix: Padding(
+                  padding: EdgeInsets.only(left: 8),
+                  child: Icon(
+                    CupertinoIcons.search,
+                    color: CupertinoColors.systemGrey,
+                    size: 20,
+                  ),
+                ),
+                clearButtonMode: OverlayVisibilityMode.editing,
+              ),
+            ),
+            // Units list
+            Expanded(
+              child: _filteredUnits.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No units found',
+                        style: TextStyle(
+                          fontFamily: 'SF Pro Display',
+                          letterSpacing: 0.25,
+                          color: CupertinoColors.systemGrey,
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _filteredUnits.length,
+                      itemBuilder: (context, index) {
+                        final unit = _filteredUnits[index];
+                        return CupertinoListTile(
+                          title: Text(
+                            unit['name']?.toString() ?? '',
+                            style: TextStyle(
+                              fontFamily: 'SF Pro Display',
+                              letterSpacing: 0.25,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Code: ${unit['code']?.toString() ?? ''}',
+                            style: TextStyle(
+                              fontFamily: 'SF Pro Display',
+                              letterSpacing: 0.25,
+                              color: CupertinoColors.systemGrey,
+                            ),
+                          ),
+                          onTap: () {
+                            widget.onUnitSelection(
+                              widget.unitKey,
+                              widget.unitIdKey,
+                              _formatUnitDisplay(unit),
+                              widget.units,
+                            );
+                            Navigator.of(context).pop();
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

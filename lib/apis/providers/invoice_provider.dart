@@ -3,30 +3,41 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../core/dio_provider.dart';
 import '../core/api_urls.dart';
-import 'package:flutter_test_22/apis/providers/auth_provider.dart';
+import 'package:Wareozo/apis/providers/auth_provider.dart';
 
 // Invoice list provider - now depends on auth provider
-final invoiceListProvider = StateNotifierProvider<InvoiceListNotifier, AsyncValue<List<Map<String, dynamic>>>>((ref) {
-  final dio = ref.watch(dioProvider);
-  final authState = ref.watch(authProvider);
-  return InvoiceListNotifier(dio, ref);
-});
+final invoiceListProvider =
+    StateNotifierProvider<
+      InvoiceListNotifier,
+      AsyncValue<List<Map<String, dynamic>>>
+    >((ref) {
+      final dio = ref.watch(dioProvider);
+      final authState = ref.watch(authProvider);
+      return InvoiceListNotifier(dio, ref);
+    });
 
 // Single invoice provider for details
-final invoiceDetailProvider = StateNotifierProvider.family<InvoiceDetailNotifier, AsyncValue<Map<String, dynamic>?>, String>((ref, invoiceId) {
-  final dio = ref.watch(dioProvider);
-  return InvoiceDetailNotifier(dio, invoiceId);
-});
+final invoiceDetailProvider =
+    StateNotifierProvider.family<
+      InvoiceDetailNotifier,
+      AsyncValue<Map<String, dynamic>?>,
+      String
+    >((ref, invoiceId) {
+      final dio = ref.watch(dioProvider);
+      return InvoiceDetailNotifier(dio, invoiceId);
+    });
 
 // Invoice list notifier
-class InvoiceListNotifier extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>> {
+class InvoiceListNotifier
+    extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>> {
   final Dio _dio;
   final Ref _ref;
   List<Map<String, dynamic>> _allInvoices = [];
   String _currentSearchQuery = '';
   String? _currentAccountId;
 
-  InvoiceListNotifier(this._dio, this._ref) : super(const AsyncValue.loading()) {
+  InvoiceListNotifier(this._dio, this._ref)
+    : super(const AsyncValue.loading()) {
     // Listen to auth state changes
     _ref.listen<AuthState>(authProvider, (previous, next) {
       if (next.isAuthenticated && next.accountId != null) {
@@ -36,7 +47,7 @@ class InvoiceListNotifier extends StateNotifier<AsyncValue<List<Map<String, dyna
         }
       }
     });
-    
+
     // Load invoices if user is already authenticated
     final authState = _ref.read(authProvider);
     if (authState.isAuthenticated && authState.accountId != null) {
@@ -47,39 +58,39 @@ class InvoiceListNotifier extends StateNotifier<AsyncValue<List<Map<String, dyna
   // Get account ID from auth provider
   String? _getAccountId() {
     final authState = _ref.read(authProvider);
-    return authState.accountId ?? '6434642d86b9bb6018ef2528'; // Fallback to default
+    return authState.accountId ??
+        '6434642d86b9bb6018ef2528'; // Fallback to default
   }
 
   // Load invoices for the authenticated user's account
   Future<void> loadInvoices([String? accountId]) async {
     try {
       state = const AsyncValue.loading();
-      
+
       // Use provided accountId or get from auth provider
       _currentAccountId = accountId ?? _getAccountId();
-      
+
       if (_currentAccountId == null) {
         state = AsyncValue.error(
-          'No account ID available. Please login again.', 
-          StackTrace.current
+          'No account ID available. Please login again.',
+          StackTrace.current,
         );
         return;
       }
-      
-      final String url = ApiUrls.replaceParams(
-        ApiUrls.invoiceList,
-        {'accountId': _currentAccountId!},
-      );
+
+      final String url = ApiUrls.replaceParams(ApiUrls.invoiceList, {
+        'accountId': _currentAccountId!,
+      });
 
       log('Loading invoices from: ${ApiUrls.baseUrl}$url');
       log('Using account ID: $_currentAccountId');
 
       final response = await _dio.get(url);
-      
+
       if (response.statusCode == 200 && response.data != null) {
         // Handle different response structures
         List<dynamic> invoicesData = [];
-        
+
         if (response.data is Map<String, dynamic>) {
           if (response.data.containsKey('invoices')) {
             invoicesData = response.data['invoices'] ?? [];
@@ -96,21 +107,23 @@ class InvoiceListNotifier extends StateNotifier<AsyncValue<List<Map<String, dyna
         _allInvoices = invoicesData
             .map((invoice) => invoice as Map<String, dynamic>)
             .toList();
-        
-        log('Loaded ${_allInvoices.length} invoices for account: $_currentAccountId');
-        
+
+        log(
+          'Loaded ${_allInvoices.length} invoices for account: $_currentAccountId',
+        );
+
         // Apply current search if any
         _applySearch();
       } else {
         state = AsyncValue.error(
-          'Failed to load invoices: ${response.statusCode}', 
-          StackTrace.current
+          'Failed to load invoices: ${response.statusCode}',
+          StackTrace.current,
         );
       }
     } on DioException catch (e) {
       log('DioException loading invoices: ${e.message}');
       String errorMessage = 'Network error occurred';
-      
+
       if (e.response != null) {
         errorMessage = 'Server error: ${e.response!.statusCode}';
         if (e.response!.data != null) {
@@ -121,7 +134,7 @@ class InvoiceListNotifier extends StateNotifier<AsyncValue<List<Map<String, dyna
       } else if (e.type == DioExceptionType.receiveTimeout) {
         errorMessage = 'Response timeout';
       }
-      
+
       state = AsyncValue.error(errorMessage, e.stackTrace);
     } catch (e, stackTrace) {
       log('Error loading invoices: $e');
@@ -141,19 +154,22 @@ class InvoiceListNotifier extends StateNotifier<AsyncValue<List<Map<String, dyna
       state = AsyncValue.data(_allInvoices);
     } else {
       final filteredInvoices = _allInvoices.where((invoice) {
-        final invoiceNumber = invoice['invoiceNumber']?.toString().toLowerCase() ?? '';
-        final buyerName = invoice['buyer']?['name']?.toString().toLowerCase() ?? '';
-        final clientName = invoice['client']?['name']?.toString().toLowerCase() ?? '';
+        final invoiceNumber =
+            invoice['invoiceNumber']?.toString().toLowerCase() ?? '';
+        final buyerName =
+            invoice['buyer']?['name']?.toString().toLowerCase() ?? '';
+        final clientName =
+            invoice['client']?['name']?.toString().toLowerCase() ?? '';
         final amount = invoice['amount']?.toString().toLowerCase() ?? '';
         final status = invoice['status']?.toString().toLowerCase() ?? '';
-        
+
         return invoiceNumber.contains(_currentSearchQuery) ||
-               buyerName.contains(_currentSearchQuery) ||
-               clientName.contains(_currentSearchQuery) ||
-               amount.contains(_currentSearchQuery) ||
-               status.contains(_currentSearchQuery);
+            buyerName.contains(_currentSearchQuery) ||
+            clientName.contains(_currentSearchQuery) ||
+            amount.contains(_currentSearchQuery) ||
+            status.contains(_currentSearchQuery);
       }).toList();
-      
+
       state = AsyncValue.data(filteredInvoices);
     }
   }
@@ -162,17 +178,19 @@ class InvoiceListNotifier extends StateNotifier<AsyncValue<List<Map<String, dyna
   Future<void> deleteInvoice(String invoiceId) async {
     try {
       log('Deleting invoice: $invoiceId');
-      
+
       // Make delete request
       await _dio.delete('invoice/$invoiceId');
-      
+
       // Remove from local list
-      _allInvoices.removeWhere((invoice) => 
-        (invoice['_id'] == invoiceId || invoice['id'] == invoiceId));
-      
+      _allInvoices.removeWhere(
+        (invoice) =>
+            (invoice['_id'] == invoiceId || invoice['id'] == invoiceId),
+      );
+
       // Refresh the displayed list
       _applySearch();
-      
+
       log('Invoice deleted successfully');
     } on DioException catch (e) {
       log('DioException deleting invoice: ${e.message}');
@@ -199,18 +217,12 @@ class InvoiceListNotifier extends StateNotifier<AsyncValue<List<Map<String, dyna
 
   // Get current invoices
   List<Map<String, dynamic>> get currentInvoices {
-    return state.maybeWhen(
-      data: (invoices) => invoices,
-      orElse: () => [],
-    );
+    return state.maybeWhen(data: (invoices) => invoices, orElse: () => []);
   }
 
   // Check if loading
   bool get isLoading {
-    return state.maybeWhen(
-      loading: () => true,
-      orElse: () => false,
-    );
+    return state.maybeWhen(loading: () => true, orElse: () => false);
   }
 
   // Get current account ID
@@ -218,11 +230,13 @@ class InvoiceListNotifier extends StateNotifier<AsyncValue<List<Map<String, dyna
 }
 
 // Invoice detail notifier
-class InvoiceDetailNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>?>> {
+class InvoiceDetailNotifier
+    extends StateNotifier<AsyncValue<Map<String, dynamic>?>> {
   final Dio _dio;
   final String _invoiceId;
 
-  InvoiceDetailNotifier(this._dio, this._invoiceId) : super(const AsyncValue.loading()) {
+  InvoiceDetailNotifier(this._dio, this._invoiceId)
+    : super(const AsyncValue.loading()) {
     loadInvoiceDetail();
   }
 
@@ -230,14 +244,14 @@ class InvoiceDetailNotifier extends StateNotifier<AsyncValue<Map<String, dynamic
   Future<void> loadInvoiceDetail() async {
     try {
       state = const AsyncValue.loading();
-      
+
       log('Loading invoice detail: $_invoiceId');
 
       final response = await _dio.get('invoice/$_invoiceId');
-      
+
       if (response.statusCode == 200 && response.data != null) {
         Map<String, dynamic> invoiceData;
-        
+
         if (response.data is Map<String, dynamic>) {
           if (response.data.containsKey('invoice')) {
             invoiceData = response.data['invoice'];
@@ -254,18 +268,18 @@ class InvoiceDetailNotifier extends StateNotifier<AsyncValue<Map<String, dynamic
         log('Invoice detail loaded successfully');
       } else {
         state = AsyncValue.error(
-          'Failed to load invoice detail: ${response.statusCode}', 
-          StackTrace.current
+          'Failed to load invoice detail: ${response.statusCode}',
+          StackTrace.current,
         );
       }
     } on DioException catch (e) {
       log('DioException loading invoice detail: ${e.message}');
       String errorMessage = 'Network error occurred';
-      
+
       if (e.response != null) {
         errorMessage = 'Server error: ${e.response!.statusCode}';
       }
-      
+
       state = AsyncValue.error(errorMessage, e.stackTrace);
     } catch (e, stackTrace) {
       log('Error loading invoice detail: $e');
@@ -278,11 +292,8 @@ class InvoiceDetailNotifier extends StateNotifier<AsyncValue<Map<String, dynamic
     try {
       log('Updating invoice: $_invoiceId');
 
-      final response = await _dio.put(
-        'invoice/$_invoiceId',
-        data: invoiceData,
-      );
-      
+      final response = await _dio.put('invoice/$_invoiceId', data: invoiceData);
+
       if (response.statusCode == 200 && response.data != null) {
         // Update local state
         await loadInvoiceDetail();
@@ -308,7 +319,7 @@ class InvoiceDetailNotifier extends StateNotifier<AsyncValue<Map<String, dynamic
 // Helper providers for invoice statistics
 final invoiceStatsProvider = Provider<Map<String, dynamic>>((ref) {
   final invoicesAsync = ref.watch(invoiceListProvider);
-  
+
   return invoicesAsync.when(
     data: (invoices) {
       double totalAmount = 0.0;
@@ -316,22 +327,23 @@ final invoiceStatsProvider = Provider<Map<String, dynamic>>((ref) {
       double paidAmount = 0.0;
       double pendingAmount = 0.0;
       int totalCount = invoices.length;
-      
+
       final DateTime today = DateTime.now();
-      
+
       for (final invoice in invoices) {
-        final double amount = double.tryParse(invoice['amount']?.toString() ?? '0') ?? 0.0;
+        final double amount =
+            double.tryParse(invoice['amount']?.toString() ?? '0') ?? 0.0;
         final String status = invoice['status']?.toString().toUpperCase() ?? '';
-        
+
         totalAmount += amount;
-        
+
         // Check if invoice is from today
         final String? dateString = invoice['date']?.toString();
         if (dateString != null) {
           try {
             final DateTime invoiceDate = DateTime.parse(dateString);
-            if (invoiceDate.year == today.year && 
-                invoiceDate.month == today.month && 
+            if (invoiceDate.year == today.year &&
+                invoiceDate.month == today.month &&
                 invoiceDate.day == today.day) {
               todayAmount += amount;
             }
@@ -339,7 +351,7 @@ final invoiceStatsProvider = Provider<Map<String, dynamic>>((ref) {
             // Ignore date parsing errors
           }
         }
-        
+
         // Calculate paid vs pending amounts
         if (status == 'PAID' || status == 'COMPLETED') {
           paidAmount += amount;
@@ -347,7 +359,7 @@ final invoiceStatsProvider = Provider<Map<String, dynamic>>((ref) {
           pendingAmount += amount;
         }
       }
-      
+
       return {
         'totalAmount': totalAmount,
         'todayAmount': todayAmount,

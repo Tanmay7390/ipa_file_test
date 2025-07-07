@@ -2,17 +2,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test_22/apis/providers/bankaccount_provider.dart';
-import 'package:flutter_test_22/theme_provider.dart';
-import 'package:flutter_test_22/components/form_fields.dart';
+import 'package:Wareozo/apis/providers/bankaccount_provider.dart';
+import 'package:Wareozo/theme_provider.dart';
+import 'package:Wareozo/components/form_fields.dart';
 
 class BankForm extends ConsumerStatefulWidget {
   final String? bankId; // null for Add, has value for Update
-  
-  const BankForm({
-    Key? key,
-    this.bankId,
-  }) : super(key: key);
+
+  const BankForm({Key? key, this.bankId}) : super(key: key);
 
   @override
   ConsumerState<BankForm> createState() => _BankFormState();
@@ -35,7 +32,7 @@ class _BankFormState extends ConsumerState<BankForm> {
     'France',
     'Japan',
     'Singapore',
-    'UAE'
+    'UAE',
   ];
 
   final List<String> _currencyOptions = [
@@ -47,7 +44,7 @@ class _BankFormState extends ConsumerState<BankForm> {
     'EUR - Euro',
     'JPY - Japanese Yen',
     'SGD - Singapore Dollar',
-    'AED - UAE Dirham'
+    'AED - UAE Dirham',
   ];
 
   bool get _isEditMode => widget.bankId != null;
@@ -68,12 +65,12 @@ class _BankFormState extends ConsumerState<BankForm> {
   Future<void> _initializeForm() async {
     if (_isEditMode) {
       setState(() => _isLoading = true);
-      
+
       try {
         final bank = await ref
             .read(bankAccountProvider.notifier)
             .getBankById(widget.bankId!);
-            
+
         if (bank != null) {
           setState(() {
             _formData.addAll({
@@ -86,7 +83,7 @@ class _BankFormState extends ConsumerState<BankForm> {
               'accountNumber': bank['accountNumber'] ?? '',
               'accountName': bank['accountName'] ?? '',
               'country': bank['country']?['name'] ?? '',
-              'currency': bank['currency']?['name'] != null 
+              'currency': bank['currency']?['name'] != null
                   ? '${bank['currency']['code']} - ${bank['currency']['name']}'
                   : '',
             });
@@ -197,9 +194,11 @@ class _BankFormState extends ConsumerState<BankForm> {
       }
 
       if (success) {
-        _showSuccessDialog(_isEditMode 
-            ? 'Bank account updated successfully' 
-            : 'Bank account created successfully');
+        _showSuccessDialog(
+          _isEditMode
+              ? 'Bank account updated successfully'
+              : 'Bank account created successfully',
+        );
       } else {
         final error = ref.read(bankAccountProvider).error;
         _showErrorDialog(error ?? 'Failed to save bank account');
@@ -255,9 +254,7 @@ class _BankFormState extends ConsumerState<BankForm> {
     if (_isLoading && !_isInitialized) {
       return Scaffold(
         backgroundColor: colors.background,
-        body: Center(
-          child: CupertinoActivityIndicator(),
-        ),
+        body: Center(child: CupertinoActivityIndicator()),
       );
     }
 
@@ -336,7 +333,7 @@ class _BankFormState extends ConsumerState<BankForm> {
 
           _buildDivider(colors),
 
-          // Branch Name  
+          // Branch Name
           FormFieldWidgets.buildTextField(
             'branchName',
             'Branch Name',

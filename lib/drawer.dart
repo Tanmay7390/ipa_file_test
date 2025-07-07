@@ -2,9 +2,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_test_22/theme_provider.dart';
-import 'package:flutter_test_22/apis/providers/auth_provider.dart';
+import 'package:Wareozo/theme_provider.dart';
+import 'package:Wareozo/apis/providers/auth_provider.dart';
+import 'package:Wareozo/apis/providers/business_commonprofile_provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:Wareozo/components/exit_confirmation_utils.dart';
 
 // Shared drawer mixin - Fixed to properly constrain the mixin
 mixin DrawerMixin<T extends StatefulWidget> on State<T> {
@@ -56,6 +58,7 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
       'Global Home': '/global-home',
       'Inventory': '/inventory-list',
       'Invoice': '/invoice',
+      'Item Categories': '/categories',
     };
     context.go(routes[pageName]!);
   }
@@ -99,6 +102,7 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
     if (location.startsWith('/global-home')) return 'Global Home';
     if (location.startsWith('/inventory-list')) return 'Inventory';
     if (location.startsWith('/invoice')) return 'Invoice';
+    if (location.startsWith('/categories')) return 'Item Categories';
     return 'Home';
   }
 
@@ -140,7 +144,6 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
         final colors = ref.watch(
           colorProvider,
         ); // Use color provider instead of theme
-        final userProfileAsync = ref.watch(userProfileProvider);
 
         return Container(
           decoration: BoxDecoration(
@@ -162,25 +165,106 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      userProfileAsync.when(
-                        data: (profile) {
+                      Builder(
+                        builder: (context) {
+                          final businessState = ref.watch(
+                            businessProfileProvider,
+                          );
+                          final profile = businessState.profile;
+
+                          // Handle loading state
+                          if (businessState.isLoading) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CircleAvatar(
+                                  radius: 30,
+                                  backgroundColor: colors.primary,
+                                  child: Icon(
+                                    CupertinoIcons.building_2_fill,
+                                    color: Colors.white,
+                                    size: 30,
+                                  ),
+                                ),
+                                SizedBox(height: 12),
+                                Container(
+                                  width: 120,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    color: colors.textSecondary.withOpacity(
+                                      0.3,
+                                    ),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Container(
+                                  width: 80,
+                                  height: 15,
+                                  decoration: BoxDecoration(
+                                    color: colors.textSecondary.withOpacity(
+                                      0.2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+
+                          // Handle error state
+                          if (businessState.error != null) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CircleAvatar(
+                                  radius: 30,
+                                  backgroundColor: colors.primary,
+                                  child: Icon(
+                                    CupertinoIcons.building_2_fill,
+                                    color: Colors.white,
+                                    size: 30,
+                                  ),
+                                ),
+                                SizedBox(height: 12),
+                                Text(
+                                  'Company',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
+                                    color: colors.textPrimary,
+                                  ),
+                                ),
+                                Text(
+                                  '@company',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+
+                          // Handle success state with profile data
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               CircleAvatar(
                                 radius: 30,
-                                backgroundImage: profile?['avatar'] != null
-                                    ? NetworkImage(profile!['avatar'])
-                                    : NetworkImage(
-                                        'https://i.imgur.com/QCNbOAo.png',
-                                      ),
+                                backgroundImage: profile?['logo'] != null
+                                    ? NetworkImage(profile!['logo'])
+                                    : null,
                                 backgroundColor: colors.primary,
-                                child: profile?['avatar'] == null
+                                child: profile?['logo'] == null
                                     ? Text(
-                                        profile?['name']
+                                        profile?['legalName']
                                                 ?.substring(0, 1)
                                                 .toUpperCase() ??
-                                            'U',
+                                            profile?['name']
+                                                ?.substring(0, 1)
+                                                .toUpperCase() ??
+                                            'C',
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontSize: 24,
@@ -191,7 +275,9 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                               ),
                               SizedBox(height: 12),
                               Text(
-                                profile?['name'] ?? 'User',
+                                profile?['legalName'] ??
+                                    profile?['name'] ??
+                                    'Company',
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w600,
@@ -199,7 +285,14 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                                 ),
                               ),
                               Text(
-                                '@${profile?['username'] ?? profile?['email']?.split('@')[0] ?? 'user'}',
+                                profile?['displayName'] ?? '@company',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                              Text(
+                                profile?['email'] ?? '@user',
                                 style: TextStyle(
                                   fontSize: 15,
                                   color: colors.textSecondary,
@@ -208,68 +301,6 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                             ],
                           );
                         },
-                        loading: () => Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CircleAvatar(
-                              radius: 30,
-                              backgroundColor: colors.primary,
-                              child: Icon(
-                                CupertinoIcons.person,
-                                color: Colors.white,
-                                size: 30,
-                              ),
-                            ),
-                            SizedBox(height: 12),
-                            Container(
-                              width: 120,
-                              height: 20,
-                              decoration: BoxDecoration(
-                                color: colors.textSecondary.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Container(
-                              width: 80,
-                              height: 15,
-                              decoration: BoxDecoration(
-                                color: colors.textSecondary.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                          ],
-                        ),
-                        error: (error, stack) => Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CircleAvatar(
-                              radius: 30,
-                              backgroundColor: colors.primary,
-                              child: Icon(
-                                CupertinoIcons.person,
-                                color: Colors.white,
-                                size: 30,
-                              ),
-                            ),
-                            SizedBox(height: 12),
-                            Text(
-                              'User',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w600,
-                                color: colors.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              '@user',
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: colors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
                     ],
                   ),
@@ -284,6 +315,7 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                       (CupertinoIcons.globe, 'Global Home'),
                       (CupertinoIcons.bag, 'Inventory'),
                       (CupertinoIcons.doc, 'Invoice'),
+                      (CupertinoIcons.list_bullet, 'Item Categories'),
                     ].map((item) => drawerItem(item.$1, item.$2)).toList(),
                   ),
                 ),
@@ -478,6 +510,7 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
   }
 }
 
+// Simplified HomeScreenWithDrawer - PopScope handling moved to UniversalPageWrapper
 class HomeScreenWithDrawer extends StatefulWidget {
   final StatefulNavigationShell navigationShell;
   const HomeScreenWithDrawer({required this.navigationShell, super.key});
@@ -495,34 +528,10 @@ class _HomeScreenWithDrawerState extends State<HomeScreenWithDrawer>
 
   @override
   Widget build(BuildContext context) {
-    // Check if we're on a main tab route
-    final location = GoRouterState.of(context).matchedLocation;
-    final isMainTabRoute = [
-      '/home',
-      '/employee',
-      '/customersuppliers',
-    ].contains(location);
-
-    return PopScope(
-      canPop:
-          !drawerOpen && (!isMainTabRoute || Navigator.of(context).canPop()),
-      onPopInvokedWithResult: (didPop, result) async {
-        if (!didPop) {
-          if (drawerOpen) {
-            // If drawer is open, close it
-            toggleDrawer(false);
-          } else if (isMainTabRoute && !Navigator.of(context).canPop()) {
-            // Exit the app only on main tab routes with no navigation stack
-            SystemNavigator.pop();
-          }
-          // For other cases, let normal navigation handle it
-        }
-      },
-      child: CupertinoPageScaffold(
-        child: buildDrawerLayout(
-          ScaffoldWithNavBar(navigationShell: widget.navigationShell),
-          checkMainRoute: true,
-        ),
+    return CupertinoPageScaffold(
+      child: buildDrawerLayout(
+        ScaffoldWithNavBar(navigationShell: widget.navigationShell),
+        checkMainRoute: true,
       ),
     );
   }
@@ -888,6 +897,7 @@ class ScaffoldWithNavBar extends ConsumerWidget {
   }
 }
 
+// Simplified StandaloneDrawerWrapper - PopScope handling moved to UniversalPageWrapper
 class StandaloneDrawerWrapper extends StatefulWidget {
   final Widget child;
   const StandaloneDrawerWrapper({required this.child, super.key});
@@ -906,18 +916,6 @@ class _StandaloneDrawerWrapperState extends State<StandaloneDrawerWrapper>
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: !drawerOpen,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (!didPop) {
-          if (drawerOpen) {
-            // If drawer is open, close it
-            toggleDrawer(false);
-          }
-          // If drawer is closed, let normal navigation handle the back action
-        }
-      },
-      child: CupertinoPageScaffold(child: buildDrawerLayout(widget.child)),
-    );
+    return CupertinoPageScaffold(child: buildDrawerLayout(widget.child));
   }
 }

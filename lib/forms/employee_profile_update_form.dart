@@ -103,6 +103,49 @@ class _EmployeeSectionedFormPageState
   List<Map<String, dynamic>> uniform = [];
   List<File> attachments = [];
 
+  // Helper method to clean up nested objects to only include IDs
+  Map<String, dynamic> _cleanDataForUpdate(Map<String, dynamic> data) {
+    final cleanedData = Map<String, dynamic>.from(data);
+
+    // Extract only IDs from nested objects
+    if (cleanedData['account'] is Map) {
+      cleanedData['account'] = cleanedData['account']['_id'];
+    }
+
+    if (cleanedData['client'] is Map) {
+      cleanedData['client'] = cleanedData['client']['_id'];
+    }
+
+    if (cleanedData['createdBy'] is Map) {
+      cleanedData['createdBy'] = cleanedData['createdBy']['_id'];
+    }
+
+    if (cleanedData['updatedBy'] is Map) {
+      cleanedData['updatedBy'] = cleanedData['updatedBy']['_id'];
+    }
+
+    if (cleanedData['baseLocation'] is Map) {
+      cleanedData['baseLocation'] = cleanedData['baseLocation']['_id'];
+    }
+
+    // Clean up addresses array
+    if (cleanedData['addresses'] is List) {
+      cleanedData['addresses'] = (cleanedData['addresses'] as List)
+          .where(
+            (addr) => addr['_id'] != null,
+          ) // Only include existing addresses
+          .map((addr) => addr['_id']) // Extract only the ObjectId
+          .toList();
+    }
+
+    // Remove MongoDB-specific fields
+    cleanedData.remove('createdAt');
+    cleanedData.remove('updatedAt');
+    cleanedData.remove('__v');
+
+    return cleanedData;
+  }
+
   // Store original employee data to preserve other sections
   Map<String, dynamic> originalEmployeeData = {};
 
@@ -138,17 +181,17 @@ class _EmployeeSectionedFormPageState
 
       if (response.success && response.data != null) {
         final employee = response.data!;
-        
+
         // Store original data to preserve other sections
         originalEmployeeData = Map<String, dynamic>.from(employee);
-        
+
         // Map employee data to form data
         formData = {
           'name': employee['name'] ?? '',
           'empId': employee['empId'] ?? '',
           'gender': employee['gender'] ?? '',
-          'dob': employee['dob'] != null 
-              ? DateTime.parse(employee['dob']) 
+          'dob': employee['dob'] != null
+              ? DateTime.parse(employee['dob'])
               : null,
           'personalEmail': employee['personalEmail'] ?? '',
           'businessEmail': employee['businessEmail'] ?? '',
@@ -158,8 +201,8 @@ class _EmployeeSectionedFormPageState
           'fatherName': employee['fatherName'] ?? '',
           'motherName': employee['motherName'] ?? '',
           'isMarried': employee['isMarried'] ?? false,
-          'marriageDate': employee['marriageDate'] != null 
-              ? DateTime.parse(employee['marriageDate']) 
+          'marriageDate': employee['marriageDate'] != null
+              ? DateTime.parse(employee['marriageDate'])
               : null,
           'spouseName': employee['spouseName'] ?? '',
           'spousePhone': employee['spousePhone'] ?? '',
@@ -169,20 +212,20 @@ class _EmployeeSectionedFormPageState
           'nomineeName': employee['nomineeName'] ?? '',
           'nomineeRelation': employee['nomineeRelation'] ?? '',
           'bankLinkPhone': employee['bankLinkPhone'] ?? '',
-          'grossSalary': employee['salary']?.isNotEmpty == true 
+          'grossSalary': employee['salary']?.isNotEmpty == true
               ? employee['salary'][0]['grossSalary'] ?? ''
               : '',
-          'ctc': employee['salary']?.isNotEmpty == true 
+          'ctc': employee['salary']?.isNotEmpty == true
               ? employee['salary'][0]['ctc'] ?? ''
               : '',
-          'assessmentYear': employee['salary']?.isNotEmpty == true 
+          'assessmentYear': employee['salary']?.isNotEmpty == true
               ? employee['salary'][0]['assessmentYear'] ?? ''
               : '',
-          'dateOfJoining': employee['dateOfJoining'] != null 
-              ? DateTime.parse(employee['dateOfJoining']) 
+          'dateOfJoining': employee['dateOfJoining'] != null
+              ? DateTime.parse(employee['dateOfJoining'])
               : null,
-          'dateofResign': employee['dateofResign'] != null 
-              ? DateTime.parse(employee['dateofResign']) 
+          'dateofResign': employee['dateofResign'] != null
+              ? DateTime.parse(employee['dateofResign'])
               : null,
           'reasonOfResign': employee['reasonOfResign'] ?? '',
           'isActive': employee['isActive'] ?? true,
@@ -192,20 +235,24 @@ class _EmployeeSectionedFormPageState
 
         // Load addresses
         addresses = List<Map<String, dynamic>>.from(
-          employee['addresses']?.map((addr) => {
-            'id': addr['_id'],
-            'type': addr['type'],
-            'line1': addr['line1'] ?? '',
-            'line2': addr['line2'] ?? '',
-            'city': addr['city'] ?? '',
-            'state': addr['state'],
-            'country': addr['country'],
-            'code': addr['code'] ?? '',
-          }) ?? []
+          employee['addresses']?.map(
+                (addr) => {
+                  'id': addr['_id'],
+                  'type': addr['type'],
+                  'line1': addr['line1'] ?? '',
+                  'line2': addr['line2'] ?? '',
+                  'city': addr['city'] ?? '',
+                  'state': addr['state'],
+                  'country': addr['country'],
+                  'code': addr['code'] ?? '',
+                },
+              ) ??
+              [],
         );
 
         // Ensure we have at least present and permanent address entries
-        if (addresses.isEmpty || !addresses.any((a) => a['type'] == 'Present Address')) {
+        if (addresses.isEmpty ||
+            !addresses.any((a) => a['type'] == 'Present Address')) {
           addresses.add({
             'type': 'Present Address',
             'line1': '',
@@ -230,20 +277,18 @@ class _EmployeeSectionedFormPageState
 
         // Load other arrays
         emergencyPhones = List<Map<String, dynamic>>.from(
-          employee['emergencyPhones'] ?? []
+          employee['emergencyPhones'] ?? [],
         );
         dependents = List<Map<String, dynamic>>.from(
-          employee['dependents'] ?? []
+          employee['dependents'] ?? [],
         );
         education = List<Map<String, dynamic>>.from(
-          employee['education'] ?? []
+          employee['education'] ?? [],
         );
         prevEmployment = List<Map<String, dynamic>>.from(
-          employee['prevEmployment'] ?? []
+          employee['prevEmployment'] ?? [],
         );
-        uniform = List<Map<String, dynamic>>.from(
-          employee['uniform'] ?? []
-        );
+        uniform = List<Map<String, dynamic>>.from(employee['uniform'] ?? []);
       }
     } catch (e) {
       print('Error loading employee data: $e');
@@ -264,7 +309,7 @@ class _EmployeeSectionedFormPageState
 
   bool _validateCurrentSection() {
     validationErrors.clear();
-    
+
     switch (currentSection) {
       case EmployeeFormSection.personal:
         if (formData['name']?.isEmpty ?? true) {
@@ -280,7 +325,7 @@ class _EmployeeSectionedFormPageState
           validationErrors['dob'] = 'Date of birth is required';
         }
         break;
-        
+
       case EmployeeFormSection.contact:
         if (formData['primaryPhone']?.isEmpty ?? true) {
           validationErrors['primaryPhone'] = 'Primary phone is required';
@@ -289,7 +334,7 @@ class _EmployeeSectionedFormPageState
           validationErrors['personalEmail'] = 'Personal email is required';
         }
         break;
-        
+
       case EmployeeFormSection.addresses:
         // Validate present address
         final presentAddr = addresses.firstWhere(
@@ -297,14 +342,15 @@ class _EmployeeSectionedFormPageState
           orElse: () => {},
         );
         if (presentAddr['line1']?.isEmpty ?? true) {
-          validationErrors['presentAddressLine1'] = 'Present address line 1 is required';
+          validationErrors['presentAddressLine1'] =
+              'Present address line 1 is required';
         }
         break;
-        
+
       default:
         break;
     }
-    
+
     return validationErrors.isEmpty;
   }
 
@@ -320,8 +366,8 @@ class _EmployeeSectionedFormPageState
       });
 
       // Start with original employee data to preserve other sections
-      final submitData = Map<String, dynamic>.from(originalEmployeeData);
-      
+      final submitData = _cleanDataForUpdate(originalEmployeeData);
+
       // Update only the current section's data
       switch (currentSection) {
         case EmployeeFormSection.personal:
@@ -334,7 +380,7 @@ class _EmployeeSectionedFormPageState
             'motherName': formData['motherName'],
             'languages': formData['languages'],
           });
-          
+
           if (formData['photo'] != null && formData['photo'] is File) {
             submitData['photo'] = await MultipartFile.fromFile(
               (formData['photo'] as File).path,
@@ -342,7 +388,7 @@ class _EmployeeSectionedFormPageState
             );
           }
           break;
-          
+
         case EmployeeFormSection.contact:
           submitData.addAll({
             'personalEmail': formData['personalEmail'],
@@ -353,13 +399,22 @@ class _EmployeeSectionedFormPageState
           });
           submitData['emergencyPhones'] = emergencyPhones;
           break;
-          
+
         case EmployeeFormSection.addresses:
-          submitData['addresses'] = addresses.where((addr) => 
-            addr['line1']?.isNotEmpty ?? false
-          ).toList();
+          // Only include addresses that have existing IDs
+          final existingAddressIds = addresses
+              .where((addr) => addr['id'] != null)
+              .map((addr) => addr['id'])
+              .toList();
+
+          // Don't add addresses to submitData for FormData processing
+          // Instead, handle addresses separately or use a different approach
+          // For now, skip updating addresses until address API is implemented
+
+          // TODO: Implement separate address update calls here
+          // You should call address update API for each modified address
           break;
-          
+
         case EmployeeFormSection.family:
           submitData.addAll({
             'isMarried': formData['isMarried'],
@@ -369,34 +424,34 @@ class _EmployeeSectionedFormPageState
           });
           submitData['dependents'] = dependents;
           break;
-          
+
         case EmployeeFormSection.education:
           submitData['education'] = education;
           break;
-          
+
         case EmployeeFormSection.employment:
-          submitData.addAll({
-            'isPrevEmployment': formData['isPrevEmployment'],
-          });
+          submitData.addAll({'isPrevEmployment': formData['isPrevEmployment']});
           submitData['prevEmployment'] = prevEmployment;
           break;
-          
+
         case EmployeeFormSection.salary:
-          submitData['salary'] = [{
-            'grossSalary': formData['grossSalary'] ?? '',
-            'ctc': formData['ctc'] ?? '',
-            'assessmentYear': formData['assessmentYear'] ?? '',
-            'startDate': formData['dateOfJoining']?.toIso8601String(),
-            'endDate': formData['dateofResign']?.toIso8601String(),
-            'active': true,
-          }];
+          submitData['salary'] = [
+            {
+              'grossSalary': formData['grossSalary'] ?? '',
+              'ctc': formData['ctc'] ?? '',
+              'assessmentYear': formData['assessmentYear'] ?? '',
+              'startDate': formData['dateOfJoining']?.toIso8601String(),
+              'endDate': formData['dateofResign']?.toIso8601String(),
+              'active': true,
+            },
+          ];
           submitData.addAll({
             'dateOfJoining': formData['dateOfJoining']?.toIso8601String(),
             'dateofResign': formData['dateofResign']?.toIso8601String(),
             'reasonOfResign': formData['reasonOfResign'],
           });
           break;
-          
+
         case EmployeeFormSection.compliance:
           submitData.addAll({
             'isCompliance': formData['isCompliance'],
@@ -407,7 +462,7 @@ class _EmployeeSectionedFormPageState
           });
           submitData['uniform'] = uniform;
           break;
-          
+
         case EmployeeFormSection.attachments:
           if (formData['signature'] != null && formData['signature'] is File) {
             submitData['signature'] = await MultipartFile.fromFile(
@@ -426,7 +481,7 @@ class _EmployeeSectionedFormPageState
       if (response.success) {
         // Refresh employee list
         ref.read(employeeListProvider.notifier).refresh();
-        
+
         // Show success message and go back
         showCupertinoDialog(
           context: context,
@@ -515,11 +570,11 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
           context: context,
-          initials: formData['name']?.isNotEmpty == true 
+          initials: formData['name']?.isNotEmpty == true
               ? formData['name'].toString().substring(0, 1).toUpperCase()
               : null,
         ),
-        
+
         FormFieldWidgets.buildTextField(
           'name',
           'Full Name',
@@ -530,7 +585,7 @@ class _EmployeeSectionedFormPageState
           validationErrors: validationErrors,
           isRequired: true,
         ),
-        
+
         FormFieldWidgets.buildTextField(
           'empId',
           'Employee ID',
@@ -541,7 +596,7 @@ class _EmployeeSectionedFormPageState
           validationErrors: validationErrors,
           isRequired: true,
         ),
-        
+
         FormFieldWidgets.buildSelectField(
           'gender',
           'Gender',
@@ -551,7 +606,7 @@ class _EmployeeSectionedFormPageState
           validationErrors: validationErrors,
           isRequired: true,
         ),
-        
+
         FormFieldWidgets.buildDateField(
           'dob',
           'Date of Birth',
@@ -562,7 +617,7 @@ class _EmployeeSectionedFormPageState
           isRequired: true,
           maximumDate: DateTime.now(),
         ),
-        
+
         FormFieldWidgets.buildTextField(
           'fatherName',
           'Father\'s Name',
@@ -572,7 +627,7 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
         ),
-        
+
         FormFieldWidgets.buildTextField(
           'motherName',
           'Mother\'s Name',
@@ -582,11 +637,22 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
         ),
-        
+
         FormFieldWidgets.buildMultiSelectField(
           'languages',
           'Languages',
-          ['English', 'Hindi', 'Marathi', 'Tamil', 'Telugu', 'Gujarati', 'Bengali', 'Kannada', 'Malayalam', 'Punjabi'],
+          [
+            'English',
+            'Hindi',
+            'Marathi',
+            'Tamil',
+            'Telugu',
+            'Gujarati',
+            'Bengali',
+            'Kannada',
+            'Malayalam',
+            'Punjabi',
+          ],
           onChanged: _onFieldChanged,
           formData: formData,
           validationErrors: validationErrors,
@@ -608,7 +674,7 @@ class _EmployeeSectionedFormPageState
           validationErrors: validationErrors,
           isRequired: true,
         ),
-        
+
         FormFieldWidgets.buildTextField(
           'businessEmail',
           'Business Email',
@@ -618,7 +684,7 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
         ),
-        
+
         FormFieldWidgets.buildTextField(
           'primaryPhone',
           'Primary Phone',
@@ -629,7 +695,7 @@ class _EmployeeSectionedFormPageState
           validationErrors: validationErrors,
           isRequired: true,
         ),
-        
+
         FormFieldWidgets.buildTextField(
           'alternatePhone',
           'Alternate Phone',
@@ -639,7 +705,7 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
         ),
-        
+
         if (formData['alternatePhone']?.isNotEmpty == true)
           FormFieldWidgets.buildTextField(
             'alternatePhoneRelation',
@@ -650,7 +716,7 @@ class _EmployeeSectionedFormPageState
             formData: formData,
             validationErrors: validationErrors,
           ),
-        
+
         _buildEmergencyContactsSection(),
       ],
     );
@@ -667,10 +733,7 @@ class _EmployeeSectionedFormPageState
             children: [
               const Text(
                 'Emergency Contacts',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
               CupertinoButton(
                 padding: EdgeInsets.zero,
@@ -679,11 +742,11 @@ class _EmployeeSectionedFormPageState
               ),
             ],
           ),
-          
+
           ...emergencyPhones.asMap().entries.map((entry) {
             final index = entry.key;
             final contact = entry.value;
-            
+
             return Container(
               margin: const EdgeInsets.only(top: 12),
               padding: const EdgeInsets.all(12),
@@ -696,15 +759,22 @@ class _EmployeeSectionedFormPageState
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Contact ${index + 1}', style: const TextStyle(fontWeight: FontWeight.w500)),
+                      Text(
+                        'Contact ${index + 1}',
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
                       CupertinoButton(
                         padding: EdgeInsets.zero,
                         onPressed: () => _removeEmergencyContact(index),
-                        child: const Icon(CupertinoIcons.xmark, size: 16, color: CupertinoColors.systemRed),
+                        child: const Icon(
+                          CupertinoIcons.xmark,
+                          size: 16,
+                          color: CupertinoColors.systemRed,
+                        ),
                       ),
                     ],
                   ),
-                  
+
                   FormFieldWidgets.buildTextField(
                     'emergencyName_$index',
                     'Name',
@@ -719,7 +789,7 @@ class _EmployeeSectionedFormPageState
                     validationErrors: {},
                     compact: true,
                   ),
-                  
+
                   FormFieldWidgets.buildTextField(
                     'emergencyPhone_$index',
                     'Phone',
@@ -734,7 +804,7 @@ class _EmployeeSectionedFormPageState
                     validationErrors: {},
                     compact: true,
                   ),
-                  
+
                   FormFieldWidgets.buildTextField(
                     'emergencyRelation_$index',
                     'Relation',
@@ -745,7 +815,9 @@ class _EmployeeSectionedFormPageState
                         emergencyPhones[index]['relation'] = value;
                       });
                     },
-                    formData: {'emergencyRelation_$index': contact['relation'] ?? ''},
+                    formData: {
+                      'emergencyRelation_$index': contact['relation'] ?? '',
+                    },
                     validationErrors: {},
                     compact: true,
                   ),
@@ -760,11 +832,7 @@ class _EmployeeSectionedFormPageState
 
   void _addEmergencyContact() {
     setState(() {
-      emergencyPhones.add({
-        'name': '',
-        'phone': '',
-        'relation': '',
-      });
+      emergencyPhones.add({'name': '', 'phone': '', 'relation': ''});
     });
   }
 
@@ -780,7 +848,7 @@ class _EmployeeSectionedFormPageState
         final index = addresses.indexOf(address);
         final type = address['type'];
         final prefix = type.toLowerCase().replaceAll(' ', '');
-        
+
         return Container(
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.all(16),
@@ -799,7 +867,7 @@ class _EmployeeSectionedFormPageState
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               FormFieldWidgets.buildTextField(
                 '${prefix}Line1',
                 'Address Line 1',
@@ -811,13 +879,16 @@ class _EmployeeSectionedFormPageState
                   });
                 },
                 formData: {'${prefix}Line1': address['line1'] ?? ''},
-                validationErrors: type == 'Present Address' 
-                    ? {'presentAddressLine1': validationErrors['presentAddressLine1'] ?? ''}
+                validationErrors: type == 'Present Address'
+                    ? {
+                        'presentAddressLine1':
+                            validationErrors['presentAddressLine1'] ?? '',
+                      }
                     : {},
                 isRequired: type == 'Present Address',
                 compact: true,
               ),
-              
+
               FormFieldWidgets.buildTextField(
                 '${prefix}Line2',
                 'Address Line 2',
@@ -832,7 +903,7 @@ class _EmployeeSectionedFormPageState
                 validationErrors: {},
                 compact: true,
               ),
-              
+
               FormFieldWidgets.buildTextField(
                 '${prefix}City',
                 'City',
@@ -847,10 +918,9 @@ class _EmployeeSectionedFormPageState
                 validationErrors: {},
                 compact: true,
               ),
-              
+
               // State and Country dropdowns would go here
               // You'll need to implement these using your countries_states_provider
-              
               FormFieldWidgets.buildTextField(
                 '${prefix}PinCode',
                 'Pin Code',
@@ -882,7 +952,7 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
         ),
-        
+
         if (formData['isMarried'] == true) ...[
           FormFieldWidgets.buildDateField(
             'marriageDate',
@@ -893,7 +963,7 @@ class _EmployeeSectionedFormPageState
             validationErrors: validationErrors,
             maximumDate: DateTime.now(),
           ),
-          
+
           FormFieldWidgets.buildTextField(
             'spouseName',
             'Spouse Name',
@@ -903,7 +973,7 @@ class _EmployeeSectionedFormPageState
             formData: formData,
             validationErrors: validationErrors,
           ),
-          
+
           FormFieldWidgets.buildTextField(
             'spousePhone',
             'Spouse Phone',
@@ -914,7 +984,7 @@ class _EmployeeSectionedFormPageState
             validationErrors: validationErrors,
           ),
         ],
-        
+
         _buildDependentsSection(),
       ],
     );
@@ -931,10 +1001,7 @@ class _EmployeeSectionedFormPageState
             children: [
               const Text(
                 'Dependents',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
               CupertinoButton(
                 padding: EdgeInsets.zero,
@@ -943,11 +1010,11 @@ class _EmployeeSectionedFormPageState
               ),
             ],
           ),
-          
+
           ...dependents.asMap().entries.map((entry) {
             final index = entry.key;
             final dependent = entry.value;
-            
+
             return Container(
               margin: const EdgeInsets.only(top: 12),
               padding: const EdgeInsets.all(12),
@@ -960,15 +1027,22 @@ class _EmployeeSectionedFormPageState
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Dependent ${index + 1}', style: const TextStyle(fontWeight: FontWeight.w500)),
+                      Text(
+                        'Dependent ${index + 1}',
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
                       CupertinoButton(
                         padding: EdgeInsets.zero,
                         onPressed: () => _removeDependent(index),
-                        child: const Icon(CupertinoIcons.xmark, size: 16, color: CupertinoColors.systemRed),
+                        child: const Icon(
+                          CupertinoIcons.xmark,
+                          size: 16,
+                          color: CupertinoColors.systemRed,
+                        ),
                       ),
                     ],
                   ),
-                  
+
                   FormFieldWidgets.buildTextField(
                     'dependentName_$index',
                     'Name',
@@ -983,20 +1057,30 @@ class _EmployeeSectionedFormPageState
                     validationErrors: {},
                     compact: true,
                   ),
-                  
+
                   FormFieldWidgets.buildSelectField(
                     'dependentRelation_$index',
                     'Relation',
-                    ['Son', 'Daughter', 'Father', 'Mother', 'Brother', 'Sister', 'Other'],
+                    [
+                      'Son',
+                      'Daughter',
+                      'Father',
+                      'Mother',
+                      'Brother',
+                      'Sister',
+                      'Other',
+                    ],
                     onChanged: (key, value) {
                       setState(() {
                         dependents[index]['relation'] = value;
                       });
                     },
-                    formData: {'dependentRelation_$index': dependent['relation'] ?? ''},
+                    formData: {
+                      'dependentRelation_$index': dependent['relation'] ?? '',
+                    },
                     validationErrors: {},
                   ),
-                  
+
                   FormFieldWidgets.buildTextField(
                     'dependentAge_$index',
                     'Age',
@@ -1007,7 +1091,9 @@ class _EmployeeSectionedFormPageState
                         dependents[index]['age'] = value;
                       });
                     },
-                    formData: {'dependentAge_$index': dependent['age']?.toString() ?? ''},
+                    formData: {
+                      'dependentAge_$index': dependent['age']?.toString() ?? '',
+                    },
                     validationErrors: {},
                     compact: true,
                   ),
@@ -1022,11 +1108,7 @@ class _EmployeeSectionedFormPageState
 
   void _addDependent() {
     setState(() {
-      dependents.add({
-        'name': '',
-        'relation': '',
-        'age': '',
-      });
+      dependents.add({'name': '', 'relation': '', 'age': ''});
     });
   }
 
@@ -1047,10 +1129,7 @@ class _EmployeeSectionedFormPageState
             children: [
               const Text(
                 'Education',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
               CupertinoButton(
                 padding: EdgeInsets.zero,
@@ -1059,11 +1138,11 @@ class _EmployeeSectionedFormPageState
               ),
             ],
           ),
-          
+
           ...education.asMap().entries.map((entry) {
             final index = entry.key;
             final edu = entry.value;
-            
+
             return Container(
               margin: const EdgeInsets.only(top: 12),
               padding: const EdgeInsets.all(12),
@@ -1076,15 +1155,22 @@ class _EmployeeSectionedFormPageState
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Education ${index + 1}', style: const TextStyle(fontWeight: FontWeight.w500)),
+                      Text(
+                        'Education ${index + 1}',
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
                       CupertinoButton(
                         padding: EdgeInsets.zero,
                         onPressed: () => _removeEducation(index),
-                        child: const Icon(CupertinoIcons.xmark, size: 16, color: CupertinoColors.systemRed),
+                        child: const Icon(
+                          CupertinoIcons.xmark,
+                          size: 16,
+                          color: CupertinoColors.systemRed,
+                        ),
                       ),
                     ],
                   ),
-                  
+
                   FormFieldWidgets.buildTextField(
                     'educationCourse_$index',
                     'Course',
@@ -1099,7 +1185,7 @@ class _EmployeeSectionedFormPageState
                     validationErrors: {},
                     compact: true,
                   ),
-                  
+
                   FormFieldWidgets.buildTextField(
                     'educationCollege_$index',
                     'College/Institute',
@@ -1114,7 +1200,7 @@ class _EmployeeSectionedFormPageState
                     validationErrors: {},
                     compact: true,
                   ),
-                  
+
                   FormFieldWidgets.buildTextField(
                     'educationUniversity_$index',
                     'University',
@@ -1125,11 +1211,13 @@ class _EmployeeSectionedFormPageState
                         education[index]['university'] = value;
                       });
                     },
-                    formData: {'educationUniversity_$index': edu['university'] ?? ''},
+                    formData: {
+                      'educationUniversity_$index': edu['university'] ?? '',
+                    },
                     validationErrors: {},
                     compact: true,
                   ),
-                  
+
                   FormFieldWidgets.buildTextField(
                     'educationPercentage_$index',
                     'Percentage',
@@ -1140,11 +1228,14 @@ class _EmployeeSectionedFormPageState
                         education[index]['percentage'] = value;
                       });
                     },
-                    formData: {'educationPercentage_$index': edu['percentage']?.toString() ?? ''},
+                    formData: {
+                      'educationPercentage_$index':
+                          edu['percentage']?.toString() ?? '',
+                    },
                     validationErrors: {},
                     compact: true,
                   ),
-                  
+
                   FormFieldWidgets.buildTextField(
                     'educationPassingYear_$index',
                     'Passing Year',
@@ -1155,7 +1246,10 @@ class _EmployeeSectionedFormPageState
                         education[index]['passing_year'] = value;
                       });
                     },
-                    formData: {'educationPassingYear_$index': edu['passing_year']?.toString() ?? ''},
+                    formData: {
+                      'educationPassingYear_$index':
+                          edu['passing_year']?.toString() ?? '',
+                    },
                     validationErrors: {},
                     compact: true,
                   ),
@@ -1196,7 +1290,7 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
         ),
-        
+
         if (formData['isPrevEmployment'] == true)
           _buildPreviousEmploymentSection(),
       ],
@@ -1214,10 +1308,7 @@ class _EmployeeSectionedFormPageState
             children: [
               const Text(
                 'Previous Employment',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
               CupertinoButton(
                 padding: EdgeInsets.zero,
@@ -1226,11 +1317,11 @@ class _EmployeeSectionedFormPageState
               ),
             ],
           ),
-          
+
           ...prevEmployment.asMap().entries.map((entry) {
             final index = entry.key;
             final emp = entry.value;
-            
+
             return Container(
               margin: const EdgeInsets.only(top: 12),
               padding: const EdgeInsets.all(12),
@@ -1243,15 +1334,22 @@ class _EmployeeSectionedFormPageState
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Employment ${index + 1}', style: const TextStyle(fontWeight: FontWeight.w500)),
+                      Text(
+                        'Employment ${index + 1}',
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
                       CupertinoButton(
                         padding: EdgeInsets.zero,
                         onPressed: () => _removePreviousEmployment(index),
-                        child: const Icon(CupertinoIcons.xmark, size: 16, color: CupertinoColors.systemRed),
+                        child: const Icon(
+                          CupertinoIcons.xmark,
+                          size: 16,
+                          color: CupertinoColors.systemRed,
+                        ),
                       ),
                     ],
                   ),
-                  
+
                   FormFieldWidgets.buildTextField(
                     'empCompanyName_$index',
                     'Company Name',
@@ -1262,11 +1360,13 @@ class _EmployeeSectionedFormPageState
                         prevEmployment[index]['companyName'] = value;
                       });
                     },
-                    formData: {'empCompanyName_$index': emp['companyName'] ?? ''},
+                    formData: {
+                      'empCompanyName_$index': emp['companyName'] ?? '',
+                    },
                     validationErrors: {},
                     compact: true,
                   ),
-                  
+
                   FormFieldWidgets.buildTextField(
                     'empDesignation_$index',
                     'Designation',
@@ -1277,41 +1377,45 @@ class _EmployeeSectionedFormPageState
                         prevEmployment[index]['designation'] = value;
                       });
                     },
-                    formData: {'empDesignation_$index': emp['designation'] ?? ''},
+                    formData: {
+                      'empDesignation_$index': emp['designation'] ?? '',
+                    },
                     validationErrors: {},
                     compact: true,
                   ),
-                  
+
                   FormFieldWidgets.buildDateField(
                     'empStartDate_$index',
                     'Start Date',
                     context: context,
                     onChanged: (key, value) {
                       setState(() {
-                        prevEmployment[index]['startDate'] = value?.toIso8601String();
+                        prevEmployment[index]['startDate'] = value
+                            ?.toIso8601String();
                       });
                     },
                     formData: {
-                      'empStartDate_$index': emp['startDate'] != null 
-                          ? DateTime.parse(emp['startDate']) 
-                          : null
+                      'empStartDate_$index': emp['startDate'] != null
+                          ? DateTime.parse(emp['startDate'])
+                          : null,
                     },
                     validationErrors: {},
                   ),
-                  
+
                   FormFieldWidgets.buildDateField(
                     'empEndDate_$index',
                     'End Date',
                     context: context,
                     onChanged: (key, value) {
                       setState(() {
-                        prevEmployment[index]['endDate'] = value?.toIso8601String();
+                        prevEmployment[index]['endDate'] = value
+                            ?.toIso8601String();
                       });
                     },
                     formData: {
-                      'empEndDate_$index': emp['endDate'] != null 
-                          ? DateTime.parse(emp['endDate']) 
-                          : null
+                      'empEndDate_$index': emp['endDate'] != null
+                          ? DateTime.parse(emp['endDate'])
+                          : null,
                     },
                     validationErrors: {},
                   ),
@@ -1353,7 +1457,7 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
         ),
-        
+
         FormFieldWidgets.buildTextField(
           'ctc',
           'CTC',
@@ -1363,7 +1467,7 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
         ),
-        
+
         FormFieldWidgets.buildTextField(
           'assessmentYear',
           'Assessment Year',
@@ -1373,7 +1477,7 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
         ),
-        
+
         FormFieldWidgets.buildDateField(
           'dateOfJoining',
           'Date of Joining',
@@ -1382,7 +1486,7 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
         ),
-        
+
         FormFieldWidgets.buildDateField(
           'dateofResign',
           'Date of Resignation',
@@ -1391,7 +1495,7 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
         ),
-        
+
         if (formData['dateofResign'] != null)
           FormFieldWidgets.buildTextAreaField(
             'reasonOfResign',
@@ -1414,7 +1518,7 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
         ),
-        
+
         FormFieldWidgets.buildTextField(
           'nomineeName',
           'Nominee Name',
@@ -1424,7 +1528,7 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
         ),
-        
+
         FormFieldWidgets.buildTextField(
           'nomineeRelation',
           'Nominee Relation',
@@ -1434,7 +1538,7 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
         ),
-        
+
         FormFieldWidgets.buildTextField(
           'bankLinkPhone',
           'Bank Linked Phone',
@@ -1444,7 +1548,7 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
         ),
-        
+
         FormFieldWidgets.buildSwitchField(
           'isActive',
           'Active Employee',
@@ -1452,7 +1556,7 @@ class _EmployeeSectionedFormPageState
           formData: formData,
           validationErrors: validationErrors,
         ),
-        
+
         _buildUniformSection(),
       ],
     );
@@ -1469,10 +1573,7 @@ class _EmployeeSectionedFormPageState
             children: [
               const Text(
                 'Uniform',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
               CupertinoButton(
                 padding: EdgeInsets.zero,
@@ -1481,11 +1582,11 @@ class _EmployeeSectionedFormPageState
               ),
             ],
           ),
-          
+
           ...uniform.asMap().entries.map((entry) {
             final index = entry.key;
             final uniformItem = entry.value;
-            
+
             return Container(
               margin: const EdgeInsets.only(top: 12),
               padding: const EdgeInsets.all(12),
@@ -1498,15 +1599,22 @@ class _EmployeeSectionedFormPageState
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Uniform ${index + 1}', style: const TextStyle(fontWeight: FontWeight.w500)),
+                      Text(
+                        'Uniform ${index + 1}',
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
                       CupertinoButton(
                         padding: EdgeInsets.zero,
                         onPressed: () => _removeUniform(index),
-                        child: const Icon(CupertinoIcons.xmark, size: 16, color: CupertinoColors.systemRed),
+                        child: const Icon(
+                          CupertinoIcons.xmark,
+                          size: 16,
+                          color: CupertinoColors.systemRed,
+                        ),
                       ),
                     ],
                   ),
-                  
+
                   FormFieldWidgets.buildTextField(
                     'uniformItem_$index',
                     'Item',
@@ -1521,7 +1629,7 @@ class _EmployeeSectionedFormPageState
                     validationErrors: {},
                     compact: true,
                   ),
-                  
+
                   FormFieldWidgets.buildTextField(
                     'uniformQuantity_$index',
                     'Quantity',
@@ -1532,7 +1640,10 @@ class _EmployeeSectionedFormPageState
                         uniform[index]['quantity'] = value;
                       });
                     },
-                    formData: {'uniformQuantity_$index': uniformItem['quantity']?.toString() ?? ''},
+                    formData: {
+                      'uniformQuantity_$index':
+                          uniformItem['quantity']?.toString() ?? '',
+                    },
                     validationErrors: {},
                     compact: true,
                   ),
@@ -1547,10 +1658,7 @@ class _EmployeeSectionedFormPageState
 
   void _addUniform() {
     setState(() {
-      uniform.add({
-        'item': '',
-        'quantity': '',
-      });
+      uniform.add({'item': '', 'quantity': ''});
     });
   }
 
@@ -1572,17 +1680,14 @@ class _EmployeeSectionedFormPageState
           context: context,
           size: 120,
         ),
-        
+
         const SizedBox(height: 20),
-        
+
         Container(
           padding: const EdgeInsets.all(16),
           child: const Text(
             'Additional document uploads can be handled here. You can extend this section to include specific document types like Aadhar, PAN, etc.',
-            style: TextStyle(
-              fontSize: 16,
-              color: CupertinoColors.systemGrey,
-            ),
+            style: TextStyle(fontSize: 16, color: CupertinoColors.systemGrey),
           ),
         ),
       ],
@@ -1592,7 +1697,7 @@ class _EmployeeSectionedFormPageState
   @override
   Widget build(BuildContext context) {
     final colors = ref.watch(colorProvider);
-    
+
     if (!isInitialized || isLoading) {
       return CupertinoPageScaffold(
         backgroundColor: colors.background,
@@ -1603,9 +1708,7 @@ class _EmployeeSectionedFormPageState
             style: TextStyle(color: colors.textPrimary),
           ),
         ),
-        child: Center(
-          child: CupertinoActivityIndicator(color: colors.primary),
-        ),
+        child: Center(child: CupertinoActivityIndicator(color: colors.primary)),
       );
     }
 
@@ -1671,22 +1774,18 @@ class _EmployeeSectionedFormPageState
                 ],
               ),
             ),
-            
+
             // Section content
             Expanded(
-              child: SingleChildScrollView(
-                child: _buildSectionContent(),
-              ),
+              child: SingleChildScrollView(child: _buildSectionContent()),
             ),
-            
+
             // Update button
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: colors.surface,
-                border: Border(
-                  top: BorderSide(color: colors.border),
-                ),
+                border: Border(top: BorderSide(color: colors.border)),
               ),
               child: SizedBox(
                 width: double.infinity,

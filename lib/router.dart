@@ -4,39 +4,172 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
-import 'package:flutter_test_22/drawer.dart';
-import 'package:flutter_test_22/apis/providers/auth_provider.dart';
-import 'package:flutter_test_22/forms/invoice_form.dart';
-import 'package:flutter_test_22/tabs/employee_tab.dart';
-import 'package:flutter_test_22/forms/employee_form.dart';
-import 'package:flutter_test_22/tabs/home_tab.dart';
-import 'package:flutter_test_22/onboarding/onboarding_screen.dart';
-import 'package:flutter_test_22/auth/login.dart';
-import 'package:flutter_test_22/auth/signup.dart';
-import 'package:flutter_test_22/auth/forgot_password.dart';
-import 'package:flutter_test_22/auth/login_with_otp.dart';
-import 'package:flutter_test_22/auth/otp_verification.dart';
-import 'package:flutter_test_22/tabs/customersupplier_tab.dart';
-import 'package:flutter_test_22/tabs/profile_pages/customer_profile_page.dart';
-import 'package:flutter_test_22/tabs/profile_pages/supplier_profile_page.dart';
-import 'package:flutter_test_22/forms/customersupplier_form.dart';
-import 'package:flutter_test_22/inventory/inventory_list.dart';
-import 'package:flutter_test_22/Inventory/inventory_form.dart';
-import 'package:flutter_test_22/tabs/invoice_tab.dart';
-import 'package:flutter_test_22/business_profile/business_profile_page.dart';
-import 'package:flutter_test_22/business_profile/update_legal_info_form.dart';
-import 'package:flutter_test_22/business_profile/update_payment_info_form.dart';
-import 'package:flutter_test_22/business_profile/update_company_profile_form.dart';
-import 'package:flutter_test_22/business_profile/bank_form.dart';
-import 'package:flutter_test_22/business_profile/address_form.dart';
-import 'package:flutter_test_22/business_profile/document_setting_form.dart';
-import 'package:flutter_test_22/tabs/profile_pages/employee_profile_page.dart';
-import 'package:flutter_test_22/forms/employee_profile_update_form.dart';
-import 'package:flutter_test_22/tabs/profile_pages/customersupplier_profile_page.dart';
-import '../../forms/customersupplier_update_form.dart';
-import 'package:flutter_test_22/testing.dart';
+import 'package:Wareozo/drawer.dart';
+import 'package:Wareozo/apis/providers/auth_provider.dart';
+import 'package:Wareozo/forms/invoice_form.dart';
+import 'package:Wareozo/tabs/employee_tab.dart';
+import 'package:Wareozo/forms/employee_form.dart';
+import 'package:Wareozo/tabs/home_tab.dart';
+import 'package:Wareozo/onboarding/onboarding_screen.dart';
+import 'package:Wareozo/auth/login.dart';
+import 'package:Wareozo/auth/signup.dart';
+import 'package:Wareozo/auth/forgot_password.dart';
+import 'package:Wareozo/auth/login_with_otp.dart';
+import 'package:Wareozo/auth/otp_verification.dart';
+import 'package:Wareozo/tabs/customersupplier_tab.dart';
+import 'package:Wareozo/tabs/profile_pages/customer_profile_page.dart';
+import 'package:Wareozo/tabs/profile_pages/supplier_profile_page.dart';
+import 'package:Wareozo/forms/customersupplier_form.dart';
+import 'package:Wareozo/inventory/inventory_list.dart';
+import 'package:Wareozo/Inventory/inventory_form.dart';
+import 'package:Wareozo/tabs/invoice_tab.dart';
+import 'package:Wareozo/business_profile/business_profile_page.dart';
+import 'package:Wareozo/business_profile/update_legal_info_form.dart';
+import 'package:Wareozo/business_profile/update_payment_info_form.dart';
+import 'package:Wareozo/business_profile/update_company_profile_form.dart';
+import 'package:Wareozo/business_profile/bank_form.dart';
+import 'package:Wareozo/business_profile/address_form.dart';
+import 'package:Wareozo/business_profile/document_setting_form.dart';
+import 'package:Wareozo/tabs/profile_pages/employee_profile_page.dart';
+import 'package:Wareozo/forms/employee_profile_update_form.dart';
+import 'package:Wareozo/tabs/profile_pages/customersupplier_profile_page.dart';
+import 'forms/customersupplier_profile_update_form.dart';
+import 'package:Wareozo/components/exit_confirmation_utils.dart';
+import 'package:Wareozo/category/category_listing_page.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
+
+// Enhanced exit handling wrapper with better error handling and WillPopScope
+class RobustExitWrapper extends StatefulWidget {
+  final Widget child;
+  final String routePath;
+  final bool isMainRoute;
+
+  const RobustExitWrapper({
+    super.key,
+    required this.child,
+    required this.routePath,
+    this.isMainRoute = false,
+  });
+
+  @override
+  State<RobustExitWrapper> createState() => _RobustExitWrapperState();
+}
+
+class _RobustExitWrapperState extends State<RobustExitWrapper> {
+  bool _isHandlingPop = false;
+
+  /// Check if current route is a main tab route
+  bool get _isMainTabRoute {
+    return [
+      '/home',
+      '/employee',
+      '/customersuppliers',
+      '/inventory-list',
+      '/invoice',
+    ].contains(widget.routePath);
+  }
+
+  /// Check if should show exit confirmation
+  bool get _shouldShowExitConfirmation {
+    return _isMainTabRoute || widget.isMainRoute;
+  }
+
+  /// Handle back navigation with comprehensive error handling
+  Future<bool> _handleWillPop() async {
+    // Prevent multiple simultaneous pop attempts
+    if (_isHandlingPop) {
+      return false;
+    }
+
+    _isHandlingPop = true;
+
+    try {
+      if (!mounted) {
+        return false;
+      }
+
+      final canPop = Navigator.of(context).canPop();
+      final shouldShowExit = _shouldShowExitConfirmation;
+
+      print('🔄 Handling back navigation:');
+      print('   - Route: ${widget.routePath}');
+      print('   - Can pop: $canPop');
+      print('   - Should show exit: $shouldShowExit');
+
+      if (!canPop && shouldShowExit) {
+        // User is trying to exit the app from a main route
+        print('   - Showing exit confirmation');
+        final shouldExit = await _showExitConfirmation();
+        if (shouldExit && mounted) {
+          print('   - User confirmed exit');
+          await _safeExit();
+          return true;
+        } else {
+          print('   - User cancelled exit');
+          return false;
+        }
+      } else if (canPop) {
+        // Normal navigation - allow back navigation
+        print('   - Normal back navigation');
+        return true;
+      } else {
+        // User is on a non-main route but can't pop
+        print('   - Navigating to home instead');
+        if (mounted) {
+          context.go('/home');
+        }
+        return false;
+      }
+    } catch (e) {
+      print('⚠️ Error in _handleWillPop: $e');
+      // In case of error, allow normal pop to prevent crash
+      return true;
+    } finally {
+      _isHandlingPop = false;
+    }
+  }
+
+  /// Show exit confirmation dialog with error handling
+  Future<bool> _showExitConfirmation() async {
+    try {
+      if (!mounted) return false;
+
+      return await ExitConfirmationUtils.showExitConfirmationDialog(context);
+    } catch (e) {
+      print('⚠️ Error showing exit confirmation: $e');
+      // If dialog fails, default to not exiting
+      return false;
+    }
+  }
+
+  /// Safely exit the app with error handling
+  Future<void> _safeExit() async {
+    try {
+      if (!mounted) return;
+
+      // Add small delay for better UX
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      if (mounted) {
+        SystemNavigator.pop();
+      }
+    } catch (e) {
+      print('⚠️ Error during app exit: $e');
+      // Try alternative exit method
+      try {
+        SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+      } catch (e2) {
+        print('⚠️ Alternative exit method also failed: $e2');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(onWillPop: _handleWillPop, child: widget.child);
+  }
+}
 
 final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
@@ -94,32 +227,48 @@ final appRouter = GoRouter(
     // Onboarding route
     GoRoute(
       path: '/onboarding',
-      builder: (context, state) => const OnboardingScreen(),
-    ),
-    GoRoute(
-      path: '/testing',
-      builder: (context, state) => const CourseContentScreen(),
+      builder: (context, state) => RobustExitWrapper(
+        routePath: '/onboarding',
+        child: const OnboardingScreen(),
+      ),
     ),
 
     // Auth routes
-    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-    GoRoute(path: '/signup', builder: (context, state) => const SignupScreen()),
+    GoRoute(
+      path: '/login',
+      builder: (context, state) =>
+          RobustExitWrapper(routePath: '/login', child: const LoginScreen()),
+    ),
+    GoRoute(
+      path: '/signup',
+      builder: (context, state) =>
+          RobustExitWrapper(routePath: '/signup', child: const SignupScreen()),
+    ),
     GoRoute(
       path: '/forgot-password',
-      builder: (context, state) => const ForgotPasswordScreen(),
+      builder: (context, state) => RobustExitWrapper(
+        routePath: '/forgot-password',
+        child: const ForgotPasswordScreen(),
+      ),
     ),
     GoRoute(
       path: '/login-with-otp',
-      builder: (context, state) => const LoginWithOTPScreen(),
+      builder: (context, state) => RobustExitWrapper(
+        routePath: '/login-with-otp',
+        child: const LoginWithOTPScreen(),
+      ),
     ),
     GoRoute(
       path: '/otp-verification',
       builder: (context, state) {
         final extra = state.extra as Map<String, dynamic>?;
-        return OTPVerificationScreen(
-          email: extra?['email'] ?? '',
-          type: extra?['type'] ?? 'email',
-          flowType: extra?['flowType'] ?? 'login-otp',
+        return RobustExitWrapper(
+          routePath: '/otp-verification',
+          child: OTPVerificationScreen(
+            email: extra?['email'] ?? '',
+            type: extra?['type'] ?? 'email',
+            flowType: extra?['flowType'] ?? 'login-otp',
+          ),
         );
       },
     ),
@@ -127,84 +276,123 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/global-home',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const GlobalHomePage(),
+      builder: (context, state) => RobustExitWrapper(
+        routePath: '/global-home',
+        isMainRoute: true,
+        child: const GlobalHomePage(),
+      ),
     ),
     GoRoute(
       path: '/bookmarks',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const BookmarksPageWithDrawer(),
+      builder: (context, state) => RobustExitWrapper(
+        routePath: '/bookmarks',
+        isMainRoute: true,
+        child: const BookmarksPageWithDrawer(),
+      ),
     ),
     GoRoute(
       path: '/business-profile',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const BusinessProfilePage(),
+      builder: (context, state) => RobustExitWrapper(
+        routePath: '/business-profile',
+        child: const BusinessProfilePage(),
+      ),
     ),
     GoRoute(
       path: '/update-company-profile',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const UpdateCompanyProfileForm(),
+      builder: (context, state) => RobustExitWrapper(
+        routePath: '/update-company-profile',
+        child: const UpdateCompanyProfileForm(),
+      ),
     ),
     GoRoute(
       path: '/update-payment-info',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const UpdatePaymentInfoForm(),
+      builder: (context, state) => RobustExitWrapper(
+        routePath: '/update-payment-info',
+        child: const UpdatePaymentInfoForm(),
+      ),
     ),
     GoRoute(
       path: '/update-legal-info',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const UpdateLegalInfoForm(),
+      builder: (context, state) => RobustExitWrapper(
+        routePath: '/update-legal-info',
+        child: const UpdateLegalInfoForm(),
+      ),
     ),
 
     // Address and Bank routes
     GoRoute(
       path: '/add-address',
-      builder: (context, state) => const AddressForm(),
+      builder: (context, state) => RobustExitWrapper(
+        routePath: '/add-address',
+        child: const AddressForm(),
+      ),
     ),
     GoRoute(
       path: '/edit-address/:id',
       builder: (context, state) {
         final id = state.pathParameters['id']!;
-        return AddressForm(addressId: id);
+        return RobustExitWrapper(
+          routePath: '/edit-address/$id',
+          child: AddressForm(addressId: id),
+        );
       },
     ),
     GoRoute(
       path: '/add-bank-account',
-      builder: (context, state) => const BankForm(),
+      builder: (context, state) => RobustExitWrapper(
+        routePath: '/add-bank-account',
+        child: const BankForm(),
+      ),
     ),
     GoRoute(
       path: '/edit-bank-account/:id',
       builder: (context, state) {
         final id = state.pathParameters['id']!;
-        return BankForm(bankId: id);
+        return RobustExitWrapper(
+          routePath: '/edit-bank-account/$id',
+          child: BankForm(bankId: id),
+        );
       },
     ),
     GoRoute(
       path: '/add-document-setting',
-      builder: (context, state) => const DocumentSettingForm(),
+      builder: (context, state) => RobustExitWrapper(
+        routePath: '/add-document-setting',
+        child: const DocumentSettingForm(),
+      ),
     ),
     GoRoute(
       path: '/edit-document-setting/:id',
       builder: (context, state) {
         final id = state.pathParameters['id']!;
         final documentTypeName = state.uri.queryParameters['documentTypeName'];
-        return DocumentSettingForm(
-          documentSettingId: id,
-          documentTypeName: documentTypeName,
+        return RobustExitWrapper(
+          routePath: '/edit-document-setting/$id',
+          child: DocumentSettingForm(
+            documentSettingId: id,
+            documentTypeName: documentTypeName,
+          ),
         );
       },
     ),
+    GoRoute(
+      path: '/categories',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => RobustExitWrapper(
+        routePath: '/categories',
+        child: const CategoryListingPage(),
+      ),
+    ),
 
-    // Invoice routes
-    // GoRoute(
-    //   path: '/invoice',
-    //   parentNavigatorKey: _rootNavigatorKey,
-    //   builder: (context, state) => const InvoiceTab(),
-    // ),
-
-    // Main app with bottom tabs
+    // Main app with bottom tabs - Special handling for the shell route
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
-          HomeScreenWithDrawer(navigationShell: navigationShell),
+          RobustHomeScreenWithDrawer(navigationShell: navigationShell),
       branches: [
         StatefulShellBranch(
           routes: [
@@ -214,7 +402,10 @@ final appRouter = GoRouter(
               routes: [
                 GoRoute(
                   path: 'details',
-                  builder: (context, state) => const HomeDetailsPage(),
+                  builder: (context, state) => RobustExitWrapper(
+                    routePath: '/home/details',
+                    child: const HomeDetailsPage(),
+                  ),
                 ),
               ],
             ),
@@ -224,19 +415,26 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/inventory-list',
-
               builder: (context, state) => const InventoryList(),
               routes: [
                 GoRoute(
                   path: 'add',
                   parentNavigatorKey: _rootNavigatorKey,
-                  builder: (context, state) => CreateInventory(),
+                  builder: (context, state) => RobustExitWrapper(
+                    routePath: '/inventory-list/add',
+                    child: CreateInventory(),
+                  ),
                 ),
                 GoRoute(
                   path: 'edit/:id',
                   parentNavigatorKey: _rootNavigatorKey,
-                  builder: (context, state) =>
-                      CreateInventory(inventoryId: state.pathParameters['id']),
+                  builder: (context, state) => RobustExitWrapper(
+                    routePath:
+                        '/inventory-list/edit/${state.pathParameters['id']}',
+                    child: CreateInventory(
+                      inventoryId: state.pathParameters['id'],
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -251,12 +449,18 @@ final appRouter = GoRouter(
                 GoRoute(
                   path: 'add',
                   parentNavigatorKey: _rootNavigatorKey,
-                  builder: (context, state) => InvoiceFormSheet(),
+                  builder: (context, state) => RobustExitWrapper(
+                    routePath: '/invoice/add',
+                    child: InvoiceFormSheet(),
+                  ),
                 ),
                 GoRoute(
                   path: 'profile/:id',
-                  builder: (context, state) => EmployeeProfilePage(
-                    employeeId: state.pathParameters['id']!,
+                  builder: (context, state) => RobustExitWrapper(
+                    routePath: '/invoice/profile/${state.pathParameters['id']}',
+                    child: EmployeeProfilePage(
+                      employeeId: state.pathParameters['id']!,
+                    ),
                   ),
                 ),
               ],
@@ -269,26 +473,35 @@ final appRouter = GoRouter(
               path: '/employee',
               builder: (context, state) => const EmployeeTab(),
               routes: [
-                // Employee creation route (for initial minimal details)
+                // Employee creation route
                 GoRoute(
                   path: 'add',
                   parentNavigatorKey: _rootNavigatorKey,
-                  builder: (context, state) => EmployeeForm(),
+                  builder: (context, state) => RobustExitWrapper(
+                    routePath: '/employee/add',
+                    child: EmployeeForm(),
+                  ),
                 ),
 
-                // Employee edit route (for basic edit - can be removed if not needed)
+                // Employee edit route
                 GoRoute(
                   path: 'edit/:id',
                   parentNavigatorKey: _rootNavigatorKey,
-                  builder: (context, state) =>
-                      EmployeeForm(employeeId: state.pathParameters['id']),
+                  builder: (context, state) => RobustExitWrapper(
+                    routePath: '/employee/edit/${state.pathParameters['id']}',
+                    child: EmployeeForm(employeeId: state.pathParameters['id']),
+                  ),
                 ),
 
                 // Employee profile route
                 GoRoute(
                   path: 'profile/:id',
-                  builder: (context, state) => EmployeeProfilePage(
-                    employeeId: state.pathParameters['id']!,
+                  builder: (context, state) => RobustExitWrapper(
+                    routePath:
+                        '/employee/profile/${state.pathParameters['id']}',
+                    child: EmployeeProfilePage(
+                      employeeId: state.pathParameters['id']!,
+                    ),
                   ),
                 ),
 
@@ -298,21 +511,28 @@ final appRouter = GoRouter(
                   parentNavigatorKey: _rootNavigatorKey,
                   builder: (context, state) {
                     final employeeId = state.pathParameters['id']!;
-                    return EmployeeSectionedFormPage(
-                      employeeId: employeeId,
-                      initialSection: EmployeeFormSection.personal,
+                    return RobustExitWrapper(
+                      routePath: '/employee/update/$employeeId/personal',
+                      child: EmployeeSectionedFormPage(
+                        employeeId: employeeId,
+                        initialSection: EmployeeFormSection.personal,
+                      ),
                     );
                   },
                 ),
 
+                // ... (rest of employee routes with RobustExitWrapper)
                 GoRoute(
                   path: 'update/:id/contact',
                   parentNavigatorKey: _rootNavigatorKey,
                   builder: (context, state) {
                     final employeeId = state.pathParameters['id']!;
-                    return EmployeeSectionedFormPage(
-                      employeeId: employeeId,
-                      initialSection: EmployeeFormSection.contact,
+                    return RobustExitWrapper(
+                      routePath: '/employee/update/$employeeId/contact',
+                      child: EmployeeSectionedFormPage(
+                        employeeId: employeeId,
+                        initialSection: EmployeeFormSection.contact,
+                      ),
                     );
                   },
                 ),
@@ -322,9 +542,12 @@ final appRouter = GoRouter(
                   parentNavigatorKey: _rootNavigatorKey,
                   builder: (context, state) {
                     final employeeId = state.pathParameters['id']!;
-                    return EmployeeSectionedFormPage(
-                      employeeId: employeeId,
-                      initialSection: EmployeeFormSection.addresses,
+                    return RobustExitWrapper(
+                      routePath: '/employee/update/$employeeId/addresses',
+                      child: EmployeeSectionedFormPage(
+                        employeeId: employeeId,
+                        initialSection: EmployeeFormSection.addresses,
+                      ),
                     );
                   },
                 ),
@@ -334,9 +557,12 @@ final appRouter = GoRouter(
                   parentNavigatorKey: _rootNavigatorKey,
                   builder: (context, state) {
                     final employeeId = state.pathParameters['id']!;
-                    return EmployeeSectionedFormPage(
-                      employeeId: employeeId,
-                      initialSection: EmployeeFormSection.family,
+                    return RobustExitWrapper(
+                      routePath: '/employee/update/$employeeId/family',
+                      child: EmployeeSectionedFormPage(
+                        employeeId: employeeId,
+                        initialSection: EmployeeFormSection.family,
+                      ),
                     );
                   },
                 ),
@@ -346,9 +572,12 @@ final appRouter = GoRouter(
                   parentNavigatorKey: _rootNavigatorKey,
                   builder: (context, state) {
                     final employeeId = state.pathParameters['id']!;
-                    return EmployeeSectionedFormPage(
-                      employeeId: employeeId,
-                      initialSection: EmployeeFormSection.education,
+                    return RobustExitWrapper(
+                      routePath: '/employee/update/$employeeId/education',
+                      child: EmployeeSectionedFormPage(
+                        employeeId: employeeId,
+                        initialSection: EmployeeFormSection.education,
+                      ),
                     );
                   },
                 ),
@@ -358,9 +587,12 @@ final appRouter = GoRouter(
                   parentNavigatorKey: _rootNavigatorKey,
                   builder: (context, state) {
                     final employeeId = state.pathParameters['id']!;
-                    return EmployeeSectionedFormPage(
-                      employeeId: employeeId,
-                      initialSection: EmployeeFormSection.employment,
+                    return RobustExitWrapper(
+                      routePath: '/employee/update/$employeeId/employment',
+                      child: EmployeeSectionedFormPage(
+                        employeeId: employeeId,
+                        initialSection: EmployeeFormSection.employment,
+                      ),
                     );
                   },
                 ),
@@ -370,9 +602,12 @@ final appRouter = GoRouter(
                   parentNavigatorKey: _rootNavigatorKey,
                   builder: (context, state) {
                     final employeeId = state.pathParameters['id']!;
-                    return EmployeeSectionedFormPage(
-                      employeeId: employeeId,
-                      initialSection: EmployeeFormSection.salary,
+                    return RobustExitWrapper(
+                      routePath: '/employee/update/$employeeId/salary',
+                      child: EmployeeSectionedFormPage(
+                        employeeId: employeeId,
+                        initialSection: EmployeeFormSection.salary,
+                      ),
                     );
                   },
                 ),
@@ -382,9 +617,12 @@ final appRouter = GoRouter(
                   parentNavigatorKey: _rootNavigatorKey,
                   builder: (context, state) {
                     final employeeId = state.pathParameters['id']!;
-                    return EmployeeSectionedFormPage(
-                      employeeId: employeeId,
-                      initialSection: EmployeeFormSection.compliance,
+                    return RobustExitWrapper(
+                      routePath: '/employee/update/$employeeId/compliance',
+                      child: EmployeeSectionedFormPage(
+                        employeeId: employeeId,
+                        initialSection: EmployeeFormSection.compliance,
+                      ),
                     );
                   },
                 ),
@@ -394,14 +632,17 @@ final appRouter = GoRouter(
                   parentNavigatorKey: _rootNavigatorKey,
                   builder: (context, state) {
                     final employeeId = state.pathParameters['id']!;
-                    return EmployeeSectionedFormPage(
-                      employeeId: employeeId,
-                      initialSection: EmployeeFormSection.attachments,
+                    return RobustExitWrapper(
+                      routePath: '/employee/update/$employeeId/attachments',
+                      child: EmployeeSectionedFormPage(
+                        employeeId: employeeId,
+                        initialSection: EmployeeFormSection.attachments,
+                      ),
                     );
                   },
                 ),
 
-                // Legacy route for backward compatibility (can be removed later)
+                // Legacy route for backward compatibility
                 GoRoute(
                   path: 'update/:id/:section',
                   parentNavigatorKey: _rootNavigatorKey,
@@ -443,9 +684,12 @@ final appRouter = GoRouter(
                         section = EmployeeFormSection.personal;
                     }
 
-                    return EmployeeSectionedFormPage(
-                      employeeId: employeeId,
-                      initialSection: section,
+                    return RobustExitWrapper(
+                      routePath: '/employee/update/$employeeId/$sectionStr',
+                      child: EmployeeSectionedFormPage(
+                        employeeId: employeeId,
+                        initialSection: section,
+                      ),
                     );
                   },
                 ),
@@ -462,7 +706,10 @@ final appRouter = GoRouter(
                 GoRoute(
                   path: 'add',
                   parentNavigatorKey: _rootNavigatorKey,
-                  builder: (context, state) => CustomerFormSheet(),
+                  builder: (context, state) => RobustExitWrapper(
+                    routePath: '/customersuppliers/add',
+                    child: CustomerFormSheet(),
+                  ),
                 ),
                 GoRoute(
                   path: 'one/:customerId',
@@ -470,38 +717,31 @@ final appRouter = GoRouter(
                   builder: (context, state) {
                     final customerId = state.pathParameters['customerId']!;
                     final initialData = state.extra as Map<String, dynamic>?;
-                    return CustomerFormSheet(
-                      customerId: customerId,
-                      initialData: initialData,
+                    return RobustExitWrapper(
+                      routePath: '/customersuppliers/one/$customerId',
+                      child: CustomerFormSheet(
+                        customerId: customerId,
+                        initialData: initialData,
+                      ),
                     );
                   },
                 ),
-                // GoRoute(
-                //   path: 'profile/:customerId',
-                //   builder: (context, state) {
-                //     final customerId = state.pathParameters['customerId']!;
-                //     return CustomerProfilePage(customerId: customerId);
-                //   },
-                // ),
-                // GoRoute(
-                //   path: 'supplier/profile/:supplierId',
-                //   builder: (context, state) {
-                //     final supplierId = state.pathParameters['supplierId']!;
-                //     return SupplierProfilePage(supplierId: supplierId);
-                //   },
-                // ),
                 GoRoute(
                   path: 'profile/:entityId',
                   builder: (context, state) {
                     final entityId = state.pathParameters['entityId']!;
                     final entityType =
                         state.uri.queryParameters['type'] ?? 'customer';
-                    return CustomerSupplierProfilePage(
-                      entityId: entityId,
-                      entityType: entityType,
+                    return RobustExitWrapper(
+                      routePath: '/customersuppliers/profile/$entityId',
+                      child: CustomerSupplierProfilePage(
+                        entityId: entityId,
+                        entityType: entityType,
+                      ),
                     );
                   },
                 ),
+                // ... (rest of customer/supplier routes with RobustExitWrapper)
                 GoRoute(
                   path: 'update/:entityId/basic',
                   parentNavigatorKey: _rootNavigatorKey,
@@ -509,10 +749,13 @@ final appRouter = GoRouter(
                     final entityId = state.pathParameters['entityId']!;
                     final entityType =
                         state.uri.queryParameters['type'] ?? 'customer';
-                    return CustomerSupplierSectionedFormPage(
-                      entityId: entityId,
-                      entityType: entityType,
-                      initialSection: CustomerSupplierFormSection.basic,
+                    return RobustExitWrapper(
+                      routePath: '/customersuppliers/update/$entityId/basic',
+                      child: CustomerSupplierSectionedFormPage(
+                        entityId: entityId,
+                        entityType: entityType,
+                        initialSection: CustomerSupplierFormSection.basic,
+                      ),
                     );
                   },
                 ),
@@ -524,10 +767,13 @@ final appRouter = GoRouter(
                     final entityId = state.pathParameters['entityId']!;
                     final entityType =
                         state.uri.queryParameters['type'] ?? 'customer';
-                    return CustomerSupplierSectionedFormPage(
-                      entityId: entityId,
-                      entityType: entityType,
-                      initialSection: CustomerSupplierFormSection.contact,
+                    return RobustExitWrapper(
+                      routePath: '/customersuppliers/update/$entityId/contact',
+                      child: CustomerSupplierSectionedFormPage(
+                        entityId: entityId,
+                        entityType: entityType,
+                        initialSection: CustomerSupplierFormSection.contact,
+                      ),
                     );
                   },
                 ),
@@ -539,10 +785,13 @@ final appRouter = GoRouter(
                     final entityId = state.pathParameters['entityId']!;
                     final entityType =
                         state.uri.queryParameters['type'] ?? 'customer';
-                    return CustomerSupplierSectionedFormPage(
-                      entityId: entityId,
-                      entityType: entityType,
-                      initialSection: CustomerSupplierFormSection.business,
+                    return RobustExitWrapper(
+                      routePath: '/customersuppliers/update/$entityId/business',
+                      child: CustomerSupplierSectionedFormPage(
+                        entityId: entityId,
+                        entityType: entityType,
+                        initialSection: CustomerSupplierFormSection.business,
+                      ),
                     );
                   },
                 ),
@@ -554,10 +803,14 @@ final appRouter = GoRouter(
                     final entityId = state.pathParameters['entityId']!;
                     final entityType =
                         state.uri.queryParameters['type'] ?? 'customer';
-                    return CustomerSupplierSectionedFormPage(
-                      entityId: entityId,
-                      entityType: entityType,
-                      initialSection: CustomerSupplierFormSection.addresses,
+                    return RobustExitWrapper(
+                      routePath:
+                          '/customersuppliers/update/$entityId/addresses',
+                      child: CustomerSupplierSectionedFormPage(
+                        entityId: entityId,
+                        entityType: entityType,
+                        initialSection: CustomerSupplierFormSection.addresses,
+                      ),
                     );
                   },
                 ),
@@ -569,10 +822,13 @@ final appRouter = GoRouter(
                     final entityId = state.pathParameters['entityId']!;
                     final entityType =
                         state.uri.queryParameters['type'] ?? 'customer';
-                    return CustomerSupplierSectionedFormPage(
-                      entityId: entityId,
-                      entityType: entityType,
-                      initialSection: CustomerSupplierFormSection.payment,
+                    return RobustExitWrapper(
+                      routePath: '/customersuppliers/update/$entityId/payment',
+                      child: CustomerSupplierSectionedFormPage(
+                        entityId: entityId,
+                        entityType: entityType,
+                        initialSection: CustomerSupplierFormSection.payment,
+                      ),
                     );
                   },
                 ),
@@ -584,15 +840,38 @@ final appRouter = GoRouter(
                     final entityId = state.pathParameters['entityId']!;
                     final entityType =
                         state.uri.queryParameters['type'] ?? 'customer';
-                    return CustomerSupplierSectionedFormPage(
-                      entityId: entityId,
-                      entityType: entityType,
-                      initialSection: CustomerSupplierFormSection.attachments,
+                    return RobustExitWrapper(
+                      routePath:
+                          '/customersuppliers/update/$entityId/attachments',
+                      child: CustomerSupplierSectionedFormPage(
+                        entityId: entityId,
+                        entityType: entityType,
+                        initialSection: CustomerSupplierFormSection.attachments,
+                      ),
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: 'update/:entityId/agreedservices',
+                  parentNavigatorKey: _rootNavigatorKey,
+                  builder: (context, state) {
+                    final entityId = state.pathParameters['entityId']!;
+                    final entityType =
+                        state.uri.queryParameters['type'] ?? 'customer';
+                    return RobustExitWrapper(
+                      routePath:
+                          '/customersuppliers/update/$entityId/agreedservices',
+                      child: CustomerSupplierSectionedFormPage(
+                        entityId: entityId,
+                        entityType: entityType,
+                        initialSection:
+                            CustomerSupplierFormSection.agreedServices,
+                      ),
                     );
                   },
                 ),
 
-                // Legacy route for backward compatibility (can be removed later)
+                // Legacy route
                 GoRoute(
                   path: 'update/:entityId/:section',
                   parentNavigatorKey: _rootNavigatorKey,
@@ -623,14 +902,21 @@ final appRouter = GoRouter(
                       case 'attachments':
                         section = CustomerSupplierFormSection.attachments;
                         break;
+                      case 'agreedservices':
+                        section = CustomerSupplierFormSection.agreedServices;
+                        break;
                       default:
                         section = CustomerSupplierFormSection.basic;
                     }
 
-                    return CustomerSupplierSectionedFormPage(
-                      entityId: entityId,
-                      entityType: entityType,
-                      initialSection: section,
+                    return RobustExitWrapper(
+                      routePath:
+                          '/customersuppliers/update/$entityId/$sectionStr',
+                      child: CustomerSupplierSectionedFormPage(
+                        entityId: entityId,
+                        entityType: entityType,
+                        initialSection: section,
+                      ),
                     );
                   },
                 ),
@@ -659,7 +945,111 @@ class GoRouterRefreshStream extends ChangeNotifier {
   }
 }
 
-// Updated BookmarksPageWithDrawer with PopScope
+// Enhanced HomeScreenWithDrawer with robust exit handling
+class RobustHomeScreenWithDrawer extends StatefulWidget {
+  final StatefulNavigationShell navigationShell;
+  const RobustHomeScreenWithDrawer({required this.navigationShell, super.key});
+  @override
+  State<RobustHomeScreenWithDrawer> createState() =>
+      _RobustHomeScreenWithDrawerState();
+}
+
+class _RobustHomeScreenWithDrawerState extends State<RobustHomeScreenWithDrawer>
+    with TickerProviderStateMixin {
+  bool _isHandlingPop = false;
+
+  /// Handle back navigation for main screen with drawer
+  Future<bool> _handleMainScreenPop() async {
+    // Prevent multiple simultaneous pop attempts
+    if (_isHandlingPop) {
+      return false;
+    }
+
+    _isHandlingPop = true;
+
+    try {
+      if (!mounted) {
+        return false;
+      }
+
+      final location = GoRouterState.of(context).matchedLocation;
+      final isMainTabRoute = [
+        '/home',
+        '/employee',
+        '/customersuppliers',
+        '/inventory-list',
+        '/invoice',
+      ].contains(location);
+
+      print('🔄 Main screen back navigation:');
+      print('   - Location: $location');
+      print('   - Is main tab: $isMainTabRoute');
+
+      if (isMainTabRoute) {
+        print('   - Showing exit confirmation');
+        final shouldExit = await _showExitConfirmation();
+        if (shouldExit && mounted) {
+          print('   - User confirmed exit');
+          await _safeExit();
+          return true;
+        } else {
+          print('   - User cancelled exit');
+          return false;
+        }
+      } else {
+        print('   - Normal navigation allowed');
+        return true;
+      }
+    } catch (e) {
+      print('⚠️ Error in main screen pop handling: $e');
+      return true; // Allow normal pop to prevent crash
+    } finally {
+      _isHandlingPop = false;
+    }
+  }
+
+  /// Show exit confirmation dialog with error handling
+  Future<bool> _showExitConfirmation() async {
+    try {
+      if (!mounted) return false;
+
+      return await ExitConfirmationUtils.showExitConfirmationDialog(context);
+    } catch (e) {
+      print('⚠️ Error showing exit confirmation: $e');
+      return false;
+    }
+  }
+
+  /// Safely exit the app
+  Future<void> _safeExit() async {
+    try {
+      if (!mounted) return;
+
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      if (mounted) {
+        SystemNavigator.pop();
+      }
+    } catch (e) {
+      print('⚠️ Error during app exit: $e');
+      try {
+        SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+      } catch (e2) {
+        print('⚠️ Alternative exit method also failed: $e2');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: _handleMainScreenPop,
+      child: HomeScreenWithDrawer(navigationShell: widget.navigationShell),
+    );
+  }
+}
+
+// Updated standalone pages without internal PopScope since RobustExitWrapper handles it
 class BookmarksPageWithDrawer extends StatelessWidget {
   const BookmarksPageWithDrawer({super.key});
 
@@ -667,37 +1057,28 @@ class BookmarksPageWithDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final canPop = Navigator.of(context).canPop();
 
-    return PopScope(
-      canPop: true,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop && !canPop) {
-          // If we're on root and trying to go back, go to home instead
-          context.go('/home');
-        }
-      },
-      child: StandaloneDrawerWrapper(
-        child: CupertinoPageScaffold(
-          navigationBar: CupertinoNavigationBar(
-            leading: canPop
-                ? CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () => context.pop(),
-                    child: const Icon(CupertinoIcons.back),
-                  )
-                : CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () => context.go('/home'),
-                    child: const Icon(CupertinoIcons.home),
-                  ),
-            middle: const Text('Bookmarks'),
-          ),
-          child: SafeArea(
-            child: _buildCenter(
-              'Bookmarks',
-              CupertinoIcons.bookmark_fill,
-              CupertinoColors.systemOrange,
-              context,
-            ),
+    return StandaloneDrawerWrapper(
+      child: CupertinoPageScaffold(
+        navigationBar: CupertinoNavigationBar(
+          leading: canPop
+              ? CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () => context.pop(),
+                  child: const Icon(CupertinoIcons.back),
+                )
+              : CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () => context.go('/home'),
+                  child: const Icon(CupertinoIcons.home),
+                ),
+          middle: const Text('Bookmarks'),
+        ),
+        child: SafeArea(
+          child: _buildCenter(
+            'Bookmarks',
+            CupertinoIcons.bookmark_fill,
+            CupertinoColors.systemOrange,
+            context,
           ),
         ),
       ),
@@ -705,7 +1086,6 @@ class BookmarksPageWithDrawer extends StatelessWidget {
   }
 }
 
-// Updated GlobalHomePage with PopScope
 class GlobalHomePage extends StatelessWidget {
   const GlobalHomePage({super.key});
 
@@ -713,37 +1093,28 @@ class GlobalHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final canPop = Navigator.of(context).canPop();
 
-    return PopScope(
-      canPop: true,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop && !canPop) {
-          // If we're on root and trying to go back, go to home instead
-          context.go('/home');
-        }
-      },
-      child: StandaloneDrawerWrapper(
-        child: CupertinoPageScaffold(
-          navigationBar: CupertinoNavigationBar(
-            leading: canPop
-                ? CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () => context.pop(),
-                    child: const Icon(CupertinoIcons.back),
-                  )
-                : CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () => context.go('/home'),
-                    child: const Icon(CupertinoIcons.home),
-                  ),
-            middle: const Text('Global Home'),
-          ),
-          child: SafeArea(
-            child: _buildCenter(
-              'Global Home',
-              CupertinoIcons.globe,
-              CupertinoColors.systemBlue,
-              context,
-            ),
+    return StandaloneDrawerWrapper(
+      child: CupertinoPageScaffold(
+        navigationBar: CupertinoNavigationBar(
+          leading: canPop
+              ? CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () => context.pop(),
+                  child: const Icon(CupertinoIcons.back),
+                )
+              : CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () => context.go('/home'),
+                  child: const Icon(CupertinoIcons.home),
+                ),
+          middle: const Text('Global Home'),
+        ),
+        child: SafeArea(
+          child: _buildCenter(
+            'Global Home',
+            CupertinoIcons.globe,
+            CupertinoColors.systemBlue,
+            context,
           ),
         ),
       ),

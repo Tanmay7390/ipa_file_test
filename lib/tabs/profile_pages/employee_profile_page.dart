@@ -791,7 +791,10 @@ class _EmployeeProfilePageState extends ConsumerState<EmployeeProfilePage> {
   }
 
   // Navigation methods - Fixed to use widget.employeeId
-  void _navigateToPersonalDetails(Map<String, dynamic> employee, BuildContext context) {
+  void _navigateToPersonalDetails(
+    Map<String, dynamic> employee,
+    BuildContext context,
+  ) {
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (context) => EmployeePersonalDetailsPage(
@@ -802,7 +805,10 @@ class _EmployeeProfilePageState extends ConsumerState<EmployeeProfilePage> {
     );
   }
 
-  void _navigateToAddressDetails(Map<String, dynamic> employee, BuildContext context) {
+  void _navigateToAddressDetails(
+    Map<String, dynamic> employee,
+    BuildContext context,
+  ) {
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (context) => EmployeeAddressDetailsPage(
@@ -813,7 +819,10 @@ class _EmployeeProfilePageState extends ConsumerState<EmployeeProfilePage> {
     );
   }
 
-  void _navigateToFamilyDetails(Map<String, dynamic> employee, BuildContext context) {
+  void _navigateToFamilyDetails(
+    Map<String, dynamic> employee,
+    BuildContext context,
+  ) {
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (context) => EmployeeFamilyDetailsPage(
@@ -824,7 +833,10 @@ class _EmployeeProfilePageState extends ConsumerState<EmployeeProfilePage> {
     );
   }
 
-  void _navigateToEmergencyContacts(Map<String, dynamic> employee, BuildContext context) {
+  void _navigateToEmergencyContacts(
+    Map<String, dynamic> employee,
+    BuildContext context,
+  ) {
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (context) => EmployeeEmergencyContactsPage(
@@ -835,7 +847,10 @@ class _EmployeeProfilePageState extends ConsumerState<EmployeeProfilePage> {
     );
   }
 
-  void _navigateToEducationDetails(Map<String, dynamic> employee, BuildContext context) {
+  void _navigateToEducationDetails(
+    Map<String, dynamic> employee,
+    BuildContext context,
+  ) {
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (context) => EmployeeEducationDetailsPage(
@@ -846,7 +861,10 @@ class _EmployeeProfilePageState extends ConsumerState<EmployeeProfilePage> {
     );
   }
 
-  void _navigateToEmploymentDetails(Map<String, dynamic> employee, BuildContext context) {
+  void _navigateToEmploymentDetails(
+    Map<String, dynamic> employee,
+    BuildContext context,
+  ) {
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (context) => EmployeeEmploymentDetailsPage(
@@ -857,7 +875,10 @@ class _EmployeeProfilePageState extends ConsumerState<EmployeeProfilePage> {
     );
   }
 
-  void _navigateToUniformDetails(Map<String, dynamic> employee, BuildContext context) {
+  void _navigateToUniformDetails(
+    Map<String, dynamic> employee,
+    BuildContext context,
+  ) {
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (context) => EmployeeUniformDetailsPage(
@@ -868,7 +889,10 @@ class _EmployeeProfilePageState extends ConsumerState<EmployeeProfilePage> {
     );
   }
 
-  void _navigateToKYCDocuments(Map<String, dynamic> employee, BuildContext context) {
+  void _navigateToKYCDocuments(
+    Map<String, dynamic> employee,
+    BuildContext context,
+  ) {
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (context) => EmployeeKYCDocumentsPage(
@@ -879,7 +903,10 @@ class _EmployeeProfilePageState extends ConsumerState<EmployeeProfilePage> {
     );
   }
 
-  void _navigateToAdditionalDocuments(Map<String, dynamic> employee, BuildContext context) {
+  void _navigateToAdditionalDocuments(
+    Map<String, dynamic> employee,
+    BuildContext context,
+  ) {
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (context) => EmployeeAdditionalDocumentsPage(
@@ -901,7 +928,10 @@ class _EmployeeProfilePageState extends ConsumerState<EmployeeProfilePage> {
     );
   }
 
-  void _navigateToThumbSignature(Map<String, dynamic> employee, BuildContext context) {
+  void _navigateToThumbSignature(
+    Map<String, dynamic> employee,
+    BuildContext context,
+  ) {
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (context) => EmployeeThumbSignaturePage(
@@ -912,7 +942,10 @@ class _EmployeeProfilePageState extends ConsumerState<EmployeeProfilePage> {
     );
   }
 
-  void _navigateToBGVConsent(Map<String, dynamic> employee, BuildContext context) {
+  void _navigateToBGVConsent(
+    Map<String, dynamic> employee,
+    BuildContext context,
+  ) {
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (context) => EmployeeBGVConsentPage(
@@ -923,7 +956,10 @@ class _EmployeeProfilePageState extends ConsumerState<EmployeeProfilePage> {
     );
   }
 
-  void _navigateToTermsConditions(Map<String, dynamic> employee, BuildContext context) {
+  void _navigateToTermsConditions(
+    Map<String, dynamic> employee,
+    BuildContext context,
+  ) {
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (context) => EmployeeTermsConditionsPage(
@@ -934,7 +970,10 @@ class _EmployeeProfilePageState extends ConsumerState<EmployeeProfilePage> {
     );
   }
 
-  void _navigateToSettings(Map<String, dynamic> employee, BuildContext context) {
+  void _navigateToSettings(
+    Map<String, dynamic> employee,
+    BuildContext context,
+  ) {
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (context) => EmployeeSettingsPage(
@@ -1132,7 +1171,7 @@ class EmployeeEmploymentDetailsPage extends ConsumerWidget {
   final String employeeId;
 
   const EmployeeEmploymentDetailsPage({
-    super.key, 
+    super.key,
     required this.employee,
     required this.employeeId,
   });
@@ -1157,7 +1196,8 @@ class EmployeeEmploymentDetailsPage extends ConsumerWidget {
         ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: () => context.go('/employee/update/$employeeId/employment'),
+          onPressed: () =>
+              context.go('/employee/update/$employeeId/employment'),
           child: Icon(CupertinoIcons.pencil, color: colors.primary, size: 20),
         ),
       ),
@@ -1195,7 +1235,8 @@ class EmployeeEmploymentDetailsPage extends ConsumerWidget {
                   ),
                   CupertinoButton(
                     padding: EdgeInsets.zero,
-                    onPressed: () => context.go('/employee/update/$employeeId/employment'),
+                    onPressed: () =>
+                        context.go('/employee/update/$employeeId/employment'),
                     child: Icon(
                       CupertinoIcons.add,
                       color: colors.primary,
@@ -1211,7 +1252,10 @@ class EmployeeEmploymentDetailsPage extends ConsumerWidget {
                 _buildEmptyExperienceState(colors)
               else
                 ...prevEmployment
-                    .map((emp) => _buildPreviousEmploymentCard(emp, colors, context))
+                    .map(
+                      (emp) =>
+                          _buildPreviousEmploymentCard(emp, colors, context),
+                    )
                     .toList(),
 
               const SizedBox(height: 16),
@@ -1223,55 +1267,54 @@ class EmployeeEmploymentDetailsPage extends ConsumerWidget {
     );
   }
 
-Widget _buildCurrentEmploymentCard(
-  Map<String, dynamic> employee,
-  WareozeColorScheme colors,
-  BuildContext context, // Add context parameter
-) {
-  final empId = employee['empId'] ?? 'Not assigned';
-  final createdAt = employee['createdAt'];
-  final joinDate = createdAt != null
-      ? _formatDate(createdAt)
-      : 'Not specified';
+  Widget _buildCurrentEmploymentCard(
+    Map<String, dynamic> employee,
+    WareozeColorScheme colors,
+    BuildContext context, // Add context parameter
+  ) {
+    final empId = employee['empId'] ?? 'Not assigned';
+    final createdAt = employee['createdAt'];
+    final joinDate = createdAt != null
+        ? _formatDate(createdAt)
+        : 'Not specified';
 
-  return Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: colors.surface,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: colors.border),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(child: _buildDetailColumn('Employee ID', empId, colors)),
-            const SizedBox(width: 20),
-            Expanded(
-              child: _buildDetailColumn('Join Date', joinDate, colors),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(child: _buildDetailColumn('Status', 'Active', colors)),
-            const SizedBox(width: 20),
-            Expanded(
-              child: _buildDetailColumn(
-                'Department',
-                'Not specified',
-                colors,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: _buildDetailColumn('Employee ID', empId, colors)),
+              const SizedBox(width: 20),
+              Expanded(
+                child: _buildDetailColumn('Join Date', joinDate, colors),
               ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(child: _buildDetailColumn('Status', 'Active', colors)),
+              const SizedBox(width: 20),
+              Expanded(
+                child: _buildDetailColumn(
+                  'Department',
+                  'Not specified',
+                  colors,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildEmptyExperienceState(WareozeColorScheme colors) {
     return Container(
@@ -1295,76 +1338,76 @@ Widget _buildCurrentEmploymentCard(
     );
   }
 
-Widget _buildPreviousEmploymentCard(
-  Map<String, dynamic> employment,
-  WareozeColorScheme colors,
-  BuildContext context, // Add context parameter
-) {
-  final companyName = employment['companyName'] ?? 'Not specified';
-  final designation = employment['designation'] ?? 'Not specified';
-  final startDate = _formatDate(employment['startDate']);
-  final endDate = _formatDate(employment['endDate']);
+  Widget _buildPreviousEmploymentCard(
+    Map<String, dynamic> employment,
+    WareozeColorScheme colors,
+    BuildContext context, // Add context parameter
+  ) {
+    final companyName = employment['companyName'] ?? 'Not specified';
+    final designation = employment['designation'] ?? 'Not specified';
+    final startDate = _formatDate(employment['startDate']);
+    final endDate = _formatDate(employment['endDate']);
 
-  return Container(
-    margin: const EdgeInsets.only(bottom: 16),
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: colors.surface,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: colors.border),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                companyName,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: colors.textPrimary,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  companyName,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
                 ),
               ),
-            ),
-            Row(
-              children: [
-                _buildActionButton(
-                  CupertinoIcons.pencil,
-                  colors.primary,
-                  colors,
-                  () => context.go('/employee/update/$employeeId/employment'),
-                ),
-                const SizedBox(width: 8),
-                _buildActionButton(
-                  CupertinoIcons.xmark,
-                  colors.error,
-                  colors,
-                  () {
-                    // Delete employment - implement in update form
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _buildDetailRow('Designation', designation, colors),
-        Row(
-          children: [
-            Expanded(
-              child: _buildDetailColumn('Start Date', startDate, colors),
-            ),
-            const SizedBox(width: 20),
-            Expanded(child: _buildDetailColumn('End Date', endDate, colors)),
-          ],
-        ),
-      ],
-    ),
-  );
-}
+              Row(
+                children: [
+                  _buildActionButton(
+                    CupertinoIcons.pencil,
+                    colors.primary,
+                    colors,
+                    () => context.go('/employee/update/$employeeId/employment'),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildActionButton(
+                    CupertinoIcons.xmark,
+                    colors.error,
+                    colors,
+                    () {
+                      // Delete employment - implement in update form
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildDetailRow('Designation', designation, colors),
+          Row(
+            children: [
+              Expanded(
+                child: _buildDetailColumn('Start Date', startDate, colors),
+              ),
+              const SizedBox(width: 20),
+              Expanded(child: _buildDetailColumn('End Date', endDate, colors)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildActionButton(
     IconData icon,
@@ -1387,36 +1430,40 @@ Widget _buildPreviousEmploymentCard(
     );
   }
 
-Widget _buildAddExperienceButton(WareozeColorScheme colors, BuildContext context) { // Add context parameter
-  return Container(
-    width: double.infinity,
-    height: 56,
-    decoration: BoxDecoration(
-      color: colors.primary.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: colors.primary.withOpacity(0.2)),
-    ),
-    child: CupertinoButton(
-      onPressed: () => context.go('/employee/update/$employeeId/employment'),
-      padding: EdgeInsets.zero,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(CupertinoIcons.add, color: colors.primary, size: 20),
-          const SizedBox(width: 8),
-          Text(
-            'Add Previous Experience',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: colors.primary,
-            ),
-          ),
-        ],
+  Widget _buildAddExperienceButton(
+    WareozeColorScheme colors,
+    BuildContext context,
+  ) {
+    // Add context parameter
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        color: colors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.primary.withOpacity(0.2)),
       ),
-    ),
-  );
-}
+      child: CupertinoButton(
+        onPressed: () => context.go('/employee/update/$employeeId/employment'),
+        padding: EdgeInsets.zero,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(CupertinoIcons.add, color: colors.primary, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Add Previous Experience',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: colors.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildDetailRow(
     String label,
@@ -1491,7 +1538,7 @@ class EmployeeAddressDetailsPage extends ConsumerWidget {
   final String employeeId;
 
   const EmployeeAddressDetailsPage({
-    super.key, 
+    super.key,
     required this.employee,
     required this.employeeId,
   });
@@ -1638,7 +1685,8 @@ class EmployeeAddressDetailsPage extends ConsumerWidget {
                 children: [
                   CupertinoButton(
                     padding: EdgeInsets.zero,
-                    onPressed: () => context.go('/employee/update/$employeeId/addresses'),
+                    onPressed: () =>
+                        context.go('/employee/update/$employeeId/addresses'),
                     child: Container(
                       width: 32,
                       height: 32,
@@ -1698,7 +1746,7 @@ class EmployeeEducationDetailsPage extends ConsumerWidget {
   final String employeeId;
 
   const EmployeeEducationDetailsPage({
-    super.key, 
+    super.key,
     required this.employee,
     required this.employeeId,
   });
@@ -1839,7 +1887,8 @@ class EmployeeEducationDetailsPage extends ConsumerWidget {
                 children: [
                   CupertinoButton(
                     padding: EdgeInsets.zero,
-                    onPressed: () => context.go('/employee/update/$employeeId/education'),
+                    onPressed: () =>
+                        context.go('/employee/update/$employeeId/education'),
                     child: Container(
                       width: 32,
                       height: 32,
@@ -1946,7 +1995,7 @@ class EmployeeEmergencyContactsPage extends ConsumerWidget {
   final String employeeId;
 
   const EmployeeEmergencyContactsPage({
-    super.key, 
+    super.key,
     required this.employee,
     required this.employeeId,
   });
@@ -1985,7 +2034,11 @@ class EmployeeEmergencyContactsPage extends ConsumerWidget {
                   if (index == emergencyPhones.length) {
                     return _buildAddButton(colors, context);
                   }
-                  return _buildContactCard(emergencyPhones[index], colors, context);
+                  return _buildContactCard(
+                    emergencyPhones[index],
+                    colors,
+                    context,
+                  );
                 },
               ),
       ),
@@ -2108,7 +2161,8 @@ class EmployeeEmergencyContactsPage extends ConsumerWidget {
             children: [
               CupertinoButton(
                 padding: EdgeInsets.zero,
-                onPressed: () => context.go('/employee/update/$employeeId/contact'),
+                onPressed: () =>
+                    context.go('/employee/update/$employeeId/contact'),
                 child: Container(
                   width: 32,
                   height: 32,
@@ -2157,7 +2211,7 @@ class EmployeeFamilyDetailsPage extends ConsumerWidget {
   final String employeeId;
 
   const EmployeeFamilyDetailsPage({
-    super.key, 
+    super.key,
     required this.employee,
     required this.employeeId,
   });
@@ -2187,18 +2241,148 @@ class EmployeeFamilyDetailsPage extends ConsumerWidget {
         ),
       ),
       child: SafeArea(
-        child: dependents.isEmpty
-            ? _buildEmptyState(colors, context)
-            : ListView.builder(
+        child: Column(
+          children: [
+            // Spouse Information Section (if married)
+            if (employee['isMarried'] == true) ...[
+              Container(
                 padding: const EdgeInsets.all(20),
-                itemCount: dependents.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == dependents.length) {
-                    return _buildAddButton(colors, context);
-                  }
-                  return _buildDependentCard(dependents[index], colors, context);
-                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'SPOUSE INFORMATION',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textSecondary,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: colors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: colors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Icon(
+                              CupertinoIcons.heart,
+                              color: colors.primary,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  employee['spouseName'] ?? 'Not provided',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: colors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  employee['spousePhone'] ?? 'Not provided',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: () => context.go(
+                              '/employee/update/$employeeId/family',
+                            ),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: colors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Icon(
+                                CupertinoIcons.pencil,
+                                color: colors.primary,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
+            ],
+
+            // Dependents Section Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'DEPENDENTS',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: colors.textSecondary,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () =>
+                        context.go('/employee/update/$employeeId/family'),
+                    child: Icon(
+                      CupertinoIcons.add,
+                      color: colors.primary,
+                      size: 20,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Dependents List
+            Expanded(
+              child: dependents.isEmpty
+                  ? _buildEmptyState(colors, context)
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: dependents.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == dependents.length) {
+                          return _buildAddButton(colors, context);
+                        }
+                        return _buildDependentCard(
+                          dependents[index],
+                          colors,
+                          context,
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2315,7 +2499,8 @@ class EmployeeFamilyDetailsPage extends ConsumerWidget {
             children: [
               CupertinoButton(
                 padding: EdgeInsets.zero,
-                onPressed: () => context.go('/employee/update/$employeeId/family'),
+                onPressed: () =>
+                    context.go('/employee/update/$employeeId/family'),
                 child: Container(
                   width: 32,
                   height: 32,
@@ -2364,7 +2549,7 @@ class EmployeeUniformDetailsPage extends ConsumerWidget {
   final String employeeId;
 
   const EmployeeUniformDetailsPage({
-    super.key, 
+    super.key,
     required this.employee,
     required this.employeeId,
   });
@@ -2379,7 +2564,7 @@ class EmployeeUniformDetailsPage extends ConsumerWidget {
       navigationBar: CupertinoNavigationBar(
         backgroundColor: colors.surface,
         middle: Text(
-          'Uniform Details',
+          'Compliance & Uniform Details',
           style: TextStyle(color: colors.textPrimary),
         ),
         leading: CupertinoButton(
@@ -2389,24 +2574,200 @@ class EmployeeUniformDetailsPage extends ConsumerWidget {
         ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: () => context.go('/employee/update/$employeeId/compliance'),
+          onPressed: () =>
+              context.go('/employee/update/$employeeId/compliance'),
           child: Icon(CupertinoIcons.add, color: colors.primary, size: 20),
         ),
       ),
       child: SafeArea(
-        child: uniform.isEmpty
-            ? _buildEmptyState(colors, context)
-            : ListView.builder(
-                padding: const EdgeInsets.all(20),
-                itemCount: uniform.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == uniform.length) {
-                    return _buildAddButton(colors, context);
-                  }
-                  return _buildUniformCard(uniform[index], colors, context);
-                },
+        child: Column(
+          children: [
+            // Compliance Information Section
+            Container(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'COMPLIANCE INFORMATION',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: colors.textSecondary,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: colors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: colors.border),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: colors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Icon(
+                                CupertinoIcons.checkmark_shield,
+                                color: colors.primary,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Compliance Status',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: colors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    employee['isCompliance'] == true
+                                        ? 'Compliant'
+                                        : 'Not Compliant',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: employee['isCompliance'] == true
+                                          ? colors.primary
+                                          : colors.error,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              onPressed: () => context.go(
+                                '/employee/update/$employeeId/compliance',
+                              ),
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: colors.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Icon(
+                                  CupertinoIcons.pencil,
+                                  color: colors.primary,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildComplianceDetailColumn(
+                                'Nominee Name',
+                                employee['nomineeName'] ?? 'Not provided',
+                                colors,
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: _buildComplianceDetailColumn(
+                                'Nominee Relation',
+                                employee['nomineeRelation'] ?? 'Not provided',
+                                colors,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
+            ),
+
+            // Uniform Items Section Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'UNIFORM ITEMS',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: colors.textSecondary,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () =>
+                        context.go('/employee/update/$employeeId/compliance'),
+                    child: Icon(
+                      CupertinoIcons.add,
+                      color: colors.primary,
+                      size: 20,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Uniform Items List
+            Expanded(
+              child: uniform.isEmpty
+                  ? _buildEmptyState(colors, context)
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: uniform.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == uniform.length) {
+                          return _buildAddButton(colors, context);
+                        }
+                        return _buildUniformCard(
+                          uniform[index],
+                          colors,
+                          context,
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  // Add this helper method to the EmployeeUniformDetailsPage class
+  Widget _buildComplianceDetailColumn(
+    String label,
+    String value,
+    WareozeColorScheme colors,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: colors.textSecondary),
+        ),
+        const SizedBox(height: 2),
+        Text(value, style: TextStyle(fontSize: 14, color: colors.textPrimary)),
+      ],
     );
   }
 
@@ -2525,7 +2886,8 @@ class EmployeeUniformDetailsPage extends ConsumerWidget {
             children: [
               CupertinoButton(
                 padding: EdgeInsets.zero,
-                onPressed: () => context.go('/employee/update/$employeeId/compliance'),
+                onPressed: () =>
+                    context.go('/employee/update/$employeeId/compliance'),
                 child: Container(
                   width: 32,
                   height: 32,
@@ -2574,7 +2936,7 @@ class EmployeeKYCDocumentsPage extends ConsumerWidget {
   final String employeeId;
 
   const EmployeeKYCDocumentsPage({
-    super.key, 
+    super.key,
     required this.employee,
     required this.employeeId,
   });
@@ -2662,78 +3024,98 @@ class EmployeeKYCDocumentsPage extends ConsumerWidget {
     );
   }
 
-Widget _buildKYCDocumentCard(
-  String documentName,
-  IconData icon,
-  Map<String, dynamic>? document,
-  WareozeColorScheme colors,
-  BuildContext context, // Add context parameter
-  String employeeId,    // Add employeeId parameter
-) {
-  final isUploaded = document != null;
-  final status = document?['status'] ?? 'PENDING';
-  final url = document?['url'];
+  Widget _buildKYCDocumentCard(
+    String documentName,
+    IconData icon,
+    Map<String, dynamic>? document,
+    WareozeColorScheme colors,
+    BuildContext context, // Add context parameter
+    String employeeId, // Add employeeId parameter
+  ) {
+    final isUploaded = document != null;
+    final status = document?['status'] ?? 'PENDING';
+    final url = document?['url'];
 
-  return Container(
-    margin: const EdgeInsets.only(bottom: 16),
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: colors.surface,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: colors.border),
-    ),
-    child: Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: isUploaded
-                ? colors.primary.withOpacity(0.1)
-                : colors.textSecondary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isUploaded
+                  ? colors.primary.withOpacity(0.1)
+                  : colors.textSecondary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              icon,
+              color: isUploaded ? colors.primary : colors.textSecondary,
+              size: 20,
+            ),
           ),
-          child: Icon(
-            icon,
-            color: isUploaded ? colors.primary : colors.textSecondary,
-            size: 20,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  documentName,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  isUploaded
+                      ? 'Status: ${_getStatusText(status)}'
+                      : 'Not uploaded',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: _getStatusColor(status, colors),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                documentName,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: colors.textPrimary,
+          if (isUploaded) ...[
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () {
+                // View document
+                if (url != null) {
+                  // Open document viewer
+                }
+              },
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: colors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  CupertinoIcons.eye,
+                  color: colors.primary,
+                  size: 16,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                isUploaded
-                    ? 'Status: ${_getStatusText(status)}'
-                    : 'Not uploaded',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: _getStatusColor(status, colors),
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (isUploaded) ...[
+            ),
+            const SizedBox(width: 8),
+          ],
           CupertinoButton(
             padding: EdgeInsets.zero,
-            onPressed: () {
-              // View document
-              if (url != null) {
-                // Open document viewer
-              }
-            },
+            onPressed: () =>
+                context.go('/employee/update/$employeeId/attachments'),
             child: Container(
               width: 32,
               height: 32,
@@ -2742,37 +3124,18 @@ Widget _buildKYCDocumentCard(
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
-                CupertinoIcons.eye,
+                isUploaded
+                    ? CupertinoIcons.arrow_2_circlepath
+                    : CupertinoIcons.cloud_upload,
                 color: colors.primary,
                 size: 16,
               ),
             ),
           ),
-          const SizedBox(width: 8),
         ],
-        CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () => context.go('/employee/update/$employeeId/attachments'),
-          child: Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: colors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              isUploaded
-                  ? CupertinoIcons.arrow_2_circlepath
-                  : CupertinoIcons.cloud_upload,
-              color: colors.primary,
-              size: 16,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
+      ),
+    );
+  }
 
   String _getStatusText(String status) {
     switch (status) {
@@ -2803,9 +3166,9 @@ Widget _buildKYCDocumentCard(
 class EmployeeAdditionalDocumentsPage extends ConsumerWidget {
   final Map<String, dynamic> employee;
   final String employeeId;
-  
+
   const EmployeeAdditionalDocumentsPage({
-    super.key, 
+    super.key,
     required this.employee,
     required this.employeeId,
   });
@@ -2817,7 +3180,8 @@ class EmployeeAdditionalDocumentsPage extends ConsumerWidget {
         middle: const Text('Additional Documents'),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: () => context.go('/employee/update/$employeeId/attachments'),
+          onPressed: () =>
+              context.go('/employee/update/$employeeId/attachments'),
           child: const Icon(CupertinoIcons.add, size: 20),
         ),
       ),
@@ -2831,9 +3195,9 @@ class EmployeeAdditionalDocumentsPage extends ConsumerWidget {
 class EmployeePVCBVCPage extends ConsumerWidget {
   final Map<String, dynamic> employee;
   final String employeeId;
-  
+
   const EmployeePVCBVCPage({
-    super.key, 
+    super.key,
     required this.employee,
     required this.employeeId,
   });
@@ -2845,7 +3209,8 @@ class EmployeePVCBVCPage extends ConsumerWidget {
         middle: const Text('PVC & BVC'),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: () => context.go('/employee/update/$employeeId/attachments'),
+          onPressed: () =>
+              context.go('/employee/update/$employeeId/attachments'),
           child: const Icon(CupertinoIcons.add, size: 20),
         ),
       ),
@@ -2857,9 +3222,9 @@ class EmployeePVCBVCPage extends ConsumerWidget {
 class EmployeeThumbSignaturePage extends ConsumerWidget {
   final Map<String, dynamic> employee;
   final String employeeId;
-  
+
   const EmployeeThumbSignaturePage({
-    super.key, 
+    super.key,
     required this.employee,
     required this.employeeId,
   });
@@ -2871,7 +3236,8 @@ class EmployeeThumbSignaturePage extends ConsumerWidget {
         middle: const Text('Thumb & Signature'),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: () => context.go('/employee/update/$employeeId/attachments'),
+          onPressed: () =>
+              context.go('/employee/update/$employeeId/attachments'),
           child: const Icon(CupertinoIcons.add, size: 20),
         ),
       ),
@@ -2883,9 +3249,9 @@ class EmployeeThumbSignaturePage extends ConsumerWidget {
 class EmployeeBGVConsentPage extends ConsumerWidget {
   final Map<String, dynamic> employee;
   final String employeeId;
-  
+
   const EmployeeBGVConsentPage({
-    super.key, 
+    super.key,
     required this.employee,
     required this.employeeId,
   });
@@ -2897,7 +3263,8 @@ class EmployeeBGVConsentPage extends ConsumerWidget {
         middle: const Text('BGV Consent Form'),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: () => context.go('/employee/update/$employeeId/attachments'),
+          onPressed: () =>
+              context.go('/employee/update/$employeeId/attachments'),
           child: const Icon(CupertinoIcons.add, size: 20),
         ),
       ),
@@ -2909,9 +3276,9 @@ class EmployeeBGVConsentPage extends ConsumerWidget {
 class EmployeeTermsConditionsPage extends ConsumerWidget {
   final Map<String, dynamic> employee;
   final String employeeId;
-  
+
   const EmployeeTermsConditionsPage({
-    super.key, 
+    super.key,
     required this.employee,
     required this.employeeId,
   });
@@ -2923,7 +3290,8 @@ class EmployeeTermsConditionsPage extends ConsumerWidget {
         middle: const Text('Terms & Conditions'),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: () => context.go('/employee/update/$employeeId/attachments'),
+          onPressed: () =>
+              context.go('/employee/update/$employeeId/attachments'),
           child: const Icon(CupertinoIcons.add, size: 20),
         ),
       ),
@@ -2935,9 +3303,9 @@ class EmployeeTermsConditionsPage extends ConsumerWidget {
 class EmployeeSettingsPage extends ConsumerWidget {
   final Map<String, dynamic> employee;
   final String employeeId;
-  
+
   const EmployeeSettingsPage({
-    super.key, 
+    super.key,
     required this.employee,
     required this.employeeId,
   });

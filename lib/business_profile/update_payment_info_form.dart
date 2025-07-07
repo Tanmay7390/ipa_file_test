@@ -1,9 +1,9 @@
 // update_payment_info_form.dart
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test_22/apis/providers/business_commonprofile_provider.dart';
-import 'package:flutter_test_22/theme_provider.dart';
-import 'package:flutter_test_22/components/form_fields.dart';
+import 'package:Wareozo/apis/providers/business_commonprofile_provider.dart';
+import 'package:Wareozo/theme_provider.dart';
+import 'package:Wareozo/components/form_fields.dart';
 import 'dart:io';
 
 class UpdatePaymentInfoForm extends ConsumerStatefulWidget {
@@ -56,13 +56,15 @@ class _UpdatePaymentInfoFormState extends ConsumerState<UpdatePaymentInfoForm> {
     // Phone number validation
     if (formData['gPayPhone']?.isNotEmpty == true &&
         !_isValidPhoneNumber(formData['gPayPhone'])) {
-      validationErrors['gPayPhone'] = 'Please enter a valid 10-digit phone number';
+      validationErrors['gPayPhone'] =
+          'Please enter a valid 10-digit phone number';
     }
 
     // UPI ID validation
     if (formData['upiId']?.isNotEmpty == true &&
         !_isValidUPIId(formData['upiId'])) {
-      validationErrors['upiId'] = 'Please enter a valid UPI ID (e.g., name@upi)';
+      validationErrors['upiId'] =
+          'Please enter a valid UPI ID (e.g., name@upi)';
     }
 
     // At least one payment method should be provided
@@ -70,7 +72,8 @@ class _UpdatePaymentInfoFormState extends ConsumerState<UpdatePaymentInfoForm> {
         (formData['upiId']?.isEmpty ?? true) &&
         (formData['qrCodeUrl']?.isEmpty ?? true) &&
         formData['qrCodeFile'] == null) {
-      validationErrors['general'] = 'Please provide at least one payment method';
+      validationErrors['general'] =
+          'Please provide at least one payment method';
     }
 
     setState(() {});
@@ -97,22 +100,23 @@ class _UpdatePaymentInfoFormState extends ConsumerState<UpdatePaymentInfoForm> {
 
     try {
       final businessProfileHelper = ref.read(businessProfileHelperProvider);
-      
+
       // Prepare payment data
       Map<String, dynamic> paymentData = {};
-      
+
       if (formData['gPayPhone']?.isNotEmpty == true) {
         paymentData['gPayPhone'] = formData['gPayPhone'];
       }
-      
+
       if (formData['gPayPhoneVerifiedFlag'] != null) {
-        paymentData['gPayPhoneVerifiedFlag'] = formData['gPayPhoneVerifiedFlag'];
+        paymentData['gPayPhoneVerifiedFlag'] =
+            formData['gPayPhoneVerifiedFlag'];
       }
-      
+
       if (formData['upiId']?.isNotEmpty == true) {
         paymentData['upiId'] = formData['upiId'];
       }
-      
+
       // For QR code file upload, you would typically need to:
       // 1. Upload the file to your server/cloud storage
       // 2. Get the URL back
@@ -121,7 +125,9 @@ class _UpdatePaymentInfoFormState extends ConsumerState<UpdatePaymentInfoForm> {
       if (formData['qrCodeFile'] != null) {
         // TODO: Implement file upload logic here
         // paymentData['qrCodeUrl'] = await uploadQRCodeFile(formData['qrCodeFile']);
-        _showErrorDialog('QR Code file upload is not implemented yet. Please use the existing QR code or contact support.');
+        _showErrorDialog(
+          'QR Code file upload is not implemented yet. Please use the existing QR code or contact support.',
+        );
         setState(() {
           isSubmitting = false;
         });
@@ -130,7 +136,9 @@ class _UpdatePaymentInfoFormState extends ConsumerState<UpdatePaymentInfoForm> {
         paymentData['qrCodeUrl'] = formData['qrCodeUrl'];
       }
 
-      final success = await businessProfileHelper.updatePaymentInfo(paymentData);
+      final success = await businessProfileHelper.updatePaymentInfo(
+        paymentData,
+      );
 
       if (success) {
         _showSuccessDialog();
@@ -198,7 +206,9 @@ class _UpdatePaymentInfoFormState extends ConsumerState<UpdatePaymentInfoForm> {
       context: context,
       builder: (context) => CupertinoAlertDialog(
         title: const Text('Phone Verification'),
-        content: const Text('Phone verification feature is not implemented yet. Please contact support for manual verification.'),
+        content: const Text(
+          'Phone verification feature is not implemented yet. Please contact support for manual verification.',
+        ),
         actions: [
           CupertinoDialogAction(
             child: const Text('OK'),
@@ -211,7 +221,7 @@ class _UpdatePaymentInfoFormState extends ConsumerState<UpdatePaymentInfoForm> {
 
   Widget _buildQRCodePreview() {
     final colors = ref.watch(colorProvider);
-    
+
     if (formData['qrCodeFile'] != null) {
       return Container(
         height: 150,
@@ -222,10 +232,7 @@ class _UpdatePaymentInfoFormState extends ConsumerState<UpdatePaymentInfoForm> {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          child: Image.file(
-            formData['qrCodeFile'],
-            fit: BoxFit.cover,
-          ),
+          child: Image.file(formData['qrCodeFile'], fit: BoxFit.cover),
         ),
       );
     } else if (formData['qrCodeUrl']?.isNotEmpty == true) {
@@ -243,9 +250,7 @@ class _UpdatePaymentInfoFormState extends ConsumerState<UpdatePaymentInfoForm> {
             fit: BoxFit.cover,
             loadingBuilder: (context, child, loadingProgress) {
               if (loadingProgress == null) return child;
-              return Center(
-                child: CupertinoActivityIndicator(),
-              );
+              return Center(child: CupertinoActivityIndicator());
             },
             errorBuilder: (context, error, stackTrace) {
               return Container(
@@ -317,14 +322,13 @@ class _UpdatePaymentInfoFormState extends ConsumerState<UpdatePaymentInfoForm> {
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () => Navigator.of(context).pop(),
-          child: Icon(
-            CupertinoIcons.back,
-            color: colors.primary,
-          ),
+          child: Icon(CupertinoIcons.back, color: colors.primary),
         ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: isSubmitting || businessProfile.isUpdating ? null : _submitForm,
+          onPressed: isSubmitting || businessProfile.isUpdating
+              ? null
+              : _submitForm,
           child: isSubmitting || businessProfile.isUpdating
               ? CupertinoActivityIndicator()
               : Text(
@@ -419,12 +423,12 @@ class _UpdatePaymentInfoFormState extends ConsumerState<UpdatePaymentInfoForm> {
                       formData: formData,
                       validationErrors: validationErrors,
                     ),
+                    Container(height: 0.5, color: colors.border),
                     Container(
-                      height: 0.5,
-                      color: colors.border,
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 6.5, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 6.5,
+                        horizontal: 16,
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -454,12 +458,15 @@ class _UpdatePaymentInfoFormState extends ConsumerState<UpdatePaymentInfoForm> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                formData['gPayPhoneVerifiedFlag'] == true ? 'Verified' : 'Not Verified',
+                                formData['gPayPhoneVerifiedFlag'] == true
+                                    ? 'Verified'
+                                    : 'Not Verified',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontFamily: 'SF Pro Display',
                                   letterSpacing: 0.25,
-                                  color: formData['gPayPhoneVerifiedFlag'] == true
+                                  color:
+                                      formData['gPayPhoneVerifiedFlag'] == true
                                       ? CupertinoColors.systemGreen
                                       : colors.error,
                                 ),
@@ -467,7 +474,10 @@ class _UpdatePaymentInfoFormState extends ConsumerState<UpdatePaymentInfoForm> {
                             ],
                           ),
                           CupertinoButton(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                             color: colors.primary,
                             borderRadius: BorderRadius.circular(8),
                             onPressed: _verifyPhoneNumber,

@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_test_22/components/common.dart';
+import 'package:Wareozo/components/common.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
-import 'package:flutter_test_22/components/form_fields.dart';
+import 'package:Wareozo/components/form_fields.dart';
 
 void showInvoiceFormSheet(BuildContext context) {
   Navigator.of(context, rootNavigator: true).push(

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter_test_22/apis/core/dio_provider.dart';
+import 'package:Wareozo/apis/core/dio_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Auth state model

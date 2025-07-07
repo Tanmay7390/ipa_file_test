@@ -200,13 +200,29 @@ class CustomerRepository {
     try {
       final url = ApiUrls.createCustomer; // 'account/buyer-seller'
 
-      // Ensure isClient is set to true for customer/buyer
-      // customerData['isClient'] = true;
-      // customerData['isVendor'] = false;
-
       log('Creating customer with data: $customerData');
 
-      final response = await dio.post(url, data: customerData);
+      // Check if there are any files in the data
+      bool hasFiles = false;
+      for (var value in customerData.values) {
+        if (value is MultipartFile) {
+          hasFiles = true;
+          break;
+        }
+      }
+
+      dynamic requestData;
+      if (hasFiles) {
+        // Use FormData for file uploads
+        requestData = FormData.fromMap(customerData);
+        log('Using FormData for file upload');
+      } else {
+        // Use regular JSON for non-file data
+        requestData = customerData;
+        log('Using JSON data (no files)');
+      }
+
+      final response = await dio.post(url, data: requestData);
 
       log(
         'Create customer response: ${response.statusCode} - ${response.data}',
@@ -264,7 +280,27 @@ class CustomerRepository {
       log('Full URL will be: ${ApiUrls.baseUrl}$url');
       log('Update data: $customerData');
 
-      final response = await dio.post(url, data: customerData);
+      // Check if there are any files in the data
+      bool hasFiles = false;
+      for (var value in customerData.values) {
+        if (value is MultipartFile) {
+          hasFiles = true;
+          break;
+        }
+      }
+
+      dynamic requestData;
+      if (hasFiles) {
+        // Use FormData for file uploads
+        requestData = FormData.fromMap(customerData);
+        log('Using FormData for file upload');
+      } else {
+        // Use regular JSON for non-file data
+        requestData = customerData;
+        log('Using JSON data (no files)');
+      }
+
+      final response = await dio.post(url, data: requestData);
 
       log(
         'Update customer response: ${response.statusCode} - ${response.data}',

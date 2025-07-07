@@ -5,7 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/api_urls.dart';
 import '../core/dio_provider.dart';
-import 'package:flutter_test_22/apis/providers/auth_provider.dart';
+import 'package:Wareozo/apis/providers/auth_provider.dart';
 
 // Supplier data model - flexible to handle any API response structure
 class SupplierData {

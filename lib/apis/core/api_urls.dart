@@ -9,6 +9,16 @@ class ApiUrls {
   static const String updateLegal = 'account/{accountId}/legal';
   static const String updatePayment = 'account/{accountId}/accounting';
 
+  // Subscription endpoints
+  static const String subscriptionList = 'subscription';
+  static const String updateSubscription = 'account/{accountId}';
+
+
+  // Agreed Service endpoints
+  static const String agreedServicesList = 'customers/single/{id}';
+  static const String updateAgreedServices =
+      'customers/single/update-agreed-services';
+
   // Bank endpoints
   static const String bankList = 'account/bankaccounts/{accountId}';
   static const String getBankById = 'account/bankaccount/{id}';
@@ -70,8 +80,21 @@ class ApiUrls {
   static const String createInventory = 'sku';
   static const String getInventorybyId = 'sku/{id}';
   static const String updateInventory = 'sku/{id}';
-  static const String measuringUnit = 'sku/measuring-unit/get';
   static const String filterInventory = 'sku/account/{accountId}?{queryParam}';
+  static const String measuringUnit = 'sku/measuring-unit/get';
+
+  // Inventory Category endpoints
+  static const String inventoryCategoryList = 'sku/category/get';
+  static const String createInventoryCategory = 'sku/category/create';
+  static const String getInventoryCategorybyId = 'sku/category/:id';
+  static const String updateInventoryCategory = 'sku/category/{id}';
+
+  // Inventory SubCategory endpoints
+  static const String inventorySubCategoryList =
+      'sku/sub-category/get?categoryId=categoryObjectId';
+  static const String createInventorySubCategory = 'sku/sub-category/create';
+  static const String getInventorySubCategorybyId = 'sku/sub-category/:id';
+  static const String updateInventorySubCategory = 'sku/sub-category/{id}';
 
   // Auth endpoints
   static const String register = 'register';

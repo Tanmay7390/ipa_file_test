@@ -1,14 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test_22/apis/providers/customer_address_provider.dart';
-import 'package:flutter_test_22/apis/providers/new_inventory_provider.dart';
-import 'package:flutter_test_22/apis/providers/auth_provider.dart';
+import 'package:Wareozo/apis/providers/customer_address_provider.dart';
+import 'package:Wareozo/apis/providers/new_inventory_provider.dart';
+import 'package:Wareozo/apis/providers/auth_provider.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
-import 'package:flutter_test_22/components/form_fields_2.dart';
-import 'package:flutter_test_22/forms/buyer_section.dart';
-import 'package:flutter_test_22/forms/address_section.dart';
-import 'package:flutter_test_22/forms/items_section.dart';
-import 'package:flutter_test_22/apis/providers/new_invoice_provider.dart';
+import 'package:Wareozo/components/form_fields_2.dart';
+import 'package:Wareozo/forms/buyer_section.dart';
+import 'package:Wareozo/forms/address_section.dart';
+import 'package:Wareozo/forms/items_section.dart';
+import 'package:Wareozo/apis/providers/new_invoice_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 

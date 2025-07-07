@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:flutter_test_22/theme_provider.dart';
+import 'package:Wareozo/theme_provider.dart';
 
 // Custom text field widget
 class AuthTextField extends ConsumerWidget {

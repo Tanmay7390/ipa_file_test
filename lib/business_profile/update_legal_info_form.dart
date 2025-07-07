@@ -1,9 +1,9 @@
 // update_legal_info_form.dart
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test_22/apis/providers/business_commonprofile_provider.dart';
-import 'package:flutter_test_22/theme_provider.dart';
-import 'package:flutter_test_22/components/form_fields.dart';
+import 'package:Wareozo/apis/providers/business_commonprofile_provider.dart';
+import 'package:Wareozo/theme_provider.dart';
+import 'package:Wareozo/components/form_fields.dart';
 
 class UpdateLegalInfoForm extends ConsumerStatefulWidget {
   const UpdateLegalInfoForm({Key? key}) : super(key: key);
@@ -29,7 +29,7 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
     'Trust',
     'Society',
     'Cooperative Society',
-    'Other'
+    'Other',
   ];
 
   final List<String> countryOptions = [
@@ -40,7 +40,7 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
     'Australia',
     'Singapore',
     'United Arab Emirates',
-    'Other'
+    'Other',
   ];
 
   final List<String> stateOptions = [
@@ -78,7 +78,7 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
     'Jammu and Kashmir',
     'Ladakh',
     'Lakshadweep',
-    'Puducherry'
+    'Puducherry',
   ];
 
   @override
@@ -94,7 +94,8 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
     if (profile != null) {
       formData = {
         'companyType': profile['companyType'] ?? '',
-        'countryOfRegistration': profile['countryOfRegistration']?['name'] ?? '',
+        'countryOfRegistration':
+            profile['countryOfRegistration']?['name'] ?? '',
         'legalName': profile['legalName'] ?? '',
         'registrationNo': profile['registrationNo'] ?? '',
         'smeRegistrationFlag': profile['smeRegistrationFlag'] ?? false,
@@ -128,27 +129,32 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
     }
 
     if (formData['countryOfRegistration']?.isEmpty ?? true) {
-      validationErrors['countryOfRegistration'] = 'Country of registration is required';
+      validationErrors['countryOfRegistration'] =
+          'Country of registration is required';
     }
 
     if (formData['stateOfRegistration']?.isEmpty ?? true) {
-      validationErrors['stateOfRegistration'] = 'State of registration is required';
+      validationErrors['stateOfRegistration'] =
+          'State of registration is required';
     }
 
     // Optional but format-specific validations
     if (formData['registrationNo']?.isNotEmpty == true &&
         formData['registrationNo'].length < 3) {
-      validationErrors['registrationNo'] = 'Registration number must be at least 3 characters';
+      validationErrors['registrationNo'] =
+          'Registration number must be at least 3 characters';
     }
 
     if (formData['taxIdentificationNumber1']?.isNotEmpty == true &&
         !_isValidTaxId(formData['taxIdentificationNumber1'])) {
-      validationErrors['taxIdentificationNumber1'] = 'Please enter a valid tax identification number';
+      validationErrors['taxIdentificationNumber1'] =
+          'Please enter a valid tax identification number';
     }
 
     if (formData['taxIdentificationNumber2']?.isNotEmpty == true &&
         !_isValidGSTNumber(formData['taxIdentificationNumber2'])) {
-      validationErrors['taxIdentificationNumber2'] = 'Please enter a valid GST number';
+      validationErrors['taxIdentificationNumber2'] =
+          'Please enter a valid GST number';
     }
 
     setState(() {});
@@ -162,7 +168,9 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
 
   bool _isValidGSTNumber(String gstNumber) {
     // Basic GST validation pattern
-    return RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$').hasMatch(gstNumber);
+    return RegExp(
+      r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$',
+    ).hasMatch(gstNumber);
   }
 
   Future<void> _submitForm() async {
@@ -174,11 +182,11 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
 
     try {
       final businessProfileHelper = ref.read(businessProfileHelperProvider);
-      
+
       // For countryOfRegistration, we need to pass the ID, not the name
       // For now, we'll use the country name and let the backend handle it
       // In a real app, you'd want to maintain a mapping of country names to IDs
-      
+
       final success = await businessProfileHelper.updateLegalInfo(
         companyType: formData['companyType'],
         countryOfRegistration: formData['countryOfRegistration'],
@@ -260,14 +268,13 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () => Navigator.of(context).pop(),
-          child: Icon(
-            CupertinoIcons.back,
-            color: colors.primary,
-          ),
+          child: Icon(CupertinoIcons.back, color: colors.primary),
         ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: isSubmitting || businessProfile.isUpdating ? null : _submitForm,
+          onPressed: isSubmitting || businessProfile.isUpdating
+              ? null
+              : _submitForm,
           child: isSubmitting || businessProfile.isUpdating
               ? CupertinoActivityIndicator()
               : Text(
@@ -327,10 +334,7 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
                       validationErrors: validationErrors,
                       isRequired: true,
                     ),
-                    Container(
-                      height: 0.5,
-                      color: colors.border,
-                    ),
+                    Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildSelectField(
                       'companyType',
                       'Company Type',
@@ -340,10 +344,7 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
                       validationErrors: validationErrors,
                       isRequired: true,
                     ),
-                    Container(
-                      height: 0.5,
-                      color: colors.border,
-                    ),
+                    Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildTextField(
                       'registrationNo',
                       'Registration Number',
@@ -396,10 +397,7 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
                       validationErrors: validationErrors,
                       isRequired: true,
                     ),
-                    Container(
-                      height: 0.5,
-                      color: colors.border,
-                    ),
+                    Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildSelectField(
                       'stateOfRegistration',
                       'State of Registration',
@@ -409,10 +407,7 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
                       validationErrors: validationErrors,
                       isRequired: true,
                     ),
-                    Container(
-                      height: 0.5,
-                      color: colors.border,
-                    ),
+                    Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildSwitchField(
                       'smeRegistrationFlag',
                       'SME Registration',
@@ -463,10 +458,7 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
                       formData: formData,
                       validationErrors: validationErrors,
                     ),
-                    Container(
-                      height: 0.5,
-                      color: colors.border,
-                    ),
+                    Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildTextField(
                       'taxIdentificationNumber2',
                       'GST Number',

@@ -4,7 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
 import '../../apis/core/dio_provider.dart';
 import '../../apis/core/api_urls.dart';
-import 'package:flutter_test_22/apis/providers/auth_provider.dart';
+import 'package:Wareozo/apis/providers/auth_provider.dart';
+import 'package:Wareozo/apis/providers/category_provider.dart';
 import '../../apis/providers/inventory_provider.dart';
 import '../components/form_fields.dart';
 
@@ -37,9 +38,11 @@ final measuringUnitsProvider = FutureProvider<List<Map<String, dynamic>>>((
       List<Map<String, dynamic>> units = List<Map<String, dynamic>>.from(
         data['measuringUnits'] ?? [],
       );
-      // Sort by priority (lower priority number means higher importance)
+      // Sort alphabetically by name instead of priority
       units.sort(
-        (a, b) => (a['priority'] as int).compareTo(b['priority'] as int),
+        (a, b) => (a['name']?.toString() ?? '').toLowerCase().compareTo(
+          (b['name']?.toString() ?? '').toLowerCase(),
+        ),
       );
       return units;
     }
@@ -147,42 +150,166 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
   }
 
   void _populateFormFromInventoryData(Map<String, dynamic> data) {
+    print('Populating form with data: $data'); // Debug print
+
     setState(() {
       // Basic Information
       _formData['name'] = data['name'] ?? '';
       _formData['description'] = data['description'] ?? '';
       _formData['itemType'] = data['itemType'] ?? 'Product';
       _formData['status'] = data['status'] ?? 'Active';
-      _formData['category'] = data['category'] ?? '';
-      _formData['subCategory'] = data['subCategory'] ?? '';
 
       // Codes
       _formData['itemCode'] = data['itemCode'] ?? '';
       _formData['hsnCode'] = data['hsnCode'] ?? '';
 
-      // Pricing
+      // FIXED: Handle Category and SubCategory properly
+      if (data['category'] != null) {
+        if (data['category'] is String) {
+          _formData['category'] = data['category'];
+          // Load category name if we have the ID
+          _loadCategoryName(data['category']);
+        } else if (data['category'] is Map) {
+          _formData['category'] = data['category']['_id'] ?? '';
+          _formData['categoryName'] = data['category']['name'] ?? '';
+        }
+      }
+
+      if (data['subCategory'] != null) {
+        if (data['subCategory'] is String) {
+          _formData['subCategory'] = data['subCategory'];
+          // Load subcategory name if we have the ID
+          _loadSubCategoryName(data['subCategory']);
+        } else if (data['subCategory'] is Map) {
+          _formData['subCategory'] = data['subCategory']['_id'] ?? '';
+          _formData['subCategoryName'] = data['subCategory']['name'] ?? '';
+        }
+      }
+
+      // Pricing - MRP
       _formData['mrp'] = data['mrp']?.toString() ?? '';
 
-      // Sale price
-      if (data['sale'] != null) {
+      // FIXED: Handle different possible sale price structures
+      if (data['salePrice'] != null) {
+        _formData['salePrice'] = data['salePrice'].toString();
+      } else if (data['sale'] != null && data['sale']['price'] != null) {
         _formData['salePrice'] = data['sale']['price']?.toString() ?? '';
-        if (data['sale']['unit'] != null) {
-          _formData['saleUnitId'] = data['sale']['unit']['_id'] ?? '';
-          _formData['saleUnit'] = data['sale']['unit']['code'] ?? '';
+      }
+
+      // FIXED: Handle sale unit - check multiple possible locations
+      if (data['saleUnit'] != null) {
+        if (data['saleUnit'] is String) {
+          _formData['saleUnit'] = data['saleUnit'];
+        } else if (data['saleUnit'] is Map && data['saleUnit']['_id'] != null) {
+          _formData['saleUnit'] = data['saleUnit']['_id'];
+          _formData['saleUnitCode'] = data['saleUnit']['code'];
+        }
+      } else if (data['sale'] != null && data['sale']['unit'] != null) {
+        if (data['sale']['unit'] is String) {
+          _formData['saleUnit'] = data['sale']['unit'];
+        } else if (data['sale']['unit'] is Map) {
+          _formData['saleUnit'] = data['sale']['unit']['_id'] ?? '';
+          _formData['saleUnitCode'] = data['sale']['unit']['code'] ?? '';
         }
       }
 
-      // Purchase price
-      if (data['purchase'] != null) {
+      // FIXED: Handle different possible purchase price structures
+      if (data['purchasePrice'] != null) {
+        if (data['purchasePrice'] is Map &&
+            data['purchasePrice']['price'] != null) {
+          _formData['purchasePrice'] =
+              data['purchasePrice']['price']?.toString() ?? '';
+        } else {
+          _formData['purchasePrice'] = data['purchasePrice']?.toString() ?? '';
+        }
+      } else if (data['purchase'] != null &&
+          data['purchase']['price'] != null) {
         _formData['purchasePrice'] =
             data['purchase']['price']?.toString() ?? '';
-        if (data['purchase']['unit'] != null) {
-          _formData['purchaseUnitId'] = data['purchase']['unit']['_id'] ?? '';
-          _formData['purchaseUnit'] = data['purchase']['unit']['code'] ?? '';
+      }
+
+      // FIXED: Handle purchase unit - check multiple possible locations
+      if (data['purchaseUnit'] != null) {
+        if (data['purchaseUnit'] is String) {
+          _formData['purchaseUnit'] = data['purchaseUnit'];
+        } else if (data['purchaseUnit'] is Map &&
+            data['purchaseUnit']['_id'] != null) {
+          _formData['purchaseUnit'] = data['purchaseUnit']['_id'];
+          _formData['purchaseUnitCode'] = data['purchaseUnit']['code'];
+        }
+      } else if (data['purchase'] != null && data['purchase']['unit'] != null) {
+        if (data['purchase']['unit'] is String) {
+          _formData['purchaseUnit'] = data['purchase']['unit'];
+        } else if (data['purchase']['unit'] is Map) {
+          _formData['purchaseUnit'] = data['purchase']['unit']['_id'] ?? '';
+          _formData['purchaseUnitCode'] =
+              data['purchase']['unit']['code'] ?? '';
         }
       }
 
-      // Discount
+      // FIXED: Handle Base and Secondary Units properly
+      if (data['baseUnit'] != null) {
+        if (data['baseUnit'] is String) {
+          _formData['baseUnit'] = data['baseUnit'];
+        } else if (data['baseUnit'] is Map) {
+          _formData['baseUnit'] = data['baseUnit']['_id'] ?? '';
+          _formData['baseUnitCode'] = data['baseUnit']['code'] ?? '';
+        }
+      }
+
+      if (data['secondaryUnit'] != null) {
+        if (data['secondaryUnit'] is String) {
+          _formData['secondaryUnit'] = data['secondaryUnit'];
+        } else if (data['secondaryUnit'] is Map) {
+          _formData['secondaryUnit'] = data['secondaryUnit']['_id'] ?? '';
+          _formData['secondaryUnitCode'] = data['secondaryUnit']['code'] ?? '';
+        }
+      }
+
+      // Conversion Rate
+      _formData['conversationRate'] =
+          data['conversationRate']?.toString() ?? '';
+
+      // FIXED: GST Information - handle both string ID and object
+      if (data['gst'] != null) {
+        if (data['gst'] is String) {
+          // If gst is stored as ID string, use it directly
+          _formData['gst'] = data['gst'];
+        } else if (data['gst'] is Map) {
+          // If gst is stored as object, get the label for display and store ID for API
+          _formData['gst'] =
+              data['gst']['lable'] ?? ''; // For display in dropdown
+          _formData['gstId'] =
+              data['gst']['_id'] ?? ''; // Store ID for API submission
+          _formData['taxRate'] =
+              double.tryParse(data['gst']['value']?.toString() ?? '0') ?? 0;
+
+          print(
+            'Loaded GST: label=${data['gst']['lable']}, id=${data['gst']['_id']}, rate=${data['gst']['value']}',
+          );
+        }
+      }
+
+      // FIXED: Handle wholesale pricing from nested structure
+      if (data['wholeSale'] != null) {
+        _formData['wholeSalePrice'] =
+            data['wholeSale']['price']?.toString() ?? '';
+        _formData['wholeSaleMinQty'] =
+            data['wholeSale']['minQty']?.toString() ?? '';
+      } else {
+        // Fallback to flat structure
+        _formData['wholeSalePrice'] = data['wholeSalePrice']?.toString() ?? '';
+        _formData['wholeSaleMinQty'] =
+            data['wholeSaleMinQty']?.toString() ?? '';
+      }
+
+      // Handle wholesale price with tax (this is usually a flat field)
+      if (data['wholeSalePriceWithTax'] != null) {
+        _formData['wholeSalePriceWithTax'] =
+            data['wholeSalePriceWithTax'] ?? false;
+      }
+
+      // Discount - handle both flat and nested structures
       if (data['discount'] != null) {
         _formData['discountPercent'] =
             data['discount']['discountPercent']?.toString() ?? '';
@@ -190,9 +317,16 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
             data['discount']['discountAmount']?.toString() ?? '';
         _formData['discountAboveQty'] =
             data['discount']['discountAboveQty']?.toString() ?? '';
+      } else {
+        // Handle flat discount fields
+        _formData['discountPercent'] =
+            data['discountPercent']?.toString() ?? '';
+        _formData['discountAmount'] = data['discountAmount']?.toString() ?? '';
+        _formData['discountAboveQty'] =
+            data['discountAboveQty']?.toString() ?? '';
       }
 
-      // Stock
+      // FIXED: Handle stock and reorder quantity from nested structure
       if (data['stock'] != null) {
         _formData['openingStock'] =
             data['stock']['openingStock']?.toString() ?? '';
@@ -200,19 +334,49 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
             data['stock']['currentStock']?.toString() ?? '';
         _formData['isRefrigerated'] = data['stock']['isRefrigerated'] ?? false;
 
+        // FIXED: Handle reorder quantity from nested stock
+        _formData['reorderQty'] = data['stock']['reorderQty']?.toString() ?? '';
+
+        // Handle low stock fields from nested structure
+        _formData['lowStockQuantity'] =
+            data['stock']['lowStockQuantity']?.toString() ?? '';
+
         if (data['stock']['stockAsOfDate'] != null) {
           _formData['stockAsOfDate'] = DateTime.parse(
             data['stock']['stockAsOfDate'],
           );
         }
+      } else {
+        // Handle flat stock fields
+        _formData['openingStock'] = data['openingStock']?.toString() ?? '';
+        _formData['currentStock'] = data['currentStock']?.toString() ?? '';
+        _formData['isRefrigerated'] = data['isRefrigerated'] ?? false;
+        _formData['reorderQty'] = data['reorderQty']?.toString() ?? '';
+        _formData['lowStockQuantity'] =
+            data['lowStockQuantity']?.toString() ?? '';
+
+        if (data['stockAsOfDate'] != null) {
+          _formData['stockAsOfDate'] = DateTime.parse(data['stockAsOfDate']);
+        }
       }
 
-      // Store location
+      // FIXED: Store location - handle nested structure properly
       if (data['storeLocation'] != null) {
-        _formData['storeName'] = data['storeLocation']['storeName'] ?? '';
+        if (data['storeLocation'] is Map) {
+          _formData['storeName'] = data['storeLocation']['storeName'] ?? '';
+          _formData['storeLocation'] = data['storeLocation']['location'] ?? '';
+        } else if (data['storeLocation'] is String) {
+          _formData['storeLocation'] = data['storeLocation'];
+        }
       }
 
-      // Additional fields
+      // Handle flat store fields as fallback
+      if (_formData['storeName'] == null ||
+          _formData['storeName'].toString().isEmpty) {
+        _formData['storeName'] = data['storeName'] ?? '';
+      }
+
+      // Additional product fields
       _formData['brand'] = data['brand'] ?? '';
       _formData['color'] = data['color'] ?? '';
 
@@ -246,7 +410,32 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
       _formData['lowStockWarning'] = _formData['lowStockWarning'] ?? false;
       _formData['wholeSalePriceWithTax'] =
           _formData['wholeSalePriceWithTax'] ?? false;
+
+      // Set default stock date if not present
+      if (_formData['stockAsOfDate'] == null) {
+        _formData['stockAsOfDate'] = DateTime.now();
+      }
     });
+
+    // Debug prints to verify form data
+    print('Form data after population:');
+    print('salePrice: ${_formData['salePrice']}');
+    print('saleUnit: ${_formData['saleUnit']}');
+    print('purchasePrice: ${_formData['purchasePrice']}');
+    print('purchaseUnit: ${_formData['purchaseUnit']}');
+    print('baseUnit: ${_formData['baseUnit']}');
+    print('secondaryUnit: ${_formData['secondaryUnit']}');
+    print('gst: ${_formData['gst']}');
+    print('gstId: ${_formData['gstId']}');
+    print('wholeSalePrice: ${_formData['wholeSalePrice']}');
+    print('wholeSaleMinQty: ${_formData['wholeSaleMinQty']}');
+    print('reorderQty: ${_formData['reorderQty']}');
+    print('storeName: ${_formData['storeName']}');
+    print('storeLocation: ${_formData['storeLocation']}');
+    print('category: ${_formData['category']}');
+    print('categoryName: ${_formData['categoryName']}');
+    print('subCategory: ${_formData['subCategory']}');
+    print('subCategoryName: ${_formData['subCategoryName']}');
   }
 
   void _updateFormData(String key, dynamic value) {
@@ -255,8 +444,70 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
       _validationErrors.remove(key);
     });
   }
+  // Add these helper methods to load category/subcategory names from IDs:
 
-  // Helper method to handle unit selection
+  Future<void> _loadCategoryName(String categoryId) async {
+    final categoryState = ref.read(categoryProvider);
+    final category = categoryState.categories.firstWhere(
+      (cat) => cat['_id'] == categoryId,
+      orElse: () => {},
+    );
+
+    if (category.isNotEmpty) {
+      setState(() {
+        _formData['categoryName'] = category['name'];
+      });
+    } else {
+      // If category not found in current list, load categories
+      await ref.read(categoryProvider.notifier).getCategories();
+      final updatedState = ref.read(categoryProvider);
+      final foundCategory = updatedState.categories.firstWhere(
+        (cat) => cat['_id'] == categoryId,
+        orElse: () => {},
+      );
+      if (foundCategory.isNotEmpty) {
+        setState(() {
+          _formData['categoryName'] = foundCategory['name'];
+        });
+      }
+    }
+  }
+
+  Future<void> _loadSubCategoryName(String subCategoryId) async {
+    final categoryState = ref.read(categoryProvider);
+    final categoryId = _formData['category'];
+
+    if (categoryId != null) {
+      final subCategories = categoryState.subCategories[categoryId] ?? [];
+      final subCategory = subCategories.firstWhere(
+        (subCat) => subCat['_id'] == subCategoryId,
+        orElse: () => {},
+      );
+
+      if (subCategory.isNotEmpty) {
+        setState(() {
+          _formData['subCategoryName'] = subCategory['name'];
+        });
+      } else {
+        // Load subcategories if not found
+        await ref.read(categoryProvider.notifier).getSubCategories(categoryId);
+        final updatedState = ref.read(categoryProvider);
+        final updatedSubCategories =
+            updatedState.subCategories[categoryId] ?? [];
+        final foundSubCategory = updatedSubCategories.firstWhere(
+          (subCat) => subCat['_id'] == subCategoryId,
+          orElse: () => {},
+        );
+        if (foundSubCategory.isNotEmpty) {
+          setState(() {
+            _formData['subCategoryName'] = foundSubCategory['name'];
+          });
+        }
+      }
+    }
+  }
+
+  // FIXED: Helper method to handle unit selection
   void _handleUnitSelection(
     String unitKey,
     String unitIdKey,
@@ -278,8 +529,14 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
     );
 
     if (selectedUnit.isNotEmpty) {
-      _updateFormData(unitKey, code);
-      _updateFormData(unitIdKey, selectedUnit['_id']);
+      // Store the unit ID (ObjectId) for the API
+      _updateFormData(unitKey, selectedUnit['_id']);
+      // Store the code for display purposes
+      _updateFormData('${unitKey}Code', code);
+
+      print(
+        'Unit selected: ${selectedUnit['name']} (${code}) - ID: ${selectedUnit['_id']}',
+      );
     }
   }
 
@@ -288,20 +545,36 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
     return "${unit['name']}(${unit['code']})";
   }
 
-  // Helper method to get current unit display value
+  // FIXED: Helper method to get current unit display value
   String? _getCurrentUnitDisplay(
     String unitKey,
     List<Map<String, dynamic>> units,
   ) {
-    final currentCode = _formData[unitKey];
-    if (currentCode == null) return null;
+    // First check if we have the unit ID stored
+    final currentUnitId = _formData[unitKey];
+    if (currentUnitId != null) {
+      final unit = units.firstWhere(
+        (unit) => unit['_id'] == currentUnitId,
+        orElse: () => {},
+      );
+      if (unit.isNotEmpty) {
+        return _formatUnitDisplay(unit);
+      }
+    }
 
-    final unit = units.firstWhere(
-      (unit) => unit['code'] == currentCode,
-      orElse: () => {},
-    );
+    // Fallback to checking by code
+    final currentCode = _formData['${unitKey}Code'];
+    if (currentCode != null) {
+      final unit = units.firstWhere(
+        (unit) => unit['code'] == currentCode,
+        orElse: () => {},
+      );
+      if (unit.isNotEmpty) {
+        return _formatUnitDisplay(unit);
+      }
+    }
 
-    return unit.isNotEmpty ? _formatUnitDisplay(unit) : null;
+    return null;
   }
 
   void _toggleSection(String sectionName) {
@@ -327,6 +600,35 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
     return _validationErrors.isEmpty;
   }
 
+  // Fixed _prepareFormDataForSubmission method in inventory_form.dart
+  Map<String, dynamic> _prepareFormDataForSubmission() {
+    Map<String, dynamic> submissionData = Map.from(_formData);
+
+    // Remove display-only fields that shouldn't be sent to API
+    submissionData.remove('saleUnitCode');
+    submissionData.remove('purchaseUnitCode');
+    submissionData.remove('baseUnitCode');
+    submissionData.remove('secondaryUnitCode');
+
+    // FIXED: For GST, if we have gstId, use that instead of the label
+    if (submissionData['gstId'] != null &&
+        submissionData['gstId'].toString().isNotEmpty) {
+      submissionData['gst'] = submissionData['gstId'];
+      submissionData.remove('gstId'); // Remove the temporary field
+    }
+
+    // Debug prints to verify submission data
+    print('=== SUBMISSION DATA DEBUG ===');
+    print('wholeSalePrice: ${submissionData['wholeSalePrice']}');
+    print('wholeSaleMinQty: ${submissionData['wholeSaleMinQty']}');
+    print('reorderQty: ${submissionData['reorderQty']}');
+    print('storeName: ${submissionData['storeName']}');
+    print('storeLocation: ${submissionData['storeLocation']}');
+    print('===============================');
+
+    return submissionData;
+  }
+
   Future<void> _submitForm() async {
     if (!_validateForm()) {
       setState(() {});
@@ -341,13 +643,18 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
       final inventoryNotifier = ref.read(inventoryProvider.notifier);
       InventoryResult result;
 
+      // FIXED: Use prepared form data
+      final submissionData = _prepareFormDataForSubmission();
+
       if (_isEditMode) {
         result = await inventoryNotifier.updateInventoryFromForm(
           widget.inventoryId!,
-          _formData,
+          submissionData,
         );
       } else {
-        result = await inventoryNotifier.createInventoryFromForm(_formData);
+        result = await inventoryNotifier.createInventoryFromForm(
+          submissionData,
+        );
       }
 
       if (result.isSuccess) {
@@ -492,10 +799,9 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
                   formData: _formData,
                   validationErrors: _validationErrors,
                 ),
-
                 FormFieldWidgets.buildTextField(
-                  'category',
-                  _isService ? 'Service Category' : 'Category',
+                  'itemCode',
+                  _isService ? 'Service Code' : 'Item Code',
                   'text',
                   context,
                   onChanged: _updateFormData,
@@ -503,14 +809,116 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
                   validationErrors: _validationErrors,
                 ),
 
-                FormFieldWidgets.buildTextField(
-                  'subCategory',
-                  _isService ? 'Service Sub Category' : 'Sub Category',
-                  'text',
-                  context,
-                  onChanged: _updateFormData,
-                  formData: _formData,
-                  validationErrors: _validationErrors,
+                // Category Dropdown
+                Consumer(
+                  builder: (context, ref, child) {
+                    final categoryState = ref.watch(categoryProvider);
+
+                    if (categoryState.isLoading) {
+                      return Container(
+                        padding: EdgeInsets.all(16),
+                        child: CupertinoActivityIndicator(),
+                      );
+                    }
+
+                    if (categoryState.categories.isEmpty) {
+                      // Load categories when form loads
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        ref.read(categoryProvider.notifier).getCategories();
+                      });
+                    }
+
+                    return FormFieldWidgets.buildSelectField(
+                      'category',
+                      _isService ? 'Service Category' : 'Category',
+                      categoryState.categories
+                          .map((cat) => cat['name'].toString())
+                          .toList(),
+                      onChanged: (key, value) {
+                        // Find the selected category
+                        final selectedCategory = categoryState.categories
+                            .firstWhere(
+                              (cat) => cat['name'] == value,
+                              orElse: () => {},
+                            );
+
+                        if (selectedCategory.isNotEmpty) {
+                          // Store category ID for API
+                          _updateFormData('category', selectedCategory['_id']);
+                          _updateFormData('categoryName', value); // For display
+
+                          // Clear subcategory when category changes
+                          _updateFormData('subCategory', null);
+                          _updateFormData('subCategoryName', null);
+
+                          // Load subcategories for this category
+                          ref
+                              .read(categoryProvider.notifier)
+                              .getSubCategories(selectedCategory['_id']);
+                        }
+                      },
+                      formData: {
+                        ..._formData,
+                        'category': _formData['categoryName'],
+                      }, // Use name for display
+                      validationErrors: _validationErrors,
+                    );
+                  },
+                ),
+
+                // Sub Category Dropdown
+                Consumer(
+                  builder: (context, ref, child) {
+                    final categoryState = ref.watch(categoryProvider);
+                    final selectedCategoryId = _formData['category'];
+
+                    if (selectedCategoryId == null) {
+                      return FormFieldWidgets.buildSelectField(
+                        'subCategory',
+                        _isService ? 'Service Sub Category' : 'Sub Category',
+                        [],
+                        onChanged: (key, value) {},
+                        formData: _formData,
+                        validationErrors: _validationErrors,
+                        isEnabled: false,
+                      );
+                    }
+
+                    final subCategories =
+                        categoryState.subCategories[selectedCategoryId] ?? [];
+
+                    return FormFieldWidgets.buildSelectField(
+                      'subCategory',
+                      _isService ? 'Service Sub Category' : 'Sub Category',
+                      subCategories
+                          .map((subCat) => subCat['name'].toString())
+                          .toList(),
+                      onChanged: (key, value) {
+                        // Find the selected subcategory
+                        final selectedSubCategory = subCategories.firstWhere(
+                          (subCat) => subCat['name'] == value,
+                          orElse: () => {},
+                        );
+
+                        if (selectedSubCategory.isNotEmpty) {
+                          // Store subcategory ID for API
+                          _updateFormData(
+                            'subCategory',
+                            selectedSubCategory['_id'],
+                          );
+                          _updateFormData(
+                            'subCategoryName',
+                            value,
+                          ); // For display
+                        }
+                      },
+                      formData: {
+                        ..._formData,
+                        'subCategory': _formData['subCategoryName'],
+                      }, // Use name for display
+                      validationErrors: _validationErrors,
+                    );
+                  },
                 ),
               ],
 
@@ -527,25 +935,21 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
                   validationErrors: _validationErrors,
                 ),
 
-                // Sale Unit Dropdown
+                // FIXED: Sale Unit Dropdown
                 measuringUnitsAsyncValue.when(
-                  data: (units) => FormFieldWidgets.buildSelectField(
+                  data: (units) => FormFieldWidgets.buildSearchableUnitField(
                     'saleUnit',
                     'Sale Unit',
-                    units.map((unit) => _formatUnitDisplay(unit)).toList(),
-                    onChanged: (key, value) {
-                      _handleUnitSelection(
-                        'saleUnit',
-                        'saleUnitId',
-                        value,
-                        units,
-                      );
-                    },
-                    formData: {
-                      ..._formData,
-                      'saleUnit': _getCurrentUnitDisplay('saleUnit', units),
-                    },
+                    units,
+                    context,
+                    onUnitSelection: _handleUnitSelection,
+                    formData: _formData,
                     validationErrors: _validationErrors,
+                    unitKey: 'saleUnit',
+                    unitIdKey:
+                        'saleUnit', // Same as unitKey since we store ID directly
+                    getCurrentValue: () =>
+                        _getCurrentUnitDisplay('saleUnit', units),
                   ),
                   loading: () => Container(
                     padding: EdgeInsets.all(16),
@@ -562,27 +966,69 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
               _buildSectionHeader('Tax Information'),
               if (_sectionExpanded['Tax Information'] == true) ...[
                 gstAsyncValue.when(
-                  data: (gstList) => FormFieldWidgets.buildSelectField(
-                    'gst',
-                    'Tax Rate',
-                    gstList.map((gst) => gst['lable'].toString()).toList(),
-                    onChanged: (key, value) {
-                      _updateFormData(key, value);
-                      final selectedGst = gstList.firstWhere(
-                        (gst) => gst['lable'] == value,
-                        orElse: () => {},
-                      );
-                      if (selectedGst.isNotEmpty) {
-                        _updateFormData('gstId', selectedGst['_id']);
-                        _updateFormData(
-                          'taxRate',
-                          double.tryParse(selectedGst['value'].toString()) ?? 0,
+                  data: (gstList) {
+                    // Helper function to get the currently selected GST label for display
+                    String? getCurrentGstLabel() {
+                      // If we have gstId from editing, find the corresponding label
+                      if (_formData['gstId'] != null &&
+                          _formData['gstId'].toString().isNotEmpty) {
+                        final gst = gstList.firstWhere(
+                          (g) => g['_id'] == _formData['gstId'],
+                          orElse: () => {},
                         );
+                        if (gst.isNotEmpty) {
+                          return gst['lable'];
+                        }
                       }
-                    },
-                    formData: _formData,
-                    validationErrors: _validationErrors,
-                  ),
+
+                      // Otherwise, use the current gst value if it's a label
+                      if (_formData['gst'] != null &&
+                          _formData['gst'].toString().isNotEmpty) {
+                        return _formData['gst'];
+                      }
+
+                      return null;
+                    }
+
+                    // Update form data to show the correct label
+                    final currentLabel = getCurrentGstLabel();
+                    if (currentLabel != null) {
+                      _formData['gst'] = currentLabel;
+                    }
+
+                    return FormFieldWidgets.buildSelectField(
+                      'gst',
+                      'Tax Rate',
+                      gstList.map((gst) => gst['lable'].toString()).toList(),
+                      onChanged: (key, value) {
+                        // Store both the label for display and ID for API
+                        _updateFormData(key, value);
+
+                        // Find the selected GST object and store its ID
+                        final selectedGst = gstList.firstWhere(
+                          (gst) => gst['lable'] == value,
+                          orElse: () => {},
+                        );
+
+                        if (selectedGst.isNotEmpty) {
+                          // Store the GST ID for API submission
+                          _updateFormData('gstId', selectedGst['_id']);
+                          // Store the tax rate for calculations
+                          _updateFormData(
+                            'taxRate',
+                            double.tryParse(selectedGst['value'].toString()) ??
+                                0,
+                          );
+
+                          print(
+                            'GST Selected: ${selectedGst['lable']} - ID: ${selectedGst['_id']}',
+                          );
+                        }
+                      },
+                      formData: _formData,
+                      validationErrors: _validationErrors,
+                    );
+                  },
                   loading: () => Container(
                     padding: EdgeInsets.all(16),
                     child: CupertinoActivityIndicator(),
@@ -610,18 +1056,8 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
               ],
 
               // Other Details Section (Common for both)
-              _buildSectionHeader('Other Details'),
-              if (_sectionExpanded['Other Details'] == true) ...[
-                FormFieldWidgets.buildTextField(
-                  'itemCode',
-                  _isService ? 'Service Code' : 'Item Code',
-                  'text',
-                  context,
-                  onChanged: _updateFormData,
-                  formData: _formData,
-                  validationErrors: _validationErrors,
-                ),
-              ],
+              // _buildSectionHeader('Other Details'),
+              // if (_sectionExpanded['Other Details'] == true) ...[],
 
               // Product-specific fields (only show when itemType is 'Product')
               if (!_isService) ...[
@@ -648,28 +1084,20 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
                     validationErrors: _validationErrors,
                   ),
 
-                  // Purchase Unit Dropdown
+                  // FIXED: Purchase Unit Dropdown
                   measuringUnitsAsyncValue.when(
-                    data: (units) => FormFieldWidgets.buildSelectField(
+                    data: (units) => FormFieldWidgets.buildSearchableUnitField(
                       'purchaseUnit',
                       'Purchase Unit',
-                      units.map((unit) => _formatUnitDisplay(unit)).toList(),
-                      onChanged: (key, value) {
-                        _handleUnitSelection(
-                          'purchaseUnit',
-                          'purchaseUnitId',
-                          value,
-                          units,
-                        );
-                      },
-                      formData: {
-                        ..._formData,
-                        'purchaseUnit': _getCurrentUnitDisplay(
-                          'purchaseUnit',
-                          units,
-                        ),
-                      },
+                      units,
+                      context,
+                      onUnitSelection: _handleUnitSelection,
+                      formData: _formData,
                       validationErrors: _validationErrors,
+                      unitKey: 'purchaseUnit',
+                      unitIdKey: 'purchaseUnit',
+                      getCurrentValue: () =>
+                          _getCurrentUnitDisplay('purchaseUnit', units),
                     ),
                     loading: () => Container(
                       padding: EdgeInsets.all(16),
@@ -679,6 +1107,16 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
                       padding: EdgeInsets.all(16),
                       child: Text('Error loading units: $error'),
                     ),
+                  ),
+
+                  FormFieldWidgets.buildTextField(
+                    'conversationRate',
+                    'Conversion Rate',
+                    'text',
+                    context,
+                    onChanged: _updateFormData,
+                    formData: _formData,
+                    validationErrors: _validationErrors,
                   ),
                 ],
 
@@ -844,83 +1282,6 @@ class _CreateInventoryState extends ConsumerState<CreateInventory> {
                   FormFieldWidgets.buildTextField(
                     'storeLocation',
                     'Store Location',
-                    'text',
-                    context,
-                    onChanged: _updateFormData,
-                    formData: _formData,
-                    validationErrors: _validationErrors,
-                  ),
-                ],
-
-                // Units Section
-                _buildSectionHeader('Unit Details'),
-                if (_sectionExpanded['Unit Details'] == true) ...[
-                  // Base Unit Dropdown
-                  measuringUnitsAsyncValue.when(
-                    data: (units) => FormFieldWidgets.buildSelectField(
-                      'baseUnit',
-                      'Base Unit',
-                      units.map((unit) => _formatUnitDisplay(unit)).toList(),
-                      onChanged: (key, value) {
-                        _handleUnitSelection(
-                          'baseUnit',
-                          'baseUnitId',
-                          value,
-                          units,
-                        );
-                      },
-                      formData: {
-                        ..._formData,
-                        'baseUnit': _getCurrentUnitDisplay('baseUnit', units),
-                      },
-                      validationErrors: _validationErrors,
-                    ),
-                    loading: () => Container(
-                      padding: EdgeInsets.all(16),
-                      child: CupertinoActivityIndicator(),
-                    ),
-                    error: (error, stack) => Container(
-                      padding: EdgeInsets.all(16),
-                      child: Text('Error loading units: $error'),
-                    ),
-                  ),
-
-                  // Secondary Unit Dropdown
-                  measuringUnitsAsyncValue.when(
-                    data: (units) => FormFieldWidgets.buildSelectField(
-                      'secondaryUnit',
-                      'Secondary Unit',
-                      units.map((unit) => _formatUnitDisplay(unit)).toList(),
-                      onChanged: (key, value) {
-                        _handleUnitSelection(
-                          'secondaryUnit',
-                          'secondaryUnitId',
-                          value,
-                          units,
-                        );
-                      },
-                      formData: {
-                        ..._formData,
-                        'secondaryUnit': _getCurrentUnitDisplay(
-                          'secondaryUnit',
-                          units,
-                        ),
-                      },
-                      validationErrors: _validationErrors,
-                    ),
-                    loading: () => Container(
-                      padding: EdgeInsets.all(16),
-                      child: CupertinoActivityIndicator(),
-                    ),
-                    error: (error, stack) => Container(
-                      padding: EdgeInsets.all(16),
-                      child: Text('Error loading units: $error'),
-                    ),
-                  ),
-
-                  FormFieldWidgets.buildTextField(
-                    'conversationRate',
-                    'Conversion Rate',
                     'text',
                     context,
                     onChanged: _updateFormData,

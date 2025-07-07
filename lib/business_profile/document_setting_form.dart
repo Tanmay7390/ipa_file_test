@@ -2,9 +2,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test_22/apis/providers/documentsetting_provider.dart';
-import 'package:flutter_test_22/theme_provider.dart';
-import 'package:flutter_test_22/components/form_fields.dart';
+import 'package:Wareozo/apis/providers/documentsetting_provider.dart';
+import 'package:Wareozo/theme_provider.dart';
+import 'package:Wareozo/components/form_fields.dart';
 
 class DocumentSettingForm extends ConsumerStatefulWidget {
   final String? documentSettingId; // null for Add, has value for Update
@@ -30,7 +30,7 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
   // Document type options (you may want to fetch these from an API)
   final List<String> _documentTypeOptions = [
     'Quotation',
-    'Invoice', 
+    'Invoice',
     'Credit Note',
     'Purchase Order',
     'Proforma Invoice',
@@ -38,7 +38,7 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
     'Debit Note',
     'Delivery Note',
     'Purchase Invoice',
-    'Sales PO'
+    'Sales PO',
   ];
 
   final List<String> _statusOptions = ['Active', 'Inactive'];
@@ -61,22 +61,25 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
   Future<void> _initializeForm() async {
     if (_isEditMode) {
       setState(() => _isLoading = true);
-      
+
       try {
         final documentSetting = await ref
             .read(documentSettingsProvider.notifier)
             .getDocumentSettingsById(widget.documentSettingId!);
-            
+
         if (documentSetting != null) {
           setState(() {
             _formData.addAll({
               'docNumberPrefix': documentSetting['docNumberPrefix'] ?? '',
               'docSequenceNumber': documentSetting['docSequenceNumber'] ?? '',
-              'docNumberLength': documentSetting['docNumberLength']?.toString() ?? '',
+              'docNumberLength':
+                  documentSetting['docNumberLength']?.toString() ?? '',
               'termsAndConditions': documentSetting['termsAndConditions'] ?? '',
               'paymentDetails': documentSetting['paymentDetails'] ?? '',
-              'paymentTermDays': documentSetting['paymentTermDays']?.toString() ?? '0',
-              'defaultPdfTemplate': documentSetting['defaultPdfTemplate']?['template'] ?? '',
+              'paymentTermDays':
+                  documentSetting['paymentTermDays']?.toString() ?? '0',
+              'defaultPdfTemplate':
+                  documentSetting['defaultPdfTemplate']?['template'] ?? '',
               'notes': documentSetting['notes'] ?? '',
               'footer1': documentSetting['footer1'] ?? '',
               'footer2': documentSetting['footer2'] ?? '',
@@ -144,11 +147,12 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
     } else {
       final length = int.tryParse(_formData['docNumberLength'].toString());
       if (length == null || length <= 0) {
-        _validationErrors['docNumberLength'] = 'Please enter a valid number length';
+        _validationErrors['docNumberLength'] =
+            'Please enter a valid number length';
       }
     }
 
-    if (_formData['documentType']?.toString().trim().isEmpty ?? true) {  
+    if (_formData['documentType']?.toString().trim().isEmpty ?? true) {
       _validationErrors['documentType'] = 'Document type is required';
     }
 
@@ -160,7 +164,8 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
     if (_formData['paymentTermDays']?.toString().isNotEmpty == true) {
       final days = int.tryParse(_formData['paymentTermDays'].toString());
       if (days == null || days < 0) {
-        _validationErrors['paymentTermDays'] = 'Please enter valid payment term days';
+        _validationErrors['paymentTermDays'] =
+            'Please enter valid payment term days';
       }
     }
 
@@ -181,10 +186,12 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
       final submitData = {
         'docNumberPrefix': _formData['docNumberPrefix'],
         'docSequenceNumber': _formData['docSequenceNumber'],
-        'docNumberLength': int.tryParse(_formData['docNumberLength'].toString()) ?? 10,
+        'docNumberLength':
+            int.tryParse(_formData['docNumberLength'].toString()) ?? 10,
         'termsAndConditions': _formData['termsAndConditions'] ?? '',
         'paymentDetails': _formData['paymentDetails'] ?? '',
-        'paymentTermDays': int.tryParse(_formData['paymentTermDays'].toString()) ?? 0,
+        'paymentTermDays':
+            int.tryParse(_formData['paymentTermDays'].toString()) ?? 0,
         'notes': _formData['notes'] ?? '',
         'footer1': _formData['footer1'] ?? '',
         'footer2': _formData['footer2'] ?? '',
@@ -206,9 +213,11 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
       }
 
       if (success) {
-        _showSuccessDialog(_isEditMode 
-            ? 'Document setting updated successfully' 
-            : 'Document setting created successfully');
+        _showSuccessDialog(
+          _isEditMode
+              ? 'Document setting updated successfully'
+              : 'Document setting created successfully',
+        );
       } else {
         final error = ref.read(documentSettingsProvider).error;
         _showErrorDialog(error ?? 'Failed to save document setting');
@@ -264,9 +273,7 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
     if (_isLoading && !_isInitialized) {
       return Scaffold(
         backgroundColor: colors.background,
-        body: Center(
-          child: CupertinoActivityIndicator(),
-        ),
+        body: Center(child: CupertinoActivityIndicator()),
       );
     }
 
@@ -344,7 +351,7 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
 
           _buildDivider(colors),
 
-          // Document Prefix  
+          // Document Prefix
           FormFieldWidgets.buildTextField(
             'docNumberPrefix',
             'Document Prefix',

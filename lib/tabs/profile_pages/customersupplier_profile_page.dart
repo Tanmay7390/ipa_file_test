@@ -7,7 +7,8 @@ import '../../components/page_scaffold.dart';
 import '../../theme_provider.dart';
 import '../../apis/providers/customer_provider.dart';
 import '../../apis/providers/supplier_provider.dart';
-import '../../forms/customersupplier_update_form.dart';
+import '../../forms/customersupplier_profile_update_form.dart';
+import '../../components/addresses_bottom_sheet.dart';
 
 class CustomerSupplierProfilePage extends ConsumerStatefulWidget {
   final String entityId;
@@ -96,6 +97,8 @@ class _CustomerSupplierProfilePageState
           _buildPaymentBankingSection(colors),
           _buildSectionHeader('ATTACHMENTS', colors),
           _buildAttachmentsDocumentsSection(colors),
+          _buildSectionHeader('AGREED SERVICES', colors),
+          _buildAgreedServicesSection(colors),
           const SizedBox(height: 32),
         ]),
       ),
@@ -381,6 +384,21 @@ class _CustomerSupplierProfilePageState
     );
   }
 
+  Widget _buildAgreedServicesSection(WareozeColorScheme colors) {
+    final agreedServices =
+        (_data?['agreedServices'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+    return _buildSectionTile(
+      title: 'Agreed Services',
+      subtitle: agreedServices.isNotEmpty
+          ? '${agreedServices.length} service${agreedServices.length != 1 ? 's' : ''} configured'
+          : 'Service agreements and contracts',
+      icon: CupertinoIcons.checkmark_alt,
+      colors: colors,
+      onTap: () => _navigateToAgreedServicesDetails(),
+    );
+  }
+
   Widget _buildPaymentBankingSection(WareozeColorScheme colors) {
     final bankAccountCount = (_data?['bankAccounts'] as List?)?.length ?? 0;
     final upiId = _data?['upiId']?.toString() ?? '';
@@ -483,6 +501,18 @@ class _CustomerSupplierProfilePageState
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (context) => AttachmentsDocumentsDetailsPage(
+          entityData: _data,
+          entityId: widget.entityId,
+          entityType: widget.entityType,
+        ),
+      ),
+    );
+  }
+
+  void _navigateToAgreedServicesDetails() {
+    Navigator.of(context).push(
+      CupertinoPageRoute(
+        builder: (context) => AgreedServicesDetailsPage(
           entityData: _data,
           entityId: widget.entityId,
           entityType: widget.entityType,
@@ -889,7 +919,8 @@ class BusinessInformationDetailsPage extends ConsumerWidget {
 }
 
 // Address Information Details Page
-class AddressInformationDetailsPage extends ConsumerWidget {
+
+class AddressInformationDetailsPage extends ConsumerStatefulWidget {
   final Map<String, dynamic>? entityData;
   final String entityId;
   final String entityType;
@@ -902,9 +933,54 @@ class AddressInformationDetailsPage extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AddressInformationDetailsPage> createState() =>
+      _AddressInformationDetailsPageState();
+}
+
+class _AddressInformationDetailsPageState
+    extends ConsumerState<AddressInformationDetailsPage> {
+  List<Map<String, dynamic>> addresses = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAddresses();
+  }
+
+  void _loadAddresses() {
+    final addressList = widget.entityData?['addresses'] as List? ?? [];
+    addresses = List<Map<String, dynamic>>.from(addressList);
+
+    // Ensure we have billing and shipping address entries
+    if (!addresses.any((a) => a['type'] == 'Billing')) {
+      addresses.add({
+        'type': 'Billing',
+        'line1': '',
+        'line2': '',
+        'city': '',
+        'state': null,
+        'country': null,
+        'code': '',
+        'isActive': true,
+      });
+    }
+    if (!addresses.any((a) => a['type'] == 'Shipping')) {
+      addresses.add({
+        'type': 'Shipping',
+        'line1': '',
+        'line2': '',
+        'city': '',
+        'state': null,
+        'country': null,
+        'code': '',
+        'isActive': true,
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final colors = ref.watch(colorProvider);
-    final addresses = entityData?['addresses'] as List? ?? [];
 
     return CupertinoPageScaffold(
       backgroundColor: colors.background,
@@ -919,85 +995,76 @@ class AddressInformationDetailsPage extends ConsumerWidget {
           onPressed: () => Navigator.of(context).pop(),
           child: Icon(CupertinoIcons.back, color: colors.primary),
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () => context.go(
-                '/customersuppliers/update/$entityId/addresses?type=$entityType',
-              ),
-              child: Icon(CupertinoIcons.add, color: colors.primary, size: 20),
-            ),
-            const SizedBox(width: 8),
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () => context.go(
-                '/customersuppliers/update/$entityId/addresses?type=$entityType',
-              ),
-              child: Icon(
-                CupertinoIcons.pencil,
-                color: colors.primary,
-                size: 20,
-              ),
-            ),
-          ],
-        ),
       ),
       child: SafeArea(
-        child: addresses.isEmpty
-            ? _buildEmptyState(colors, context)
-            : ListView.builder(
-                padding: const EdgeInsets.all(20),
-                itemCount: addresses.length + 1, // +1 for add button
-                itemBuilder: (context, index) {
-                  if (index == addresses.length) {
-                    return _buildAddButton(colors, context);
-                  }
-                  return _buildAddressCard(addresses[index], colors, context);
-                },
-              ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              // Billing Address Section
+              _buildAddressTypeSection('Billing', colors),
+              const SizedBox(height: 24),
+
+              // Shipping Address Section
+              _buildAddressTypeSection('Shipping', colors),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildEmptyState(WareozeColorScheme colors, BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(CupertinoIcons.location, size: 48, color: colors.textSecondary),
-          const SizedBox(height: 16),
-          Text(
-            'No addresses added',
-            style: TextStyle(fontSize: 18, color: colors.textSecondary),
+  Widget _buildAddressTypeSection(
+    String addressType,
+    WareozeColorScheme colors,
+  ) {
+    final address = addresses.firstWhere(
+      (addr) => addr['type'] == addressType,
+      orElse: () => <String, dynamic>{},
+    );
+
+    final hasAddressData =
+        address.isNotEmpty &&
+        (address['line1']?.toString().trim().isNotEmpty ?? false) &&
+        (address['city']?.toString().trim().isNotEmpty ?? false) &&
+        (address['code']?.toString().trim().isNotEmpty ?? false);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Header
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            '$addressType Address',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: colors.textPrimary,
+            ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Add billing and shipping addresses',
-            style: TextStyle(fontSize: 14, color: colors.textSecondary),
-          ),
-          const SizedBox(height: 24),
-          _buildAddButton(colors, context),
-        ],
-      ),
+        ),
+
+        // Address Content
+        if (!hasAddressData)
+          _buildAddAddressButton(addressType, colors)
+        else
+          _buildAddressDisplay(address, addressType, colors),
+      ],
     );
   }
 
-  Widget _buildAddButton(WareozeColorScheme colors, BuildContext context) {
+  Widget _buildAddAddressButton(String addressType, WareozeColorScheme colors) {
     return Container(
       width: double.infinity,
       height: 56,
-      margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         color: colors.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: colors.primary.withOpacity(0.2)),
       ),
       child: CupertinoButton(
-        onPressed: () => context.go(
-          '/customersuppliers/update/$entityId/addresses?type=$entityType',
-        ),
+        onPressed: () => _showAddressBottomSheet(addressType),
         padding: EdgeInsets.zero,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1005,7 +1072,7 @@ class AddressInformationDetailsPage extends ConsumerWidget {
             Icon(CupertinoIcons.add, color: colors.primary, size: 20),
             const SizedBox(width: 8),
             Text(
-              'Add Address',
+              'Add $addressType Address',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -1018,28 +1085,29 @@ class AddressInformationDetailsPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildAddressCard(
+  Widget _buildAddressDisplay(
     Map<String, dynamic> address,
+    String addressType,
     WareozeColorScheme colors,
-    BuildContext context,
   ) {
-    final type = address['type'] ?? 'Address';
     final line1 = address['line1'] ?? '';
     final line2 = address['line2'] ?? '';
     final city = address['city'] ?? '';
-    final state = address['state']?['name'] ?? '';
-    final code = address['code'] ?? '';
+    final stateName = address['state']?['name'] ?? '';
+    final countryName = address['country']?['name'] ?? '';
+    final pinCode = address['code']?.toString() ?? '';
 
     final addressParts = [
       if (line1.isNotEmpty) line1,
       if (line2.isNotEmpty) line2,
       if (city.isNotEmpty) city,
-      if (state.isNotEmpty) state,
-      if (code.isNotEmpty) code,
+      if (stateName.isNotEmpty) stateName,
+      if (countryName.isNotEmpty) countryName,
+      if (pinCode.isNotEmpty) pinCode,
     ];
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colors.surface,
@@ -1052,19 +1120,34 @@ class AddressInformationDetailsPage extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                type,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: colors.textPrimary,
-                ),
+              Row(
+                children: [
+                  Icon(
+                    addressType == 'Billing'
+                        ? CupertinoIcons.location
+                        : CupertinoIcons.location_solid,
+                    color: addressType == 'Billing'
+                        ? colors.primary
+                        : CupertinoColors.systemPurple,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$addressType Address:',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: addressType == 'Billing'
+                          ? colors.primary
+                          : CupertinoColors.systemPurple,
+                    ),
+                  ),
+                ],
               ),
               CupertinoButton(
                 padding: EdgeInsets.zero,
-                onPressed: () => context.go(
-                  '/customersuppliers/update/$entityId/addresses?type=$entityType',
-                ),
+                minSize: 0,
+                onPressed: () => _showAddressBottomSheet(addressType),
                 child: Container(
                   width: 32,
                   height: 32,
@@ -1074,8 +1157,8 @@ class AddressInformationDetailsPage extends ConsumerWidget {
                   ),
                   child: Icon(
                     CupertinoIcons.pencil,
-                    color: colors.primary,
                     size: 16,
+                    color: colors.primary,
                   ),
                 ),
               ),
@@ -1093,6 +1176,514 @@ class AddressInformationDetailsPage extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  // Show address bottom sheet directly
+  void _showAddressBottomSheet(String addressType) {
+    final addressData = <String, dynamic>{};
+
+    // Find existing address data
+    final existingAddress = addresses.firstWhere(
+      (addr) => addr['type'] == addressType,
+      orElse: () => <String, dynamic>{},
+    );
+
+    if (existingAddress.isNotEmpty) {
+      // Map existing address data to form format
+      final prefix = addressType.toLowerCase();
+      addressData['${prefix}AddressLine1'] = existingAddress['line1'] ?? '';
+      addressData['${prefix}AddressLine2'] = existingAddress['line2'] ?? '';
+      addressData['${prefix}AddressCity'] = existingAddress['city'] ?? '';
+      addressData['${prefix}AddressPinCode'] =
+          existingAddress['code']?.toString() ?? '';
+
+      // Handle country
+      if (existingAddress['country'] != null) {
+        addressData['${prefix}AddressCountry'] =
+            existingAddress['country']['name'] ?? '';
+        addressData['${prefix}AddressCountryId'] =
+            existingAddress['country']['_id'] ?? '';
+      }
+
+      // Handle state
+      if (existingAddress['state'] != null) {
+        addressData['${prefix}AddressState'] =
+            existingAddress['state']['name'] ?? '';
+        addressData['${prefix}AddressStateId'] =
+            existingAddress['state']['_id'] ?? '';
+      }
+    }
+
+    if (addressType == 'Billing') {
+      AddressBottomSheetService.showBillingAddressBottomSheet(
+        context: context,
+        ref: ref,
+        initialData: addressData,
+        onAddressSelected: (selectedData) {
+          _updateAddressFromBottomSheet(addressType, selectedData);
+        },
+      );
+    } else {
+      AddressBottomSheetService.showShippingAddressBottomSheet(
+        context: context,
+        ref: ref,
+        initialData: addressData,
+        onAddressSelected: (selectedData) {
+          _updateAddressFromBottomSheet(addressType, selectedData);
+        },
+      );
+    }
+  }
+
+  // Update address from bottom sheet data and save to backend
+  void _updateAddressFromBottomSheet(
+    String addressType,
+    Map<String, dynamic> bottomSheetData,
+  ) async {
+    setState(() {
+      // Remove existing address of this type
+      addresses.removeWhere((addr) => addr['type'] == addressType);
+
+      final prefix = addressType.toLowerCase();
+
+      // Create new address object
+      final newAddress = {
+        'type': addressType,
+        'line1': bottomSheetData['${prefix}AddressLine1'] ?? '',
+        'line2': bottomSheetData['${prefix}AddressLine2'] ?? '',
+        'city': bottomSheetData['${prefix}AddressCity'] ?? '',
+        'code': bottomSheetData['${prefix}AddressPinCode']?.toString() ?? '',
+        'isActive': true,
+      };
+
+      // Add country if provided
+      if (bottomSheetData['${prefix}AddressCountryId'] != null) {
+        newAddress['country'] = {
+          '_id': bottomSheetData['${prefix}AddressCountryId'],
+          'name': bottomSheetData['${prefix}AddressCountry'] ?? '',
+        };
+      }
+
+      // Add state if provided
+      if (bottomSheetData['${prefix}AddressStateId'] != null) {
+        newAddress['state'] = {
+          '_id': bottomSheetData['${prefix}AddressStateId'],
+          'name': bottomSheetData['${prefix}AddressState'] ?? '',
+        };
+      }
+
+      // Add the new address
+      addresses.add(newAddress);
+    });
+
+    // Save to backend
+    await _saveAddressesToBackend();
+  }
+
+  Future<void> _saveAddressesToBackend() async {
+    try {
+      // Prepare data for backend using the FLAT FIELDS approach (like your working form)
+      final submitData = Map<String, dynamic>.from(widget.entityData ?? {});
+
+      // Remove the nested addresses array - don't send it
+      submitData.remove('addresses');
+
+      // Find billing and shipping addresses
+      final billingAddress = addresses.firstWhere(
+        (addr) => addr['type'] == 'Billing',
+        orElse: () => <String, dynamic>{},
+      );
+
+      final shippingAddress = addresses.firstWhere(
+        (addr) => addr['type'] == 'Shipping',
+        orElse: () => <String, dynamic>{},
+      );
+
+      // Add billing address as FLAT FIELDS (matching your working form)
+      if (billingAddress.isNotEmpty &&
+          (billingAddress['line1']?.toString().trim().isNotEmpty ?? false)) {
+        submitData["billingAddressLine1"] = (billingAddress['line1'] ?? '')
+            .toString()
+            .trim();
+        submitData["billingAddressLine2"] = (billingAddress['line2'] ?? '')
+            .toString()
+            .trim();
+        submitData["billingAddressCity"] = (billingAddress['city'] ?? '')
+            .toString()
+            .trim();
+        submitData["billingAddressPinCode"] = (billingAddress['code'] ?? '')
+            .toString()
+            .trim();
+
+        // Add country and state as JUST THE IDs (like your working form)
+        if (billingAddress['country'] != null &&
+            billingAddress['country']['_id'] != null) {
+          submitData["billingAddressCountry"] =
+              billingAddress['country']['_id'];
+        }
+        if (billingAddress['state'] != null &&
+            billingAddress['state']['_id'] != null) {
+          submitData["billingAddressState"] = billingAddress['state']['_id'];
+        }
+
+        print('Added billing address as flat fields:');
+        print('  billingAddressLine1: "${submitData["billingAddressLine1"]}"');
+        print('  billingAddressCity: "${submitData["billingAddressCity"]}"');
+        print(
+          '  billingAddressCountry: "${submitData["billingAddressCountry"]}"',
+        );
+      }
+
+      // Add shipping address as FLAT FIELDS (matching your working form)
+      if (shippingAddress.isNotEmpty &&
+          (shippingAddress['line1']?.toString().trim().isNotEmpty ?? false)) {
+        submitData["shippingAddressLine1"] = (shippingAddress['line1'] ?? '')
+            .toString()
+            .trim();
+        submitData["shippingAddressLine2"] = (shippingAddress['line2'] ?? '')
+            .toString()
+            .trim();
+        submitData["shippingAddressCity"] = (shippingAddress['city'] ?? '')
+            .toString()
+            .trim();
+        submitData["shippingAddressPinCode"] = (shippingAddress['code'] ?? '')
+            .toString()
+            .trim();
+
+        // Add country and state as JUST THE IDs (like your working form)
+        if (shippingAddress['country'] != null &&
+            shippingAddress['country']['_id'] != null) {
+          submitData["shippingAddressCountry"] =
+              shippingAddress['country']['_id'];
+        }
+        if (shippingAddress['state'] != null &&
+            shippingAddress['state']['_id'] != null) {
+          submitData["shippingAddressState"] = shippingAddress['state']['_id'];
+        }
+
+        print('Added shipping address as flat fields:');
+        print(
+          '  shippingAddressLine1: "${submitData["shippingAddressLine1"]}"',
+        );
+        print('  shippingAddressCity: "${submitData["shippingAddressCity"]}"');
+        print(
+          '  shippingAddressCountry: "${submitData["shippingAddressCountry"]}"',
+        );
+      }
+
+      print('Final submit data (flat fields approach): $submitData');
+
+      // Update entity based on type
+      bool success = false;
+      String? errorMessage;
+
+      if (widget.entityType == 'customer') {
+        final response = await ref
+            .read(customerActionsProvider)
+            .updateCustomer(widget.entityId, submitData);
+        success = response.success;
+        errorMessage = response.error;
+
+        if (success) {
+          // Update local state in customer list
+          ref
+              .read(customerListProvider.notifier)
+              .updateCustomer(response.data!);
+        }
+      } else {
+        // For suppliers
+        final response = await ref
+            .read(supplierActionsProvider)
+            .updateSupplier(widget.entityId, submitData);
+        success = response.success;
+        errorMessage = response.error;
+
+        if (success) {
+          // Update local state in supplier list
+          ref
+              .read(supplierListProvider.notifier)
+              .updateSupplier(response.data!);
+        }
+      }
+
+      if (success) {
+        // Show success message
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Success'),
+            content: const Text('Address updated successfully'),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+        );
+      } else {
+        // Show error message
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Error'),
+            content: Text(errorMessage ?? 'Failed to update address'),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error updating address: $e');
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Error'),
+          content: const Text('An unexpected error occurred'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+}
+
+// Agreed Services Details Page
+class AgreedServicesDetailsPage extends ConsumerWidget {
+  final Map<String, dynamic>? entityData;
+  final String entityId;
+  final String entityType;
+
+  const AgreedServicesDetailsPage({
+    super.key,
+    required this.entityData,
+    required this.entityId,
+    required this.entityType,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = ref.watch(colorProvider);
+    final agreedServices =
+        (entityData?['agreedServices'] as List?)
+            ?.cast<Map<String, dynamic>>() ??
+        [];
+
+    return CupertinoPageScaffold(
+      backgroundColor: colors.background,
+      navigationBar: CupertinoNavigationBar(
+        backgroundColor: colors.surface,
+        middle: Text(
+          'Agreed Services',
+          style: TextStyle(color: colors.textPrimary),
+        ),
+        leading: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => Navigator.of(context).pop(),
+          child: Icon(CupertinoIcons.back, color: colors.primary),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => context.go(
+                '/customersuppliers/update/$entityId/agreedservices?type=$entityType',
+              ),
+              child: Icon(CupertinoIcons.add, color: colors.primary, size: 20),
+            ),
+          ],
+        ),
+      ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (agreedServices.isEmpty)
+                _buildEmptyServicesState(colors)
+              else
+                ...agreedServices.map(
+                  (service) => _buildServiceCard(service, colors),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyServicesState(WareozeColorScheme colors) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            CupertinoIcons.checkmark_alt,
+            size: 32,
+            color: colors.textSecondary,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'No agreed services',
+            style: TextStyle(fontSize: 14, color: colors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceCard(
+    Map<String, dynamic> service,
+    WareozeColorScheme colors,
+  ) {
+    final startDate = service['startDate'] != null
+        ? DateTime.parse(service['startDate'])
+        : null;
+    final endDate = service['endDate'] != null
+        ? DateTime.parse(service['endDate'])
+        : null;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                service['serviceCategory'] ?? '',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                'UID: ${service['uid']}',
+                style: TextStyle(fontSize: 12, color: colors.textSecondary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            service['serviceName'] ?? '',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: colors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildServiceDetailItem(
+                  'Service Budget',
+                  '₹${service['serviceBudget']?.toString() ?? '0'}',
+                  colors,
+                ),
+              ),
+              Expanded(
+                child: _buildServiceDetailItem(
+                  'Personnel',
+                  service['personnel']?.toString() ?? '0',
+                  colors,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildServiceDetailItem(
+                  'Start Date',
+                  startDate != null
+                      ? '${startDate.day.toString().padLeft(2, '0')} ${_getMonthName(startDate.month)} ${startDate.year}'
+                      : 'Not set',
+                  colors,
+                ),
+              ),
+              Expanded(
+                child: _buildServiceDetailItem(
+                  'End Date',
+                  endDate != null
+                      ? '${endDate.day.toString().padLeft(2, '0')} ${_getMonthName(endDate.month)} ${endDate.year}'
+                      : 'Not set',
+                  colors,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceDetailItem(
+    String label,
+    String value,
+    WareozeColorScheme colors,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: colors.textSecondary),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            color: colors.textPrimary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return months[month - 1];
   }
 }
 

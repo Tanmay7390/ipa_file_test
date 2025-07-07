@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test_22/components/form_fields.dart';
-import 'package:flutter_test_22/apis/providers/customer_address_provider.dart';
+import 'package:Wareozo/components/form_fields.dart';
+import 'package:Wareozo/apis/providers/customer_address_provider.dart';
 
 // Address Section Component - Separated from Buyer Section
 class AddressSection extends StatefulWidget {

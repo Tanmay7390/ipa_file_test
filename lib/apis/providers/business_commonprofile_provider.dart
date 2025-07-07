@@ -1,9 +1,8 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter_test_22/apis/core/dio_provider.dart';
-import 'package:flutter_test_22/apis/core/api_urls.dart';
-import 'package:flutter_test_22/apis/providers/auth_provider.dart';
+import 'package:Wareozo/apis/core/dio_provider.dart';
+import 'package:Wareozo/apis/core/api_urls.dart';
+import 'package:Wareozo/apis/providers/auth_provider.dart';
 
 // Business Profile State
 class BusinessProfileState {
@@ -39,8 +38,8 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
   final Dio _dio;
   final String? _accountId;
 
-  BusinessProfileNotifier(this._dio, this._accountId) 
-      : super(const BusinessProfileState()) {
+  BusinessProfileNotifier(this._dio, this._accountId)
+    : super(const BusinessProfileState()) {
     if (_accountId != null) {
       fetchBusinessProfile();
     }
@@ -57,17 +56,18 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
   // Fetch Business Profile
   Future<bool> fetchBusinessProfile() async {
     if (_accountId == null) {
-      state = state.copyWith(error: 'Account ID not found. Please login again.');
+      state = state.copyWith(
+        error: 'Account ID not found. Please login again.',
+      );
       return false;
     }
 
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final url = ApiUrls.replaceParams(
-        ApiUrls.myBusinessProfile,
-        {'accountId': _accountId!},
-      );
+      final url = ApiUrls.replaceParams(ApiUrls.myBusinessProfile, {
+        'accountId': _accountId!,
+      });
 
       print('Fetching business profile from: ${_dio.options.baseUrl}$url');
 
@@ -84,7 +84,7 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
 
       if (response.statusCode == 200) {
         final data = response.data;
-        
+
         // Extract account data from response
         Map<String, dynamic>? profileData;
         if (data is Map<String, dynamic>) {
@@ -98,17 +98,15 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
           }
         }
 
-        state = state.copyWith(
-          isLoading: false,
-          profile: profileData,
-        );
+        state = state.copyWith(isLoading: false, profile: profileData);
         return true;
       } else {
         String errorMessage = 'Failed to fetch business profile.';
         if (response.data != null && response.data is Map) {
-          errorMessage = response.data['message'] ?? 
-                         response.data['error'] ?? 
-                         errorMessage;
+          errorMessage =
+              response.data['message'] ??
+              response.data['error'] ??
+              errorMessage;
         }
 
         state = state.copyWith(isLoading: false, error: errorMessage);
@@ -152,17 +150,18 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
   // Update Company Profile
   Future<bool> updateCompanyProfile(Map<String, dynamic> profileData) async {
     if (_accountId == null) {
-      state = state.copyWith(error: 'Account ID not found. Please login again.');
+      state = state.copyWith(
+        error: 'Account ID not found. Please login again.',
+      );
       return false;
     }
 
     state = state.copyWith(isUpdating: true, error: null);
 
     try {
-      final url = ApiUrls.replaceParams(
-        ApiUrls.updateCompanyProfile,
-        {'accountId': _accountId!},
-      );
+      final url = ApiUrls.replaceParams(ApiUrls.updateCompanyProfile, {
+        'accountId': _accountId!,
+      });
 
       print('Updating company profile at: ${_dio.options.baseUrl}$url');
       print('Request data: $profileData');
@@ -183,21 +182,19 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
         // Update local state with new data
         final updatedProfile = Map<String, dynamic>.from(state.profile ?? {});
         updatedProfile.addAll(profileData);
-        
-        state = state.copyWith(
-          isUpdating: false,
-          profile: updatedProfile,
-        );
-        
+
+        state = state.copyWith(isUpdating: false, profile: updatedProfile);
+
         // Refresh profile data
         await fetchBusinessProfile();
         return true;
       } else {
         String errorMessage = 'Failed to update company profile.';
         if (response.data != null && response.data is Map) {
-          errorMessage = response.data['message'] ?? 
-                         response.data['error'] ?? 
-                         errorMessage;
+          errorMessage =
+              response.data['message'] ??
+              response.data['error'] ??
+              errorMessage;
         }
 
         state = state.copyWith(isUpdating: false, error: errorMessage);
@@ -209,7 +206,8 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
       if (e.response != null) {
         switch (e.response!.statusCode) {
           case 400:
-            if (e.response!.data is Map && e.response!.data['message'] != null) {
+            if (e.response!.data is Map &&
+                e.response!.data['message'] != null) {
               errorMessage = e.response!.data['message'];
             } else {
               errorMessage = 'Invalid profile data.';
@@ -251,17 +249,18 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
   // Update Legal Information
   Future<bool> updateLegalInfo(Map<String, dynamic> legalData) async {
     if (_accountId == null) {
-      state = state.copyWith(error: 'Account ID not found. Please login again.');
+      state = state.copyWith(
+        error: 'Account ID not found. Please login again.',
+      );
       return false;
     }
 
     state = state.copyWith(isUpdating: true, error: null);
 
     try {
-      final url = ApiUrls.replaceParams(
-        ApiUrls.updateLegal,
-        {'accountId': _accountId!},
-      );
+      final url = ApiUrls.replaceParams(ApiUrls.updateLegal, {
+        'accountId': _accountId!,
+      });
 
       print('Updating legal info at: ${_dio.options.baseUrl}$url');
       print('Request data: $legalData');
@@ -282,21 +281,19 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
         // Update local state with new data
         final updatedProfile = Map<String, dynamic>.from(state.profile ?? {});
         updatedProfile.addAll(legalData);
-        
-        state = state.copyWith(
-          isUpdating: false,
-          profile: updatedProfile,
-        );
-        
+
+        state = state.copyWith(isUpdating: false, profile: updatedProfile);
+
         // Refresh profile data
         await fetchBusinessProfile();
         return true;
       } else {
         String errorMessage = 'Failed to update legal information.';
         if (response.data != null && response.data is Map) {
-          errorMessage = response.data['message'] ?? 
-                         response.data['error'] ?? 
-                         errorMessage;
+          errorMessage =
+              response.data['message'] ??
+              response.data['error'] ??
+              errorMessage;
         }
 
         state = state.copyWith(isUpdating: false, error: errorMessage);
@@ -308,7 +305,8 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
       if (e.response != null) {
         switch (e.response!.statusCode) {
           case 400:
-            if (e.response!.data is Map && e.response!.data['message'] != null) {
+            if (e.response!.data is Map &&
+                e.response!.data['message'] != null) {
               errorMessage = e.response!.data['message'];
             } else {
               errorMessage = 'Invalid legal data.';
@@ -350,17 +348,18 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
   // Update Payment Information
   Future<bool> updatePaymentInfo(Map<String, dynamic> paymentData) async {
     if (_accountId == null) {
-      state = state.copyWith(error: 'Account ID not found. Please login again.');
+      state = state.copyWith(
+        error: 'Account ID not found. Please login again.',
+      );
       return false;
     }
 
     state = state.copyWith(isUpdating: true, error: null);
 
     try {
-      final url = ApiUrls.replaceParams(
-        ApiUrls.updatePayment,
-        {'accountId': _accountId!},
-      );
+      final url = ApiUrls.replaceParams(ApiUrls.updatePayment, {
+        'accountId': _accountId!,
+      });
 
       print('Updating payment info at: ${_dio.options.baseUrl}$url');
       print('Request data: $paymentData');
@@ -381,21 +380,19 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
         // Update local state with new data
         final updatedProfile = Map<String, dynamic>.from(state.profile ?? {});
         updatedProfile.addAll(paymentData);
-        
-        state = state.copyWith(
-          isUpdating: false,
-          profile: updatedProfile,
-        );
-        
+
+        state = state.copyWith(isUpdating: false, profile: updatedProfile);
+
         // Refresh profile data
         await fetchBusinessProfile();
         return true;
       } else {
         String errorMessage = 'Failed to update payment information.';
         if (response.data != null && response.data is Map) {
-          errorMessage = response.data['message'] ?? 
-                         response.data['error'] ?? 
-                         errorMessage;
+          errorMessage =
+              response.data['message'] ??
+              response.data['error'] ??
+              errorMessage;
         }
 
         state = state.copyWith(isUpdating: false, error: errorMessage);
@@ -407,7 +404,8 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
       if (e.response != null) {
         switch (e.response!.statusCode) {
           case 400:
-            if (e.response!.data is Map && e.response!.data['message'] != null) {
+            if (e.response!.data is Map &&
+                e.response!.data['message'] != null) {
               errorMessage = e.response!.data['message'];
             } else {
               errorMessage = 'Invalid payment data.';
@@ -449,7 +447,7 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
   // Helper methods to get specific data from profile
   Map<String, dynamic>? get companyInfo {
     if (state.profile == null) return null;
-    
+
     return {
       'name': state.profile!['name'],
       'legalName': state.profile!['legalName'],
@@ -470,7 +468,7 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
 
   Map<String, dynamic>? get legalInfo {
     if (state.profile == null) return null;
-    
+
     return {
       'companyType': state.profile!['companyType'],
       'countryOfRegistration': state.profile!['countryOfRegistration'],
@@ -485,7 +483,7 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
 
   Map<String, dynamic>? get paymentInfo {
     if (state.profile == null) return null;
-    
+
     return {
       'bankAccounts': state.profile!['bankAccounts'],
       'gPayPhone': state.profile!['gPayPhone'],
@@ -496,17 +494,18 @@ class BusinessProfileNotifier extends StateNotifier<BusinessProfileState> {
   }
 
   List<dynamic>? get addresses => state.profile?['addresses'];
-  
+
   List<dynamic>? get bankAccounts => state.profile?['bankAccounts'];
 }
 
 // Business Profile Provider
-final businessProfileProvider = StateNotifierProvider<BusinessProfileNotifier, BusinessProfileState>((ref) {
-  final dio = ref.watch(dioProvider);
-  final authState = ref.watch(authProvider);
-  
-  return BusinessProfileNotifier(dio, authState.accountId);
-});
+final businessProfileProvider =
+    StateNotifierProvider<BusinessProfileNotifier, BusinessProfileState>((ref) {
+      final dio = ref.watch(dioProvider);
+      final authState = ref.watch(authProvider);
+
+      return BusinessProfileNotifier(dio, authState.accountId);
+    });
 
 // Helper providers for specific data
 final companyInfoProvider = Provider<Map<String, dynamic>?>((ref) {
@@ -545,7 +544,9 @@ class BusinessProfileHelper {
 
   // Fetch business profile
   Future<bool> fetchProfile() async {
-    return await ref.read(businessProfileProvider.notifier).fetchBusinessProfile();
+    return await ref
+        .read(businessProfileProvider.notifier)
+        .fetchBusinessProfile();
   }
 
   // Update company profile with validation
@@ -571,18 +572,25 @@ class BusinessProfileHelper {
     if (legalName != null) data['legalName'] = legalName.trim();
     if (displayName != null) data['displayName'] = displayName.trim();
     if (companyDesc != null) data['companyDesc'] = companyDesc.trim();
-    if (industryVertical != null) data['industryVertical'] = industryVertical.trim();
+    if (industryVertical != null)
+      data['industryVertical'] = industryVertical.trim();
     if (businessType != null) data['businessType'] = businessType;
     if (website != null) data['website'] = website.trim();
     if (contactName != null) data['contactName'] = contactName.trim();
     if (email != null) data['email'] = email.trim();
     if (whatsAppNumber != null) data['whatsAppNumber'] = whatsAppNumber.trim();
-    if (showSignatureOnInvoice != null) data['showSignatureOnInvoice'] = showSignatureOnInvoice;
-    if (showLogoOnInvoice != null) data['showLogoOnInvoice'] = showLogoOnInvoice;
-    if (taxIdentificationNumber1 != null) data['taxIdentificationNumber1'] = taxIdentificationNumber1.trim();
-    if (taxIdentificationNumber2 != null) data['taxIdentificationNumber2'] = taxIdentificationNumber2.trim();
+    if (showSignatureOnInvoice != null)
+      data['showSignatureOnInvoice'] = showSignatureOnInvoice;
+    if (showLogoOnInvoice != null)
+      data['showLogoOnInvoice'] = showLogoOnInvoice;
+    if (taxIdentificationNumber1 != null)
+      data['taxIdentificationNumber1'] = taxIdentificationNumber1.trim();
+    if (taxIdentificationNumber2 != null)
+      data['taxIdentificationNumber2'] = taxIdentificationNumber2.trim();
 
-    return await ref.read(businessProfileProvider.notifier).updateCompanyProfile(data);
+    return await ref
+        .read(businessProfileProvider.notifier)
+        .updateCompanyProfile(data);
   }
 
   // Update legal info with validation
@@ -599,37 +607,47 @@ class BusinessProfileHelper {
     final Map<String, dynamic> data = {};
 
     if (companyType != null) data['companyType'] = companyType.trim();
-    if (countryOfRegistration != null) data['countryOfRegistration'] = countryOfRegistration;
+    if (countryOfRegistration != null)
+      data['countryOfRegistration'] = countryOfRegistration;
     if (legalName != null) data['legalName'] = legalName.trim();
     if (registrationNo != null) data['registrationNo'] = registrationNo.trim();
-    if (smeRegistrationFlag != null) data['smeRegistrationFlag'] = smeRegistrationFlag;
-    if (stateOfRegistration != null) data['stateOfRegistration'] = stateOfRegistration.trim();
-    if (taxIdentificationNumber1 != null) data['taxIdentificationNumber1'] = taxIdentificationNumber1.trim();
-    if (taxIdentificationNumber2 != null) data['taxIdentificationNumber2'] = taxIdentificationNumber2.trim();
+    if (smeRegistrationFlag != null)
+      data['smeRegistrationFlag'] = smeRegistrationFlag;
+    if (stateOfRegistration != null)
+      data['stateOfRegistration'] = stateOfRegistration.trim();
+    if (taxIdentificationNumber1 != null)
+      data['taxIdentificationNumber1'] = taxIdentificationNumber1.trim();
+    if (taxIdentificationNumber2 != null)
+      data['taxIdentificationNumber2'] = taxIdentificationNumber2.trim();
 
-    return await ref.read(businessProfileProvider.notifier).updateLegalInfo(data);
+    return await ref
+        .read(businessProfileProvider.notifier)
+        .updateLegalInfo(data);
   }
 
   // Update payment info
   Future<bool> updatePaymentInfo(Map<String, dynamic> paymentData) async {
-    return await ref.read(businessProfileProvider.notifier).updatePaymentInfo(paymentData);
+    return await ref
+        .read(businessProfileProvider.notifier)
+        .updatePaymentInfo(paymentData);
   }
 
   // Get current profile data
-  Map<String, dynamic>? get currentProfile => ref.read(businessProfileProvider).profile;
-  
+  Map<String, dynamic>? get currentProfile =>
+      ref.read(businessProfileProvider).profile;
+
   // Check if profile is loaded
   bool get isProfileLoaded => ref.read(businessProfileProvider).profile != null;
-  
+
   // Check if loading
   bool get isLoading => ref.read(businessProfileProvider).isLoading;
-  
+
   // Check if updating
   bool get isUpdating => ref.read(businessProfileProvider).isUpdating;
-  
+
   // Get error
   String? get error => ref.read(businessProfileProvider).error;
-  
+
   // Clear error
   void clearError() => ref.read(businessProfileProvider.notifier).clearError();
 }

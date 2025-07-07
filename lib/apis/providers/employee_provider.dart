@@ -336,14 +336,43 @@ class EmployeeRepository {
       final formData = FormData();
 
       // Add all fields to FormData
+      // employeeData.forEach((key, value) {
+      //   if (value != null) {
+      //     if (value is MultipartFile) {
+      //       // Handle file uploads
+      //       formData.files.add(MapEntry(key, value));
+      //     } else if (value is List) {
+      //       // For arrays, convert to JSON string
+      //       formData.fields.add(MapEntry(key, jsonEncode(value)));
+      //     } else if (value is Map) {
+      //       // For nested objects, convert to JSON string
+      //       formData.fields.add(MapEntry(key, jsonEncode(value)));
+      //     } else {
+      //       // For primitive types
+      //       formData.fields.add(MapEntry(key, value.toString()));
+      //     }
+      //   }
+      // });
+
+      // Add all fields to FormData
       employeeData.forEach((key, value) {
         if (value != null) {
           if (value is MultipartFile) {
             // Handle file uploads
             formData.files.add(MapEntry(key, value));
           } else if (value is List) {
-            // For arrays, convert to JSON string
-            formData.fields.add(MapEntry(key, jsonEncode(value)));
+            // Special handling for ObjectId arrays like addresses
+            if (key == 'addresses' && value.isNotEmpty) {
+              // Add each address ID as a separate field
+              for (int i = 0; i < value.length; i++) {
+                formData.fields.add(
+                  MapEntry('addresses[$i]', value[i].toString()),
+                );
+              }
+            } else {
+              // For other arrays, convert to JSON string
+              formData.fields.add(MapEntry(key, jsonEncode(value)));
+            }
           } else if (value is Map) {
             // For nested objects, convert to JSON string
             formData.fields.add(MapEntry(key, jsonEncode(value)));

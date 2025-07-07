@@ -2,14 +2,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_test_22/apis/providers/business_commonprofile_provider.dart';
-import 'package:flutter_test_22/apis/providers/bankaccount_provider.dart';
-import 'package:flutter_test_22/apis/providers/address_provider.dart';
-import 'package:flutter_test_22/apis/providers/documentsetting_provider.dart';
-import 'package:flutter_test_22/theme_provider.dart';
+import 'package:Wareozo/apis/providers/business_commonprofile_provider.dart';
+import 'package:Wareozo/apis/providers/bankaccount_provider.dart';
+import 'package:Wareozo/apis/providers/address_provider.dart';
+import 'package:Wareozo/apis/providers/documentsetting_provider.dart';
+import 'package:Wareozo/theme_provider.dart';
 import 'document_setting_form.dart';
 import 'bank_form.dart';
 import 'address_form.dart';
+import 'subscription_settings_page.dart';
 
 class BusinessProfilePage extends ConsumerStatefulWidget {
   const BusinessProfilePage({Key? key}) : super(key: key);
@@ -290,14 +291,7 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
       _MenuItem(
         icon: Icons.settings,
         title: 'Settings',
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Settings page not implemented yet'),
-              backgroundColor: colors.warning,
-            ),
-          );
-        },
+        onTap: () => _navigateToPage(const SubscriptionSettingsPage()),
       ),
       _MenuItem(
         icon: Icons.description,

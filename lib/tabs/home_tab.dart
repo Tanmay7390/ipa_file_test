@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../theme_provider.dart';
 import '../Inventory/inventory_form.dart';
-import 'package:flutter_test_22/drawer.dart';
+import 'package:Wareozo/drawer.dart';
 
 class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
