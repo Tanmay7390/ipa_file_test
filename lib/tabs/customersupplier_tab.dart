@@ -9,7 +9,6 @@ import '../components/swipable_row.dart';
 import '../apis/providers/customer_provider.dart';
 import '../apis/providers/supplier_provider.dart';
 
-
 class CustomerSupplierTab extends ConsumerStatefulWidget {
   const CustomerSupplierTab({super.key});
 
@@ -425,6 +424,17 @@ class _CustomerSupplierTabState extends ConsumerState<CustomerSupplierTab> {
           }).toList();
         }
 
+        // Sort by creation date (newest first)
+        filteredCustomers.sort((a, b) {
+          final aDate =
+              DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
+              DateTime(1970);
+          final bDate =
+              DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
+              DateTime(1970);
+          return bDate.compareTo(aDate); // Descending order (newest first)
+        });
+
         return CustomSwipableRow(
           isLoading: _isLoading,
           items: filteredCustomers,
@@ -471,6 +481,17 @@ class _CustomerSupplierTabState extends ConsumerState<CustomerSupplierTab> {
             return name.contains(query) || legalName.contains(query);
           }).toList();
         }
+
+        // Sort by creation date (newest first)
+        filteredSuppliers.sort((a, b) {
+          final aDate =
+              DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
+              DateTime(1970);
+          final bDate =
+              DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
+              DateTime(1970);
+          return bDate.compareTo(aDate); // Descending order (newest first)
+        });
 
         return CustomSwipableRow(
           isLoading: _isLoading,

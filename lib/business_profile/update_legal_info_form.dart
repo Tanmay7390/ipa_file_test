@@ -2,6 +2,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:Wareozo/apis/providers/business_commonprofile_provider.dart';
+import 'package:Wareozo/apis/providers/countries_states_currency_provider.dart';
 import 'package:Wareozo/theme_provider.dart';
 import 'package:Wareozo/components/form_fields.dart';
 
@@ -18,6 +19,10 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
   Map<String, String> validationErrors = {};
   bool isSubmitting = false;
 
+  // Store the selected country and state IDs
+  String? selectedCountryId;
+  String? selectedStateId;
+
   final List<String> companyTypeOptions = [
     'Private Limited Company',
     'Public Limited Company',
@@ -32,55 +37,6 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
     'Other',
   ];
 
-  final List<String> countryOptions = [
-    'India',
-    'United States',
-    'United Kingdom',
-    'Canada',
-    'Australia',
-    'Singapore',
-    'United Arab Emirates',
-    'Other',
-  ];
-
-  final List<String> stateOptions = [
-    'Andhra Pradesh',
-    'Arunachal Pradesh',
-    'Assam',
-    'Bihar',
-    'Chhattisgarh',
-    'Goa',
-    'Gujarat',
-    'Haryana',
-    'Himachal Pradesh',
-    'Jharkhand',
-    'Karnataka',
-    'Kerala',
-    'Madhya Pradesh',
-    'Maharashtra',
-    'Manipur',
-    'Meghalaya',
-    'Mizoram',
-    'Nagaland',
-    'Odisha',
-    'Punjab',
-    'Rajasthan',
-    'Sikkim',
-    'Tamil Nadu',
-    'Telangana',
-    'Tripura',
-    'Uttarakhand',
-    'Uttar Pradesh',
-    'West Bengal',
-    'Delhi',
-    'Chandigarh',
-    'Dadra and Nagar Haveli and Daman and Diu',
-    'Jammu and Kashmir',
-    'Ladakh',
-    'Lakshadweep',
-    'Puducherry',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -92,6 +48,21 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
     final profile = businessProfile.profile;
 
     if (profile != null) {
+      // Set the country ID and name
+      if (profile['countryOfRegistration'] != null) {
+        selectedCountryId = profile['countryOfRegistration']['_id'];
+      }
+
+      // For state, the API returns state as just an ID, we need to find the name
+      if (profile['stateOfRegistration'] != null &&
+          profile['stateOfRegistration'].isNotEmpty) {
+        selectedStateId = profile['stateOfRegistration']; // Store the ID
+        // Find the state name after states are loaded
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _findStateNameFromId(profile['stateOfRegistration']);
+        });
+      }
+
       formData = {
         'companyType': profile['companyType'] ?? '',
         'countryOfRegistration':
@@ -99,16 +70,72 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
         'legalName': profile['legalName'] ?? '',
         'registrationNo': profile['registrationNo'] ?? '',
         'smeRegistrationFlag': profile['smeRegistrationFlag'] ?? false,
-        'stateOfRegistration': profile['stateOfRegistration'] ?? '',
+        'stateOfRegistration': '', // Will be set by _findStateNameFromId
         'taxIdentificationNumber1': profile['taxIdentificationNumber1'] ?? '',
         'taxIdentificationNumber2': profile['taxIdentificationNumber2'] ?? '',
       };
     }
   }
 
+  void _findStateNameFromId(String stateId) {
+    final statesAsync = ref.read(statesDropdownProvider);
+    statesAsync.whenData((states) {
+      final matchingState = states.firstWhere(
+        (state) => state['id'] == stateId,
+        orElse: () => <String, String>{},
+      );
+      if (matchingState.isNotEmpty) {
+        setState(() {
+          formData['stateOfRegistration'] = matchingState['name'] ?? '';
+        });
+      }
+    });
+  }
+
   void _onFieldChanged(String key, dynamic value) {
     setState(() {
       formData[key] = value;
+
+      // Handle country selection - find the country ID
+      if (key == 'countryOfRegistration') {
+        final countriesAsync = ref.read(countriesDropdownProvider);
+        countriesAsync.whenData((countries) {
+          final selectedCountry = countries.firstWhere(
+            (country) => country['name'] == value,
+            orElse: () => <String, String>{},
+          );
+          if (selectedCountry.isNotEmpty) {
+            selectedCountryId = selectedCountry['id'];
+            print(
+              'Selected country: ${selectedCountry['name']} with ID: ${selectedCountry['id']}',
+            );
+          } else {
+            print('Country not found: $value');
+            selectedCountryId = null;
+          }
+        });
+      }
+
+      // Handle state selection - find the state ID
+      if (key == 'stateOfRegistration') {
+        final statesAsync = ref.read(statesDropdownProvider);
+        statesAsync.whenData((states) {
+          final selectedState = states.firstWhere(
+            (state) => state['name'] == value,
+            orElse: () => <String, String>{},
+          );
+          if (selectedState.isNotEmpty) {
+            selectedStateId = selectedState['id'];
+            print(
+              'Selected state: ${selectedState['name']} with ID: ${selectedState['id']}',
+            );
+          } else {
+            print('State not found: $value');
+            selectedStateId = null;
+          }
+        });
+      }
+
       // Clear validation error for this field when user starts typing
       if (validationErrors.containsKey(key)) {
         validationErrors.remove(key);
@@ -131,46 +158,27 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
     if (formData['countryOfRegistration']?.isEmpty ?? true) {
       validationErrors['countryOfRegistration'] =
           'Country of registration is required';
+    } else if (selectedCountryId == null) {
+      validationErrors['countryOfRegistration'] =
+          'Please select a valid country';
     }
 
     if (formData['stateOfRegistration']?.isEmpty ?? true) {
       validationErrors['stateOfRegistration'] =
           'State of registration is required';
+    } else if (selectedStateId == null) {
+      validationErrors['stateOfRegistration'] = 'Please select a valid state';
     }
 
-    // Optional but format-specific validations
+    // Optional field validations
     if (formData['registrationNo']?.isNotEmpty == true &&
         formData['registrationNo'].length < 3) {
       validationErrors['registrationNo'] =
           'Registration number must be at least 3 characters';
     }
 
-    if (formData['taxIdentificationNumber1']?.isNotEmpty == true &&
-        !_isValidTaxId(formData['taxIdentificationNumber1'])) {
-      validationErrors['taxIdentificationNumber1'] =
-          'Please enter a valid tax identification number';
-    }
-
-    if (formData['taxIdentificationNumber2']?.isNotEmpty == true &&
-        !_isValidGSTNumber(formData['taxIdentificationNumber2'])) {
-      validationErrors['taxIdentificationNumber2'] =
-          'Please enter a valid GST number';
-    }
-
     setState(() {});
     return validationErrors.isEmpty;
-  }
-
-  bool _isValidTaxId(String taxId) {
-    // Basic PAN validation pattern
-    return RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$').hasMatch(taxId);
-  }
-
-  bool _isValidGSTNumber(String gstNumber) {
-    // Basic GST validation pattern
-    return RegExp(
-      r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$',
-    ).hasMatch(gstNumber);
   }
 
   Future<void> _submitForm() async {
@@ -183,17 +191,27 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
     try {
       final businessProfileHelper = ref.read(businessProfileHelperProvider);
 
-      // For countryOfRegistration, we need to pass the ID, not the name
-      // For now, we'll use the country name and let the backend handle it
-      // In a real app, you'd want to maintain a mapping of country names to IDs
+      // Debug logging
+      print('=== Submitting Legal Info ===');
+      print('Company Type: ${formData['companyType']}');
+      print('Country Name: ${formData['countryOfRegistration']}');
+      print('Country ID: $selectedCountryId');
+      print('State Name: ${formData['stateOfRegistration']}');
+      print('State ID: $selectedStateId');
+      print('Legal Name: ${formData['legalName']}');
+      print('Registration No: ${formData['registrationNo']}');
+      print('SME Flag: ${formData['smeRegistrationFlag']}');
+      print('PAN: ${formData['taxIdentificationNumber1']}');
+      print('GST: ${formData['taxIdentificationNumber2']}');
 
+      // Prepare the data with correct IDs for country and state
       final success = await businessProfileHelper.updateLegalInfo(
         companyType: formData['companyType'],
-        countryOfRegistration: formData['countryOfRegistration'],
+        countryOfRegistration: selectedCountryId, // Send ID instead of name
         legalName: formData['legalName'],
         registrationNo: formData['registrationNo'],
         smeRegistrationFlag: formData['smeRegistrationFlag'],
-        stateOfRegistration: formData['stateOfRegistration'],
+        stateOfRegistration: selectedStateId, // Send ID instead of name
         taxIdentificationNumber1: formData['taxIdentificationNumber1'],
         taxIdentificationNumber2: formData['taxIdentificationNumber2'],
       );
@@ -244,6 +262,72 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCountryDropdown() {
+    final countriesAsync = ref.watch(countriesDropdownProvider);
+
+    return countriesAsync.when(
+      data: (countries) {
+        final countryNames = countries
+            .map((country) => country['name']!)
+            .toList();
+        return FormFieldWidgets.buildSelectField(
+          'countryOfRegistration',
+          'Country of Registration',
+          countryNames,
+          onChanged: _onFieldChanged,
+          formData: formData,
+          validationErrors: validationErrors,
+          isRequired: true,
+        );
+      },
+      loading: () => Container(
+        height: 60,
+        child: Center(child: CupertinoActivityIndicator()),
+      ),
+      error: (error, stack) => Container(
+        height: 60,
+        child: Center(
+          child: Text(
+            'Error loading countries',
+            style: TextStyle(color: CupertinoColors.destructiveRed),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStateDropdown() {
+    final statesAsync = ref.watch(statesDropdownProvider);
+
+    return statesAsync.when(
+      data: (states) {
+        final stateNames = states.map((state) => state['name']!).toList();
+        return FormFieldWidgets.buildSelectField(
+          'stateOfRegistration',
+          'State of Registration',
+          stateNames,
+          onChanged: _onFieldChanged,
+          formData: formData,
+          validationErrors: validationErrors,
+          isRequired: true,
+        );
+      },
+      loading: () => Container(
+        height: 60,
+        child: Center(child: CupertinoActivityIndicator()),
+      ),
+      error: (error, stack) => Container(
+        height: 60,
+        child: Center(
+          child: Text(
+            'Error loading states',
+            style: TextStyle(color: CupertinoColors.destructiveRed),
+          ),
+        ),
       ),
     );
   }
@@ -388,25 +472,9 @@ class _UpdateLegalInfoFormState extends ConsumerState<UpdateLegalInfoForm> {
                         ),
                       ),
                     ),
-                    FormFieldWidgets.buildSelectField(
-                      'countryOfRegistration',
-                      'Country of Registration',
-                      countryOptions,
-                      onChanged: _onFieldChanged,
-                      formData: formData,
-                      validationErrors: validationErrors,
-                      isRequired: true,
-                    ),
+                    _buildCountryDropdown(),
                     Container(height: 0.5, color: colors.border),
-                    FormFieldWidgets.buildSelectField(
-                      'stateOfRegistration',
-                      'State of Registration',
-                      stateOptions,
-                      onChanged: _onFieldChanged,
-                      formData: formData,
-                      validationErrors: validationErrors,
-                      isRequired: true,
-                    ),
+                    _buildStateDropdown(),
                     Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildSwitchField(
                       'smeRegistrationFlag',

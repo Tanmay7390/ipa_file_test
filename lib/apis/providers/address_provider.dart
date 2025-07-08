@@ -188,35 +188,90 @@ class AddressNotifier extends StateNotifier<AddressState> {
 
   // Create new address
   Future<bool> createAddress(Map<String, dynamic> addressData) async {
+    // Check if account ID is available
+    if (_accountId == null || _accountId!.isEmpty) {
+      state = state.copyWith(
+        error: 'Account ID not found. Please login again.',
+      );
+      return false;
+    }
+
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // Add accountId to the data
-      final dataWithAccountId = {...addressData, 'accountId': _accountId};
+      // Validate required fields
+      if (addressData['state'] == null ||
+          addressData['state'].toString().isEmpty) {
+        state = state.copyWith(isLoading: false, error: 'State is required');
+        return false;
+      }
+
+      if (addressData['country'] == null ||
+          addressData['country'].toString().isEmpty) {
+        state = state.copyWith(isLoading: false, error: 'Country is required');
+        return false;
+      }
+
+      // Prepare the data with accountId - MODIFIED THIS SECTION
+      final Map<String, dynamic> dataWithAccountId = {
+        'account': _accountId!, // Changed from 'accountId' to 'account'
+        'type': addressData['type']?.toString().trim() ?? '',
+        'line1': addressData['line1']?.toString().trim() ?? '',
+        'line2': addressData['line2']?.toString().trim() ?? '',
+        'line3': addressData['line3']?.toString().trim() ?? '',
+        'city': addressData['city']?.toString().trim() ?? '',
+        'state': addressData['state']?.toString().trim() ?? '',
+        'country': addressData['country']?.toString().trim() ?? '',
+        'code': addressData['code']?.toString().trim() ?? '',
+        'phone1': addressData['phone1']?.toString().trim() ?? '',
+        'phone2': addressData['phone2']?.toString().trim() ?? '',
+        'isActive': addressData['isActive'] ?? true,
+      };
+
+      // Debug logs
+      print('Creating address with data: $dataWithAccountId');
+      print('Account ID: $_accountId');
 
       final response = await _dio.post(
         ApiUrls.createAddress,
         data: dataWithAccountId,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          validateStatus: (status) =>
+              status! < 500, // Add this to handle 400 errors gracefully
+        ),
       );
+
+      print('Create address response status: ${response.statusCode}');
+      print('Create address response data: ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Refresh the list after successful creation
         await fetchAddresses();
+        state = state.copyWith(isLoading: false);
         return true;
       } else {
-        state = state.copyWith(
-          isLoading: false,
-          error: 'Failed to create address',
-        );
+        final errorMessage =
+            response.data['message'] ?? 'Failed to create address';
+        state = state.copyWith(isLoading: false, error: errorMessage);
         return false;
       }
     } on DioException catch (e) {
-      state = state.copyWith(isLoading: false, error: _handleDioError(e));
+      print('DioException in createAddress: ${e.message}');
+      print('Response data: ${e.response?.data}');
+      print('Response status: ${e.response?.statusCode}');
+
+      final errorMessage = e.response?.data['message'] ?? _handleDioError(e);
+      state = state.copyWith(isLoading: false, error: errorMessage);
       return false;
     } catch (e) {
+      print('General Exception in createAddress: $e');
       state = state.copyWith(
         isLoading: false,
-        error: 'An unexpected error occurred',
+        error: 'An unexpected error occurred: $e',
       );
       return false;
     }

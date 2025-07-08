@@ -34,6 +34,7 @@ class ApiUrls {
   static const String deleteAddress = 'address/{id}';
 
   // DocumentSettings endpoints
+  static const String documentTypesList = 'document-types';
   static const String documentSettingsList = 'document-settings/{accountId}';
   static const String getDocumentSettingsById = 'document-settings/single/{id}';
   static const String createDocumentSettings = 'document-settings';

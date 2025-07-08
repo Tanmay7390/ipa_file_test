@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:Wareozo/apis/providers/business_commonprofile_provider.dart';
 import 'package:Wareozo/theme_provider.dart';
 import 'package:Wareozo/components/form_fields.dart';
+import 'dart:io';
 
 class UpdateCompanyProfileForm extends ConsumerStatefulWidget {
   const UpdateCompanyProfileForm({Key? key}) : super(key: key);
@@ -19,32 +20,28 @@ class _UpdateCompanyProfileFormState
   Map<String, String> validationErrors = {};
   bool isSubmitting = false;
 
-  final List<String> businessTypeOptions = [
-    'Service',
-    'Manufacturing',
-    'Trading',
-    'Consulting',
-    'Technology',
-    'Healthcare',
-    'Education',
-    'Finance',
-    'Retail',
-    'Other',
-  ];
+  final List<String> businessTypeOptions = ['Service', 'Product', 'Consulting'];
 
   final List<String> industryVerticalOptions = [
-    'Technology',
-    'Healthcare',
-    'Finance',
-    'Education',
-    'Manufacturing',
-    'Retail',
-    'Consulting',
-    'Real Estate',
-    'Transportation',
-    'Energy',
+    'Aerospace (aircraft manufacturing)',
     'Agriculture',
-    'Other',
+    'Chemical (manufacturing)',
+    'Computers',
+    'Construction',
+    'Defense',
+    'Energy (production, distribution)',
+    'Entertainment',
+    'Financial',
+    'Food',
+    'Health Care',
+    'Hospitality',
+    'Information',
+    'Manufacturing',
+    'Mass Media',
+    'Telecommunications',
+    'Transport',
+    'Real Estate',
+    'Water',
   ];
 
   @override
@@ -57,24 +54,77 @@ class _UpdateCompanyProfileFormState
     final businessProfile = ref.read(businessProfileProvider);
     final profile = businessProfile.profile;
 
+    // Helper function to safely get string values
+    String _safeString(dynamic value) {
+      if (value == null ||
+          value == 'undefined' ||
+          value.toString().trim().isEmpty) {
+        return '';
+      }
+      return value.toString();
+    }
+
+    // Helper function to safely get list values
+    List<String> _safeList(dynamic value) {
+      if (value == null || value == 'undefined') {
+        return [];
+      }
+      if (value is List) {
+        return value.map((e) => e.toString()).toList();
+      }
+      return [];
+    }
+
+    // Helper function to safely get boolean values
+    bool _safeBool(dynamic value) {
+      if (value == null || value == 'undefined') {
+        return false;
+      }
+      if (value is bool) {
+        return value;
+      }
+      return false;
+    }
+
     if (profile != null) {
       formData = {
-        'name': profile['name'] ?? '',
-        'legalName': profile['legalName'] ?? '',
-        'displayName': profile['displayName'] ?? '',
-        'companyDesc': profile['companyDesc'] ?? '',
-        'industryVertical': profile['industryVertical'] ?? '',
-        'businessType': List<String>.from(profile['businessType'] ?? []),
-        'website': profile['website'] ?? '',
-        'contactName': profile['contactName'] ?? '',
-        'email': profile['email'] ?? '',
-        'whatsAppNumber': profile['whatsAppNumber'] ?? '',
-        'taxIdentificationNumber1': profile['taxIdentificationNumber1'] ?? '',
-        'taxIdentificationNumber2': profile['taxIdentificationNumber2'] ?? '',
-        'showSignatureOnInvoice': profile['showSignatureOnInvoice'] ?? false,
-        'showLogoOnInvoice': profile['showLogoOnInvoice'] ?? false,
+        'name': _safeString(profile['name']),
+        'legalName': _safeString(profile['legalName']),
+        'displayName': _safeString(profile['displayName']),
+        'companyDesc': _safeString(profile['companyDesc']),
+        'industryVertical': _safeString(profile['industryVertical']),
+        'businessType': _safeList(profile['businessType']),
+        'website': _safeString(profile['website']),
+        'contactName': _safeString(profile['contactName']),
+        'email': _safeString(profile['email']),
+        'whatsAppNumber': _safeString(profile['whatsAppNumber']),
+        'taxIdentificationNumber1': _safeString(
+          profile['taxIdentificationNumber1'],
+        ),
+        'taxIdentificationNumber2': _safeString(
+          profile['taxIdentificationNumber2'],
+        ),
+        'showSignatureOnInvoice': _safeBool(profile['showSignatureOnInvoice']),
+        'showLogoOnInvoice': _safeBool(profile['showLogoOnInvoice']),
+        // Add current logo and signature URLs for display
+        'currentLogoUrl': profile['logo'],
+        'currentSignatureUrl': profile['signature'],
+        // File objects for new uploads (will be null initially)
+        'logoFile': null,
+        'signatureFile': null,
       };
     }
+  }
+
+  // Helper function to clean string values - more robust
+  String? cleanString(String? value) {
+    if (value == null ||
+        value == 'undefined' ||
+        value == 'null' ||
+        value.trim().isEmpty) {
+      return null;
+    }
+    return value.trim();
   }
 
   void _onFieldChanged(String key, dynamic value) {
@@ -107,42 +157,20 @@ class _UpdateCompanyProfileFormState
       validationErrors['contactName'] = 'Contact name is required';
     }
 
-    if (formData['email']?.isEmpty ?? true) {
-      validationErrors['email'] = 'Email is required';
-    } else if (!_isValidEmail(formData['email'])) {
-      validationErrors['email'] = 'Please enter a valid email address';
-    }
-
     // Optional field validations
     if (formData['website']?.isNotEmpty == true &&
         !_isValidWebsite(formData['website'])) {
       validationErrors['website'] = 'Please enter a valid website URL';
     }
 
-    if (formData['whatsAppNumber']?.isNotEmpty == true &&
-        !_isValidPhoneNumber(formData['whatsAppNumber'])) {
-      validationErrors['whatsAppNumber'] =
-          'Please enter a valid WhatsApp number';
-    }
-
     setState(() {});
     return validationErrors.isEmpty;
-  }
-
-  bool _isValidEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
 
   bool _isValidWebsite(String website) {
     return RegExp(
       r'^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$',
     ).hasMatch(website);
-  }
-
-  bool _isValidPhoneNumber(String phone) {
-    return RegExp(
-      r'^\d{10,15}$',
-    ).hasMatch(phone.replaceAll(RegExp(r'[^\d]'), ''));
   }
 
   Future<void> _submitForm() async {
@@ -155,21 +183,40 @@ class _UpdateCompanyProfileFormState
     try {
       final businessProfileHelper = ref.read(businessProfileHelperProvider);
 
-      final success = await businessProfileHelper.updateCompanyProfile(
-        name: formData['name'],
-        legalName: formData['legalName'],
-        displayName: formData['displayName'],
-        companyDesc: formData['companyDesc'],
-        industryVertical: formData['industryVertical'],
-        businessType: formData['businessType'],
-        website: formData['website'],
-        contactName: formData['contactName'],
-        email: formData['email'],
-        whatsAppNumber: formData['whatsAppNumber'],
-        taxIdentificationNumber1: formData['taxIdentificationNumber1'],
-        taxIdentificationNumber2: formData['taxIdentificationNumber2'],
-        showSignatureOnInvoice: formData['showSignatureOnInvoice'],
-        showLogoOnInvoice: formData['showLogoOnInvoice'],
+      // Debug: Print form data before submission
+      print('Form data being submitted:');
+      formData.forEach((key, value) {
+        if (key != 'logoFile' &&
+            key != 'signatureFile' &&
+            key != 'currentLogoUrl' &&
+            key != 'currentSignatureUrl') {
+          print('  $key: $value');
+        }
+      });
+      print('Logo file: ${formData['logoFile']?.path ?? 'No file'}');
+      print('Signature file: ${formData['signatureFile']?.path ?? 'No file'}');
+
+      final success = await businessProfileHelper.updateCompanyProfileWithFiles(
+        name: formData['name']?.toString(),
+        legalName: formData['legalName']?.toString(),
+        displayName: formData['displayName']?.toString(),
+        companyDesc: formData['companyDesc']?.toString(),
+        industryVertical: formData['industryVertical']?.toString(),
+        businessType: formData['businessType'] != null
+            ? List<String>.from(formData['businessType'])
+            : null,
+        website: formData['website']?.toString(),
+        contactName: formData['contactName']?.toString(),
+        email: formData['email']?.toString(),
+        whatsAppNumber: formData['whatsAppNumber']?.toString(),
+        taxIdentificationNumber1: formData['taxIdentificationNumber1']
+            ?.toString(),
+        taxIdentificationNumber2: formData['taxIdentificationNumber2']
+            ?.toString(),
+        showSignatureOnInvoice: formData['showSignatureOnInvoice'] as bool?,
+        showLogoOnInvoice: formData['showLogoOnInvoice'] as bool?,
+        logoFile: formData['logoFile'] as File?,
+        signatureFile: formData['signatureFile'] as File?,
       );
 
       if (success) {
@@ -179,6 +226,7 @@ class _UpdateCompanyProfileFormState
         _showErrorDialog(error ?? 'Failed to update company profile');
       }
     } catch (e) {
+      print('Exception in _submitForm: $e');
       _showErrorDialog('An unexpected error occurred: $e');
     } finally {
       setState(() {
@@ -220,6 +268,18 @@ class _UpdateCompanyProfileFormState
         ],
       ),
     );
+  }
+
+  String _getLogoInitials() {
+    final name = formData['name']?.toString() ?? '';
+    if (name.isEmpty) return 'L';
+    return name.substring(0, 1).toUpperCase();
+  }
+
+  String _getSignatureInitials() {
+    final contactName = formData['contactName']?.toString() ?? '';
+    if (contactName.isEmpty) return 'S';
+    return contactName.substring(0, 1).toUpperCase();
   }
 
   @override
@@ -268,9 +328,60 @@ class _UpdateCompanyProfileFormState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Basic Information Section
+              // Logo and Signature Upload Section
               Container(
                 margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.border.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'BRANDING',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: colors.textSecondary,
+                          letterSpacing: 0.5,
+                          fontFamily: 'SF Pro Display',
+                        ),
+                      ),
+                    ),
+                    // Logo Upload Field
+                    _buildImageUploadField(
+                      'logoFile',
+                      'Company Logo',
+                      formData['currentLogoUrl'],
+                      _getLogoInitials(),
+                      colors,
+                    ),
+                    Container(height: 0.5, color: colors.border),
+                    // Signature Upload Field
+                    _buildImageUploadField(
+                      'signatureFile',
+                      'Digital Signature',
+                      formData['currentSignatureUrl'],
+                      _getSignatureInitials(),
+                      colors,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Basic Information Section
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: colors.surface,
                   borderRadius: BorderRadius.circular(12),
@@ -455,7 +566,6 @@ class _UpdateCompanyProfileFormState
                       onChanged: _onFieldChanged,
                       formData: formData,
                       validationErrors: validationErrors,
-                      isRequired: true,
                     ),
                     Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildTextField(
@@ -503,7 +613,7 @@ class _UpdateCompanyProfileFormState
                     ),
                     FormFieldWidgets.buildTextField(
                       'taxIdentificationNumber1',
-                      'Tax ID Number 1',
+                      'Tax ID #1(PAN for India)',
                       'text',
                       context,
                       onChanged: _onFieldChanged,
@@ -513,7 +623,7 @@ class _UpdateCompanyProfileFormState
                     Container(height: 0.5, color: colors.border),
                     FormFieldWidgets.buildTextField(
                       'taxIdentificationNumber2',
-                      'Tax ID Number 2',
+                      'Tax ID #2(GSTIN for India)',
                       'text',
                       context,
                       onChanged: _onFieldChanged,
@@ -576,6 +686,166 @@ class _UpdateCompanyProfileFormState
               const SizedBox(height: 100), // Extra space for better scrolling
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageUploadField(
+    String key,
+    String label,
+    String? currentUrl,
+    String initials,
+    WareozeColorScheme colors,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'SF Pro Display',
+                letterSpacing: 0.25,
+                color: colors.textPrimary,
+              ),
+            ),
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: _buildImageDisplay(key, currentUrl, initials, colors),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageDisplay(
+    String key,
+    String? currentUrl,
+    String initials,
+    WareozeColorScheme colors,
+  ) {
+    File? selectedFile = formData[key];
+
+    return Row(
+      children: [
+        // Current image display
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: colors.primary.withOpacity(0.1),
+            border: Border.all(color: colors.border, width: 1),
+            image: selectedFile != null
+                ? DecorationImage(
+                    image: FileImage(selectedFile),
+                    fit: BoxFit.cover,
+                  )
+                : currentUrl != null
+                ? DecorationImage(
+                    image: NetworkImage(currentUrl),
+                    fit: BoxFit.cover,
+                  )
+                : null,
+          ),
+          child: selectedFile == null && currentUrl == null
+              ? Center(
+                  child: Text(
+                    initials,
+                    style: TextStyle(
+                      color: colors.primary,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.25,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )
+              : null,
+        ),
+        SizedBox(width: 16),
+        // Upload buttons
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CupertinoButton(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                color: colors.primary,
+                child: Text(
+                  selectedFile != null || currentUrl != null
+                      ? 'Change'
+                      : 'Upload',
+                  style: TextStyle(
+                    color: CupertinoColors.white,
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.25,
+                    fontSize: 14,
+                  ),
+                ),
+                onPressed: () => _showImagePickerOptions(key),
+              ),
+              if (selectedFile != null || currentUrl != null)
+                Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: CupertinoButton(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Text(
+                      'Remove',
+                      style: TextStyle(
+                        color: CupertinoColors.systemRed,
+                        fontFamily: 'SF Pro Display',
+                        letterSpacing: 0.25,
+                        fontSize: 14,
+                      ),
+                    ),
+                    onPressed: () => _onFieldChanged(key, null),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showImagePickerOptions(String key) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: Text('Select Image'),
+        actions: [
+          CupertinoActionSheetAction(
+            child: Text('Camera'),
+            onPressed: () {
+              Navigator.pop(context);
+              FormFieldWidgets.buildAvatarField(
+                key,
+                '',
+                onChanged: _onFieldChanged,
+                formData: formData,
+                validationErrors: validationErrors,
+                context: context,
+              );
+            },
+          ),
+          CupertinoActionSheetAction(
+            child: Text('Gallery'),
+            onPressed: () {
+              Navigator.pop(context);
+              // You can implement gallery picker here
+              // For now, using the avatar field method
+            },
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          child: Text('Cancel'),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
     );

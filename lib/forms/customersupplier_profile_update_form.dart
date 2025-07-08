@@ -203,23 +203,101 @@ class _CustomerSupplierSectionedFormPageState
         }
         formData['whatsAppNumber'] = entityData['whatsAppNumber'] ?? '';
 
-        // Load addresses
-        addresses = List<Map<String, dynamic>>.from(
-          entityData['addresses']?.map(
-                (addr) => {
-                  'id': addr['_id'],
-                  'type': addr['type'],
-                  'line1': addr['line1'] ?? '',
-                  'line2': addr['line2'] ?? '',
-                  'city': addr['city'] ?? '',
-                  'state': addr['state'], // Keep full state object
-                  'country': addr['country'], // Keep full country object
-                  'code': addr['code'] ?? '',
-                  'isActive': addr['isActive'] ?? true,
-                },
-              ) ??
-              [],
-        );
+        addresses = [];
+
+        // First, try to load from addresses array (if server returns structured data)
+        if (entityData['addresses'] != null &&
+            entityData['addresses'] is List) {
+          addresses = List<Map<String, dynamic>>.from(
+            entityData['addresses'].map(
+              (addr) => {
+                'id': addr['_id'],
+                'type': addr['type'],
+                'line1': addr['line1'] ?? '',
+                'line2': addr['line2'] ?? '',
+                'city': addr['city'] ?? '',
+                'state': addr['state'], // Keep full state object
+                'country': addr['country'], // Keep full country object
+                'code': addr['code'] ?? '',
+                'isActive': addr['isActive'] ?? true,
+              },
+            ),
+          );
+        } else {
+          // If no structured addresses, reconstruct from flat fields
+
+          // Load billing address from flat fields
+          if ((entityData['billingAddressLine1']
+                  ?.toString()
+                  .trim()
+                  .isNotEmpty ??
+              false)) {
+            final billingAddress = {
+              'type': 'Billing',
+              'line1': entityData['billingAddressLine1'] ?? '',
+              'line2': entityData['billingAddressLine2'] ?? '',
+              'city': entityData['billingAddressCity'] ?? '',
+              'code': entityData['billingAddressPinCode']?.toString() ?? '',
+              'isActive': true,
+            };
+
+            // Add country if exists (store ID and placeholder name for now)
+            if (entityData['billingAddressCountry'] != null) {
+              billingAddress['country'] = {
+                '_id': entityData['billingAddressCountry'],
+                'name':
+                    'Country', // Placeholder - will be loaded when country dropdown opens
+              };
+            }
+
+            // Add state if exists (store ID and placeholder name for now)
+            if (entityData['billingAddressState'] != null) {
+              billingAddress['state'] = {
+                '_id': entityData['billingAddressState'],
+                'name':
+                    'State', // Placeholder - will be loaded when state dropdown opens
+              };
+            }
+
+            addresses.add(billingAddress);
+          }
+
+          // Load shipping address from flat fields
+          if ((entityData['shippingAddressLine1']
+                  ?.toString()
+                  .trim()
+                  .isNotEmpty ??
+              false)) {
+            final shippingAddress = {
+              'type': 'Shipping',
+              'line1': entityData['shippingAddressLine1'] ?? '',
+              'line2': entityData['shippingAddressLine2'] ?? '',
+              'city': entityData['shippingAddressCity'] ?? '',
+              'code': entityData['shippingAddressPinCode']?.toString() ?? '',
+              'isActive': true,
+            };
+
+            // Add country if exists (store ID and placeholder name for now)
+            if (entityData['shippingAddressCountry'] != null) {
+              shippingAddress['country'] = {
+                '_id': entityData['shippingAddressCountry'],
+                'name':
+                    'Country', // Placeholder - will be loaded when country dropdown opens
+              };
+            }
+
+            // Add state if exists (store ID and placeholder name for now)
+            if (entityData['shippingAddressState'] != null) {
+              shippingAddress['state'] = {
+                '_id': entityData['shippingAddressState'],
+                'name':
+                    'State', // Placeholder - will be loaded when state dropdown opens
+              };
+            }
+
+            addresses.add(shippingAddress);
+          }
+        }
 
         // Ensure we have billing and shipping address entries (but only if they don't exist)
         if (!addresses.any((a) => a['type'] == 'Billing')) {
@@ -246,7 +324,6 @@ class _CustomerSupplierSectionedFormPageState
             'isActive': true,
           });
         }
-
         // Load bank accounts
         bankAccounts = List<Map<String, dynamic>>.from(
           entityData['bankAccounts']?.map(
@@ -478,9 +555,79 @@ class _CustomerSupplierSectionedFormPageState
           break;
 
         case CustomerSupplierFormSection.agreedServices:
-          // This is where we batch update all agreed services changes
-          await _updateAgreedServicesBatch();
-          return; // Exit early since we handle success/error in _updateAgreedServicesBatch
+          // First, check if user is adding a new service and auto-add it to the list
+          if (_isAddingService) {
+            // Validate the new service form
+            bool isValid = true;
+            validationErrors.removeWhere((key, value) => key.startsWith('new'));
+
+            if ((formData['newServiceCategory'] ?? '')
+                .toString()
+                .trim()
+                .isEmpty) {
+              validationErrors['newServiceCategory'] =
+                  'Service category is required';
+              isValid = false;
+            }
+
+            if ((formData['newServiceName'] ?? '').toString().trim().isEmpty) {
+              validationErrors['newServiceName'] = 'Service name is required';
+              isValid = false;
+            }
+
+            if (!isValid) {
+              setState(() {});
+              return;
+            }
+
+            // Generate next UID
+            int nextUid = agreedServices.isEmpty
+                ? 1
+                : agreedServices
+                          .map((s) => s['uid'] as int)
+                          .reduce((a, b) => a > b ? a : b) +
+                      1;
+
+            // Add the new service to local state first
+            setState(() {
+              agreedServices.add({
+                'uid': nextUid,
+                'serviceCategory':
+                    formData['newServiceCategory']?.toString().trim() ?? '',
+                'serviceName':
+                    formData['newServiceName']?.toString().trim() ?? '',
+                'serviceBudget':
+                    double.tryParse(
+                      formData['newServiceBudget']?.toString() ?? '0',
+                    ) ??
+                    0.0,
+                'personnel':
+                    int.tryParse(formData['newPersonnel']?.toString() ?? '0') ??
+                    0,
+                'startDate': formData['newStartDate'] ?? DateTime.now(),
+                'endDate':
+                    formData['newEndDate'] ??
+                    DateTime.now().add(Duration(days: 7)),
+                // Note: No _id field - this will be generated by server on update
+              });
+
+              // Clear the form
+              _isAddingService = false;
+              formData.removeWhere((key, value) => key.startsWith('new'));
+              validationErrors.removeWhere(
+                (key, value) => key.startsWith('new'),
+              );
+            });
+          }
+
+          // Now proceed with batch update if there are any services
+          if (agreedServices.isNotEmpty) {
+            await _updateAgreedServicesBatch();
+          } else {
+            // If no services, just show success
+            _showSuccessDialog('Agreed services updated successfully');
+          }
+          return;
 
         case CustomerSupplierFormSection.payment:
           submitData.addAll({
@@ -576,30 +723,7 @@ class _CustomerSupplierSectionedFormPageState
     }
   }
 
-  void _updateOriginalEntityData(Map<String, dynamic> updatedData) {
-    setState(() {
-      // Update the original entity data with new values
-      for (final entry in updatedData.entries) {
-        // Skip file fields as they're not stored in the original data
-        if (entry.value is! MultipartFile) {
-          originalEntityData[entry.key] = entry.value;
-        }
-      }
-
-      // For basic section, also update form data to reflect current state
-      if (currentSection == CustomerSupplierFormSection.basic) {
-        // Clear the logo from form data after successful upload
-        formData['logo'] = null;
-      }
-
-      if (currentSection == CustomerSupplierFormSection.attachments) {
-        // Clear the signature from form data after successful upload
-        formData['signature'] = null;
-      }
-    });
-  }
-
-  // 2. New method for batch updating agreed services (like web app)
+  // Add this method back to the class:
   Future<void> _updateAgreedServicesBatch() async {
     try {
       // Convert agreed services to API format
@@ -646,6 +770,29 @@ class _CustomerSupplierSectionedFormPageState
       print('Error in batch update of agreed services: $e');
       _showErrorDialog('Failed to update agreed services: ${e.toString()}');
     }
+  }
+
+  void _updateOriginalEntityData(Map<String, dynamic> updatedData) {
+    setState(() {
+      // Update the original entity data with new values
+      for (final entry in updatedData.entries) {
+        // Skip file fields as they're not stored in the original data
+        if (entry.value is! MultipartFile) {
+          originalEntityData[entry.key] = entry.value;
+        }
+      }
+
+      // For basic section, also update form data to reflect current state
+      if (currentSection == CustomerSupplierFormSection.basic) {
+        // Clear the logo from form data after successful upload
+        formData['logo'] = null;
+      }
+
+      if (currentSection == CustomerSupplierFormSection.attachments) {
+        // Clear the signature from form data after successful upload
+        formData['signature'] = null;
+      }
+    });
   }
 
   // 3. Reload entity data after successful update
@@ -725,8 +872,8 @@ class _CustomerSupplierSectionedFormPageState
     });
   }
 
-  // 5. Local-only save new service method (no API call)
-  void _saveNewService() {
+  // Replace the existing _saveNewService() method with this:
+  Future<void> _saveNewService() async {
     // Validate required fields
     bool isValid = true;
     validationErrors.removeWhere((key, value) => key.startsWith('new'));
@@ -747,6 +894,10 @@ class _CustomerSupplierSectionedFormPageState
     }
 
     setState(() {
+      isLoading = true;
+    });
+
+    try {
       // Generate next UID
       int nextUid = agreedServices.isEmpty
           ? 1
@@ -755,42 +906,148 @@ class _CustomerSupplierSectionedFormPageState
                     .reduce((a, b) => a > b ? a : b) +
                 1;
 
-      // Add new service to local state only
-      agreedServices.add({
-        'uid': nextUid,
-        'serviceCategory':
+      // Create new service object
+      final newService = AgreedService(
+        uid: nextUid,
+        serviceCategory:
             formData['newServiceCategory']?.toString().trim() ?? '',
-        'serviceName': formData['newServiceName']?.toString().trim() ?? '',
-        'serviceBudget':
+        serviceName: formData['newServiceName']?.toString().trim() ?? '',
+        serviceBudget:
             double.tryParse(formData['newServiceBudget']?.toString() ?? '0') ??
             0.0,
-        'personnel':
+        personnel:
             int.tryParse(formData['newPersonnel']?.toString() ?? '0') ?? 0,
-        'startDate': formData['newStartDate'] ?? DateTime.now(),
-        'endDate':
+        startDate: formData['newStartDate'] ?? DateTime.now(),
+        endDate:
             formData['newEndDate'] ?? DateTime.now().add(Duration(days: 7)),
-        // Note: No _id field - this will be generated by server on update
+      );
+
+      // Convert current local services to AgreedService objects
+      final currentServices = agreedServices
+          .map(
+            (service) => AgreedService(
+              uid: service['uid'],
+              serviceCategory: service['serviceCategory'] ?? '',
+              serviceName: service['serviceName'] ?? '',
+              serviceBudget: service['serviceBudget']?.toDouble() ?? 0.0,
+              personnel: service['personnel'] ?? 0,
+              startDate: service['startDate'] ?? DateTime.now(),
+              endDate:
+                  service['endDate'] ?? DateTime.now().add(Duration(days: 7)),
+              id: service['_id'],
+            ),
+          )
+          .toList();
+
+      // Add new service to the list
+      final allServices = [...currentServices, newService];
+
+      // Call agreed services API directly
+      final response = await ref
+          .read(agreedServicesAuthenticatedActionsProvider)
+          .updateAgreedServices(
+            counterPartyId: widget.entityId,
+            services: allServices,
+          );
+
+      if (response.success) {
+        // Reload entity data to get updated services with server IDs
+        await _reloadEntityDataAfterUpdate();
+
+        setState(() {
+          // Reset form state
+          _isAddingService = false;
+          formData.removeWhere((key, value) => key.startsWith('new'));
+          validationErrors.removeWhere((key, value) => key.startsWith('new'));
+        });
+
+        // Show success message
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Success'),
+            content: const Text('Agreed service added successfully'),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+        );
+      } else {
+        throw Exception(response.error ?? 'Failed to add agreed service');
+      }
+    } catch (e) {
+      print('Error adding agreed service: $e');
+      _showErrorDialog('Failed to add agreed service: ${e.toString()}');
+    } finally {
+      setState(() {
+        isLoading = false;
       });
-
-      // Reset form state
-      _isAddingService = false;
-      formData.removeWhere((key, value) => key.startsWith('new'));
-      validationErrors.removeWhere((key, value) => key.startsWith('new'));
-    });
-
-    print('Added service locally. Total services: ${agreedServices.length}');
+    }
   }
 
-  // 6. Local-only remove service method (no API call)
-  void _removeAgreedService(int index) {
+  // Replace the existing _removeAgreedService() method with this:
+  Future<void> _removeAgreedService(int index) async {
     if (index < 0 || index >= agreedServices.length) return;
 
-    setState(() {
-      final removedService = agreedServices.removeAt(index);
-      print(
-        'Removed service locally: ${removedService['serviceName']}. Remaining: ${agreedServices.length}',
-      );
-    });
+    final serviceToRemove = agreedServices[index];
+
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      // Convert current services to AgreedService objects, excluding the one to remove
+      final remainingServices = agreedServices
+          .asMap()
+          .entries
+          .where((entry) => entry.key != index)
+          .map(
+            (entry) => AgreedService(
+              uid: entry.value['uid'],
+              serviceCategory: entry.value['serviceCategory'] ?? '',
+              serviceName: entry.value['serviceName'] ?? '',
+              serviceBudget: entry.value['serviceBudget']?.toDouble() ?? 0.0,
+              personnel: entry.value['personnel'] ?? 0,
+              startDate: entry.value['startDate'] ?? DateTime.now(),
+              endDate:
+                  entry.value['endDate'] ??
+                  DateTime.now().add(Duration(days: 7)),
+              id: entry.value['_id'],
+            ),
+          )
+          .toList();
+
+      // Call agreed services API directly
+      final response = await ref
+          .read(agreedServicesAuthenticatedActionsProvider)
+          .updateAgreedServices(
+            counterPartyId: widget.entityId,
+            services: remainingServices,
+          );
+
+      if (response.success) {
+        // Update local state
+        setState(() {
+          agreedServices.removeAt(index);
+        });
+
+        print(
+          'Removed service: ${serviceToRemove['serviceName']}. Remaining: ${agreedServices.length}',
+        );
+      } else {
+        throw Exception(response.error ?? 'Failed to remove agreed service');
+      }
+    } catch (e) {
+      print('Error removing agreed service: $e');
+      _showErrorDialog('Failed to remove agreed service: ${e.toString()}');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   // 7. Cancel add service (local only)
@@ -839,37 +1096,13 @@ class _CustomerSupplierSectionedFormPageState
     );
   }
 
-  // 9. Updated UI to show pending changes indicator
   Widget _buildAgreedServicesHeader() {
-    final hasLocalChanges = _hasUnsavedChanges();
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            const Text(
-              'Agreed Services',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-            if (hasLocalChanges)
-              Container(
-                margin: const EdgeInsets.only(left: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: CupertinoColors.systemOrange.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'Unsaved',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: CupertinoColors.systemOrange,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-          ],
+        const Text(
+          'Agreed Services',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         CupertinoButton(
           padding: EdgeInsets.zero,

@@ -35,11 +35,10 @@ class _AddressFormState extends ConsumerState<AddressForm> {
   final List<String> _addressTypeOptions = [
     'Registered',
     'Office',
-    'Shipping',
     'Billing',
-    'Warehouse',
-    'Branch',
-    'Head Office',
+    'Shipping',
+    'User Address',
+    'Misc',
   ];
 
   bool get _isEditMode => widget.addressId != null;
@@ -97,7 +96,7 @@ class _AddressFormState extends ConsumerState<AddressForm> {
         setState(() => _isLoading = false);
       }
     } else {
-      // Initialize with default values for Add mode
+      // Initialize with default values for Add mode - REPLACE THIS SECTION
       setState(() {
         _formData.addAll({
           'type': 'Registered', // Default type
@@ -119,7 +118,7 @@ class _AddressFormState extends ConsumerState<AddressForm> {
         (country) => country['name'] == 'India',
         orElse: () => {},
       );
-      if (indiaCountry['_id'] != null) {
+      if (indiaCountry.isNotEmpty && indiaCountry['_id'] != null) {
         await _loadStates(indiaCountry['_id']);
       }
     }
@@ -266,6 +265,14 @@ class _AddressFormState extends ConsumerState<AddressForm> {
         'phone2': _formData['phone2'] ?? '',
         'isActive': true,
       };
+      // Debug log
+      print('Submitting address data: $submitData');
+      print(
+        'Selected country: ${selectedCountry['name']} (${selectedCountry['_id']})',
+      );
+      print(
+        'Selected state: ${selectedState['name']} (${selectedState['_id']})',
+      );
 
       bool success;
       if (_isEditMode) {

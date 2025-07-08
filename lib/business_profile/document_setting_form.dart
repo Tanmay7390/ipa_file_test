@@ -48,6 +48,11 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
   @override
   void initState() {
     super.initState();
+    // Fetch templates and document types
+    Future.microtask(() {
+      ref.read(documentSettingsProvider.notifier).fetchInvoiceTemplates();
+      ref.read(documentSettingsProvider.notifier).fetchDocumentTypes();
+    });
     _initializeForm();
   }
 
@@ -63,9 +68,11 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
       setState(() => _isLoading = true);
 
       try {
-        final documentSetting = await ref
-            .read(documentSettingsProvider.notifier)
-            .getDocumentSettingsById(widget.documentSettingId!);
+        final documentSetting = await Future.microtask(() async {
+          return await ref
+              .read(documentSettingsProvider.notifier)
+              .getDocumentSettingsById(widget.documentSettingId!);
+        });
 
         if (documentSetting != null) {
           setState(() {
@@ -84,6 +91,7 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
               'footer1': documentSetting['footer1'] ?? '',
               'footer2': documentSetting['footer2'] ?? '',
               'smsAndWhatsAppText': documentSetting['smsAndWhatsAppText'] ?? '',
+              'emailSubject': documentSetting['emailSubject'] ?? '', // Add this
               'emailText': documentSetting['emailText'] ?? '',
               'status': documentSetting['status'] ?? 'Active',
               'documentType': documentSetting['documentType']?['name'] ?? '',
@@ -108,9 +116,10 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
           'paymentTermDays': '0',
           'defaultPdfTemplate': '',
           'notes': '',
-          'footer1': 'Powered by MyInBook',
-          'footer2': 'Powered by MyInBook',
+          'footer1': 'Powered by Wareozo',
+          'footer2': 'Powered by Wareozo',
           'smsAndWhatsAppText': '',
+          'emailSubject': '', // Add this
           'emailText': '',
           'status': 'Active',
           'documentType': widget.documentTypeName ?? '',
@@ -182,6 +191,28 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
     setState(() => _isLoading = true);
 
     try {
+      // Get the template ID from template name
+      final templates = ref.read(invoiceTemplatesProvider);
+      String? templateId;
+      if (_formData['defaultPdfTemplate']?.isNotEmpty == true) {
+        final selectedTemplate = templates.firstWhere(
+          (template) => template['template'] == _formData['defaultPdfTemplate'],
+          orElse: () => {},
+        );
+        templateId = selectedTemplate['_id'];
+      }
+
+      // Get the document type ID from document type name
+      final documentTypes = ref.read(documentTypesProvider);
+      String? documentTypeId;
+      if (_formData['documentType']?.isNotEmpty == true) {
+        final selectedDocType = documentTypes.firstWhere(
+          (docType) => docType['name'] == _formData['documentType'],
+          orElse: () => {},
+        );
+        documentTypeId = selectedDocType['_id'];
+      }
+
       // Prepare data for submission
       final submitData = {
         'docNumberPrefix': _formData['docNumberPrefix'],
@@ -192,13 +223,15 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
         'paymentDetails': _formData['paymentDetails'] ?? '',
         'paymentTermDays':
             int.tryParse(_formData['paymentTermDays'].toString()) ?? 0,
+        'defaultPdfTemplate': templateId, // Send template ID
         'notes': _formData['notes'] ?? '',
         'footer1': _formData['footer1'] ?? '',
         'footer2': _formData['footer2'] ?? '',
         'smsAndWhatsAppText': _formData['smsAndWhatsAppText'] ?? '',
+        'emailSubject': _formData['emailSubject'] ?? '', // Add this
         'emailText': _formData['emailText'] ?? '',
         'status': _formData['status'] ?? 'Active',
-        'documentType': _formData['documentType'],
+        'documentType': documentTypeId, // Send document type ID
       };
 
       bool success;
@@ -393,54 +426,24 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
 
           _buildDivider(colors),
 
-          // Payment Details
-          FormFieldWidgets.buildTextField(
-            'paymentDetails',
-            'Payment Details',
-            'text',
-            context,
-            onChanged: _onFieldChanged,
-            formData: _formData,
-            validationErrors: _validationErrors,
-          ),
+          // Default PDF Template
+          Consumer(
+            builder: (context, ref, child) {
+              final templates = ref.watch(invoiceTemplatesProvider);
+              final templateOptions = templates
+                  .map((template) => template['template']?.toString() ?? '')
+                  .where((name) => name.isNotEmpty)
+                  .toList();
 
-          _buildDivider(colors),
-
-          // Payment Term Days
-          FormFieldWidgets.buildTextField(
-            'paymentTermDays',
-            'Payment Term Days',
-            'number',
-            context,
-            onChanged: _onFieldChanged,
-            formData: _formData,
-            validationErrors: _validationErrors,
-          ),
-
-          _buildDivider(colors),
-
-          // Terms & Conditions
-          FormFieldWidgets.buildTextAreaField(
-            'termsAndConditions',
-            'Terms & Conditions',
-            onChanged: _onFieldChanged,
-            formData: _formData,
-            validationErrors: _validationErrors,
-            maxLines: 4,
-            minLines: 3,
-          ),
-
-          _buildDivider(colors),
-
-          // Notes
-          FormFieldWidgets.buildTextAreaField(
-            'notes',
-            'Notes',
-            onChanged: _onFieldChanged,
-            formData: _formData,
-            validationErrors: _validationErrors,
-            maxLines: 3,
-            minLines: 2,
+              return FormFieldWidgets.buildSelectField(
+                'defaultPdfTemplate',
+                'Default PDF Template',
+                templateOptions,
+                onChanged: _onFieldChanged,
+                formData: _formData,
+                validationErrors: _validationErrors,
+              );
+            },
           ),
 
           _buildDivider(colors),
@@ -471,6 +474,32 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
 
           _buildDivider(colors),
 
+          // Payment Details
+          FormFieldWidgets.buildTextField(
+            'paymentDetails',
+            'Payment Term',
+            'text',
+            context,
+            onChanged: _onFieldChanged,
+            formData: _formData,
+            validationErrors: _validationErrors,
+          ),
+
+          _buildDivider(colors),
+
+          // Payment Term Days
+          FormFieldWidgets.buildTextField(
+            'paymentTermDays',
+            'Payment Term/Expiry Days',
+            'number',
+            context,
+            onChanged: _onFieldChanged,
+            formData: _formData,
+            validationErrors: _validationErrors,
+          ),
+
+          _buildDivider(colors),
+
           // SMS & WhatsApp Text
           FormFieldWidgets.buildTextAreaField(
             'smsAndWhatsAppText',
@@ -484,10 +513,49 @@ class _DocumentSettingFormState extends ConsumerState<DocumentSettingForm> {
 
           _buildDivider(colors),
 
+          // Email Subject (add this before Email Text)
+          FormFieldWidgets.buildTextField(
+            'emailSubject',
+            'Email Subject',
+            'text',
+            context,
+            onChanged: _onFieldChanged,
+            formData: _formData,
+            validationErrors: _validationErrors,
+          ),
+
+          _buildDivider(colors),
+
           // Email Text
           FormFieldWidgets.buildTextAreaField(
             'emailText',
             'Email Text',
+            onChanged: _onFieldChanged,
+            formData: _formData,
+            validationErrors: _validationErrors,
+            maxLines: 3,
+            minLines: 2,
+          ),
+
+          _buildDivider(colors),
+
+          // Terms & Conditions
+          FormFieldWidgets.buildTextAreaField(
+            'termsAndConditions',
+            'Terms & Conditions',
+            onChanged: _onFieldChanged,
+            formData: _formData,
+            validationErrors: _validationErrors,
+            maxLines: 4,
+            minLines: 3,
+          ),
+
+          _buildDivider(colors),
+
+          // Notes/Disclaimer
+          FormFieldWidgets.buildTextAreaField(
+            'notes',
+            'Notes/Disclaimer',
             onChanged: _onFieldChanged,
             formData: _formData,
             validationErrors: _validationErrors,

@@ -126,22 +126,14 @@ class BankAccountNotifier extends StateNotifier<BankAccountState> {
 
   // Get bank account by ID
   Future<Map<String, dynamic>?> getBankById(String bankId) async {
-    state = state.copyWith(isFetchingById: true, error: null);
-
     try {
       final url = ApiUrls.replaceParams(ApiUrls.getBankById, {'id': bankId});
-
       final response = await _dio.get(url);
 
       if (response.statusCode == 200) {
-        // Debug: Print the response structure
-        print('Get Bank By ID Response: ${response.data}');
-        print('Response type: ${response.data.runtimeType}');
-
         Map<String, dynamic>? bankData;
 
         if (response.data is Map<String, dynamic>) {
-          // Try different possible keys where bank data might be stored
           bankData =
               response.data['bank'] ??
               response.data['data'] ??
@@ -150,51 +142,26 @@ class BankAccountNotifier extends StateNotifier<BankAccountState> {
               response.data;
         }
 
-        print('Extracted bank data: $bankData');
-
-        // Validate the bank data
         if (bankData != null && bankData['_id'] != null) {
-          state = state.copyWith(
-            selectedBankAccount: bankData,
-            isFetchingById: false,
-          );
           return bankData;
-        } else {
-          state = state.copyWith(
-            isFetchingById: false,
-            error: 'Invalid bank account data received',
-          );
-          return null;
         }
-      } else {
-        state = state.copyWith(
-          isFetchingById: false,
-          error: 'Failed to fetch bank account. Status: ${response.statusCode}',
-        );
         return null;
       }
-    } on DioException catch (e) {
-      print('DioException in getBankById: ${e.message}');
-      print('Response data: ${e.response?.data}');
-      state = state.copyWith(isFetchingById: false, error: _handleDioError(e));
       return null;
     } catch (e) {
-      print('General Exception in getBankById: $e');
-      state = state.copyWith(
-        isFetchingById: false,
-        error: 'An unexpected error occurred: $e',
-      );
+      print('Error in getBankById: $e');
       return null;
     }
   }
 
   // Create new bank account
+  // In the createBankAccount method
   Future<bool> createBankAccount(Map<String, dynamic> bankAccountData) async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // Add accountId to the data
-      final dataWithAccountId = {...bankAccountData, 'accountId': _accountId};
+      // Change 'accountId' to 'account' as per API expectation
+      final dataWithAccountId = {...bankAccountData, 'account': _accountId};
 
       final response = await _dio.post(
         ApiUrls.createBank,
@@ -202,7 +169,6 @@ class BankAccountNotifier extends StateNotifier<BankAccountState> {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Refresh the list after successful creation
         await fetchBankAccounts();
         return true;
       } else {
@@ -224,7 +190,7 @@ class BankAccountNotifier extends StateNotifier<BankAccountState> {
     }
   }
 
-  // Update bank account
+  // Similarly in the updateBankAccount method
   Future<bool> updateBankAccount(
     String bankId,
     Map<String, dynamic> bankAccountData,
@@ -234,10 +200,12 @@ class BankAccountNotifier extends StateNotifier<BankAccountState> {
     try {
       final url = ApiUrls.replaceParams(ApiUrls.updateBank, {'id': bankId});
 
-      final response = await _dio.put(url, data: bankAccountData);
+      // Add account parameter for update as well
+      final dataWithAccount = {...bankAccountData, 'account': _accountId};
+
+      final response = await _dio.put(url, data: dataWithAccount);
 
       if (response.statusCode == 200) {
-        // Refresh the list after successful update
         await fetchBankAccounts();
         return true;
       } else {

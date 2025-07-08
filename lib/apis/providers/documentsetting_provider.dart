@@ -7,32 +7,49 @@ import 'package:Wareozo/apis/providers/auth_provider.dart';
 // Document Settings State
 class DocumentSettingsState {
   final List<Map<String, dynamic>> documentSettings;
+  final List<Map<String, dynamic>> invoiceTemplates;
+  final List<Map<String, dynamic>> documentTypes;
   final Map<String, dynamic>? selectedDocumentSettings;
   final bool isLoading;
   final bool isFetchingById;
+  final bool isLoadingTemplates;
+  final bool isLoadingDocumentTypes;
   final String? error;
 
   const DocumentSettingsState({
     this.documentSettings = const [],
+    this.invoiceTemplates = const [],
+    this.documentTypes = const [],
     this.selectedDocumentSettings,
     this.isLoading = false,
     this.isFetchingById = false,
+    this.isLoadingTemplates = false,
+    this.isLoadingDocumentTypes = false,
     this.error,
   });
 
   DocumentSettingsState copyWith({
     List<Map<String, dynamic>>? documentSettings,
+    List<Map<String, dynamic>>? invoiceTemplates,
+    List<Map<String, dynamic>>? documentTypes,
     Map<String, dynamic>? selectedDocumentSettings,
     bool? isLoading,
     bool? isFetchingById,
+    bool? isLoadingTemplates,
+    bool? isLoadingDocumentTypes,
     String? error,
   }) {
     return DocumentSettingsState(
       documentSettings: documentSettings ?? this.documentSettings,
+      invoiceTemplates: invoiceTemplates ?? this.invoiceTemplates,
+      documentTypes: documentTypes ?? this.documentTypes,
       selectedDocumentSettings:
           selectedDocumentSettings ?? this.selectedDocumentSettings,
       isLoading: isLoading ?? this.isLoading,
       isFetchingById: isFetchingById ?? this.isFetchingById,
+      isLoadingTemplates: isLoadingTemplates ?? this.isLoadingTemplates,
+      isLoadingDocumentTypes:
+          isLoadingDocumentTypes ?? this.isLoadingDocumentTypes,
       error: error,
     );
   }
@@ -103,11 +120,125 @@ class DocumentSettingsNotifier extends StateNotifier<DocumentSettingsState> {
     }
   }
 
+  // Fetch invoice templates
+  Future<void> fetchInvoiceTemplates() async {
+    state = state.copyWith(isLoadingTemplates: true, error: null);
+
+    try {
+      print(
+        'Fetching invoice templates from: ${ApiUrls.invoiceTemplates}',
+      ); // Debug log
+
+      final response = await _dio.get(ApiUrls.invoiceTemplates);
+
+      print(
+        'Invoice Templates Response status: ${response.statusCode}',
+      ); // Debug log
+      print('Invoice Templates Response data: ${response.data}'); // Debug log
+
+      if (response.statusCode == 200) {
+        // The response is directly an array of templates
+        final List<dynamic> data = response.data is List
+            ? response.data
+            : response.data['templates'] ?? response.data['data'] ?? [];
+
+        print('Parsed invoice templates count: ${data.length}'); // Debug log
+
+        state = state.copyWith(
+          invoiceTemplates: data.cast<Map<String, dynamic>>(),
+          isLoadingTemplates: false,
+        );
+      } else {
+        state = state.copyWith(
+          isLoadingTemplates: false,
+          error: 'Failed to fetch invoice templates',
+        );
+      }
+    } on DioException catch (e) {
+      print('DioException in fetchInvoiceTemplates: ${e.message}'); // Debug log
+      state = state.copyWith(
+        isLoadingTemplates: false,
+        error: _handleDioError(e),
+      );
+    } catch (e) {
+      print('General exception in fetchInvoiceTemplates: $e'); // Debug log
+      state = state.copyWith(
+        isLoadingTemplates: false,
+        error: 'An unexpected error occurred: $e',
+      );
+    }
+  }
+
+  // Fetch document types
+  Future<void> fetchDocumentTypes() async {
+    state = state.copyWith(isLoadingDocumentTypes: true, error: null);
+
+    try {
+      print(
+        'Fetching document types from: ${ApiUrls.documentTypesList}',
+      ); // Debug log
+
+      final response = await _dio.get(ApiUrls.documentTypesList);
+
+      print(
+        'Document Types Response status: ${response.statusCode}',
+      ); // Debug log
+      print('Document Types Response data: ${response.data}'); // Debug log
+
+      if (response.statusCode == 200) {
+        // Look for 'documentTypes' key in response
+        final List<dynamic> data =
+            response.data['documentTypes'] ??
+            response.data['data'] ??
+            response.data ??
+            [];
+
+        print('Parsed document types count: ${data.length}'); // Debug log
+
+        state = state.copyWith(
+          documentTypes: data.cast<Map<String, dynamic>>(),
+          isLoadingDocumentTypes: false,
+        );
+      } else {
+        state = state.copyWith(
+          isLoadingDocumentTypes: false,
+          error: 'Failed to fetch document types',
+        );
+      }
+    } on DioException catch (e) {
+      print('DioException in fetchDocumentTypes: ${e.message}'); // Debug log
+      state = state.copyWith(
+        isLoadingDocumentTypes: false,
+        error: _handleDioError(e),
+      );
+    } catch (e) {
+      print('General exception in fetchDocumentTypes: $e'); // Debug log
+      state = state.copyWith(
+        isLoadingDocumentTypes: false,
+        error: 'An unexpected error occurred: $e',
+      );
+    }
+  }
+
+  // Fetch all data (document settings, templates, and types)
+  Future<void> fetchAllData() async {
+    await Future.wait([
+      fetchDocumentSettings(),
+      fetchInvoiceTemplates(),
+      fetchDocumentTypes(),
+    ]);
+  }
+
   // Get document settings by ID
   Future<Map<String, dynamic>?> getDocumentSettingsById(
     String settingsId,
   ) async {
-    state = state.copyWith(isFetchingById: true, error: null);
+    // Don't update state immediately - delay it to avoid widget lifecycle conflict
+    Future.microtask(() {
+      if (mounted) {
+        state = state.copyWith(isFetchingById: true, error: null);
+      }
+    });
 
     try {
       final url = ApiUrls.replaceParams(ApiUrls.getDocumentSettingsById, {
@@ -144,37 +275,60 @@ class DocumentSettingsNotifier extends StateNotifier<DocumentSettingsState> {
         // Validate the document settings data
         if (documentSettingsData != null &&
             documentSettingsData['_id'] != null) {
-          state = state.copyWith(
-            selectedDocumentSettings: documentSettingsData,
-            isFetchingById: false,
-          );
+          Future.microtask(() {
+            if (mounted) {
+              state = state.copyWith(
+                selectedDocumentSettings: documentSettingsData,
+                isFetchingById: false,
+              );
+            }
+          });
           return documentSettingsData;
         } else {
-          state = state.copyWith(
-            isFetchingById: false,
-            error: 'Invalid document settings data received',
-          );
+          Future.microtask(() {
+            if (mounted) {
+              state = state.copyWith(
+                isFetchingById: false,
+                error: 'Invalid document settings data received',
+              );
+            }
+          });
           return null;
         }
       } else {
-        state = state.copyWith(
-          isFetchingById: false,
-          error:
-              'Failed to fetch document settings. Status: ${response.statusCode}',
-        );
+        Future.microtask(() {
+          if (mounted) {
+            state = state.copyWith(
+              isFetchingById: false,
+              error:
+                  'Failed to fetch document settings. Status: ${response.statusCode}',
+            );
+          }
+        });
         return null;
       }
     } on DioException catch (e) {
       print('DioException in getDocumentSettingsById: ${e.message}');
       print('Response data: ${e.response?.data}');
-      state = state.copyWith(isFetchingById: false, error: _handleDioError(e));
+      Future.microtask(() {
+        if (mounted) {
+          state = state.copyWith(
+            isFetchingById: false,
+            error: _handleDioError(e),
+          );
+        }
+      });
       return null;
     } catch (e) {
       print('General Exception in getDocumentSettingsById: $e');
-      state = state.copyWith(
-        isFetchingById: false,
-        error: 'An unexpected error occurred: $e',
-      );
+      Future.microtask(() {
+        if (mounted) {
+          state = state.copyWith(
+            isFetchingById: false,
+            error: 'An unexpected error occurred: $e',
+          );
+        }
+      });
       return null;
     }
   }
@@ -291,6 +445,49 @@ class DocumentSettingsNotifier extends StateNotifier<DocumentSettingsState> {
     }
   }
 
+  // Get invoice template by ID
+  Map<String, dynamic>? getInvoiceTemplateById(String templateId) {
+    try {
+      return state.invoiceTemplates.firstWhere(
+        (template) => template['_id'] == templateId,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Get document type by ID
+  Map<String, dynamic>? getDocumentTypeById(String documentTypeId) {
+    try {
+      return state.documentTypes.firstWhere(
+        (docType) => docType['_id'] == documentTypeId,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Get document type by name
+  Map<String, dynamic>? getDocumentTypeByName(String name) {
+    try {
+      return state.documentTypes.firstWhere(
+        (docType) =>
+            docType['name']?.toString().toLowerCase() == name.toLowerCase(),
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Get active document types
+  List<Map<String, dynamic>> getActiveDocumentTypes() {
+    return state.documentTypes
+        .where(
+          (docType) => docType['status']?.toString().toLowerCase() == 'active',
+        )
+        .toList();
+  }
+
   // Clear error
   void clearError() {
     state = state.copyWith(error: null);
@@ -344,7 +541,7 @@ final documentSettingsAutoFetchProvider = Provider<void>((ref) {
 
   // Auto-fetch when user becomes authenticated and has accountId
   if (authState.isAuthenticated && authState.accountId != null) {
-    Future.microtask(() => documentSettingsNotifier.fetchDocumentSettings());
+    Future.microtask(() => documentSettingsNotifier.fetchAllData());
   }
 });
 
@@ -359,3 +556,33 @@ final getDocumentSettingsByIdProvider =
       );
       return await documentSettingsNotifier.getDocumentSettingsById(settingsId);
     });
+
+// Provider for invoice templates only
+final invoiceTemplatesProvider = Provider<List<Map<String, dynamic>>>((ref) {
+  final documentSettingsState = ref.watch(documentSettingsProvider);
+  return documentSettingsState.invoiceTemplates;
+});
+
+// Provider for document types only
+final documentTypesProvider = Provider<List<Map<String, dynamic>>>((ref) {
+  final documentSettingsState = ref.watch(documentSettingsProvider);
+  return documentSettingsState.documentTypes;
+});
+
+// Provider for active document types only
+final activeDocumentTypesProvider = Provider<List<Map<String, dynamic>>>((ref) {
+  final documentSettingsNotifier = ref.read(documentSettingsProvider.notifier);
+  return documentSettingsNotifier.getActiveDocumentTypes();
+});
+
+// Provider for fetching invoice templates separately
+final fetchInvoiceTemplatesProvider = FutureProvider<void>((ref) async {
+  final documentSettingsNotifier = ref.read(documentSettingsProvider.notifier);
+  await documentSettingsNotifier.fetchInvoiceTemplates();
+});
+
+// Provider for fetching document types separately
+final fetchDocumentTypesProvider = FutureProvider<void>((ref) async {
+  final documentSettingsNotifier = ref.read(documentSettingsProvider.notifier);
+  await documentSettingsNotifier.fetchDocumentTypes();
+});

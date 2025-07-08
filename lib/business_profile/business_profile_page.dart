@@ -11,6 +11,7 @@ import 'document_setting_form.dart';
 import 'bank_form.dart';
 import 'address_form.dart';
 import 'subscription_settings_page.dart';
+import 'package:Wareozo/apis/providers/countries_states_currency_provider.dart';
 
 class BusinessProfilePage extends ConsumerStatefulWidget {
   const BusinessProfilePage({Key? key}) : super(key: key);
@@ -289,14 +290,14 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
         onTap: () => _navigateToPage(const AddressListDetailPage()),
       ),
       _MenuItem(
-        icon: Icons.settings,
-        title: 'Settings',
-        onTap: () => _navigateToPage(const SubscriptionSettingsPage()),
-      ),
-      _MenuItem(
         icon: Icons.description,
         title: 'Document Settings',
         onTap: () => _navigateToPage(const DocumentSettingsDetailPage()),
+      ),
+      _MenuItem(
+        icon: Icons.settings,
+        title: 'Settings',
+        onTap: () => _navigateToPage(const SubscriptionSettingsPage()),
       ),
     ];
 
@@ -745,6 +746,23 @@ class RegistrationLegalDetailPage extends BaseDetailPage {
   ) {
     final businessProfileState = ref.watch(businessProfileProvider);
     final profile = businessProfileState.profile;
+    String _getStateName(WidgetRef ref, String? stateId) {
+      if (stateId == null || stateId.isEmpty) return '-';
+
+      final statesAsync = ref.watch(statesDropdownProvider);
+      return statesAsync.when(
+        data: (states) {
+          final matchingState = states.firstWhere(
+            (state) => state['id'] == stateId,
+            orElse: () => <String, String>{},
+          );
+          return matchingState['name'] ??
+              stateId; // Fallback to ID if name not found
+        },
+        loading: () => 'Loading...',
+        error: (error, stack) => stateId, // Fallback to ID on error
+      );
+    }
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -798,7 +816,7 @@ class RegistrationLegalDetailPage extends BaseDetailPage {
               ),
               _buildDetailRow(
                 'State of Registration',
-                profile?['stateOfRegistration'] ?? '',
+                _getStateName(ref, profile?['stateOfRegistration']),
                 colors,
                 isTablet,
               ),

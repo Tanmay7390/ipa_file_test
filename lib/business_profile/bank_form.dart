@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:Wareozo/apis/providers/bankaccount_provider.dart';
+import 'package:Wareozo/apis/providers/countries_states_currency_provider.dart';
 import 'package:Wareozo/theme_provider.dart';
 import 'package:Wareozo/components/form_fields.dart';
 
@@ -21,38 +22,15 @@ class _BankFormState extends ConsumerState<BankForm> {
   bool _isLoading = false;
   bool _isInitialized = false;
 
-  // Country and Currency options (you may want to fetch these from an API)
-  final List<String> _countryOptions = [
-    'India',
-    'United States',
-    'United Kingdom',
-    'Canada',
-    'Australia',
-    'Germany',
-    'France',
-    'Japan',
-    'Singapore',
-    'UAE',
-  ];
-
-  final List<String> _currencyOptions = [
-    'INR - Indian Rupee',
-    'USD - US Dollar',
-    'GBP - British Pound',
-    'CAD - Canadian Dollar',
-    'AUD - Australian Dollar',
-    'EUR - Euro',
-    'JPY - Japanese Yen',
-    'SGD - Singapore Dollar',
-    'AED - UAE Dirham',
-  ];
-
   bool get _isEditMode => widget.bankId != null;
 
   @override
+  @override
   void initState() {
     super.initState();
-    _initializeForm();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeForm();
+    });
   }
 
   @override
@@ -71,7 +49,7 @@ class _BankFormState extends ConsumerState<BankForm> {
             .read(bankAccountProvider.notifier)
             .getBankById(widget.bankId!);
 
-        if (bank != null) {
+        if (bank != null && mounted) {
           setState(() {
             _formData.addAll({
               'bankName': bank['bankName'] ?? '',
@@ -82,42 +60,103 @@ class _BankFormState extends ConsumerState<BankForm> {
               'IBAN': bank['IBAN'] ?? '',
               'accountNumber': bank['accountNumber'] ?? '',
               'accountName': bank['accountName'] ?? '',
-              'country': bank['country']?['name'] ?? '',
-              'currency': bank['currency']?['name'] != null
-                  ? '${bank['currency']['code']} - ${bank['currency']['name']}'
-                  : '',
+              'country': bank['country']?['_id'] ?? '',
+              'currency': bank['currency']?['_id'] ?? '',
             });
             _isInitialized = true;
           });
         }
       } catch (e) {
-        _showErrorDialog('Failed to load bank account: $e');
+        if (mounted) {
+          _showErrorDialog('Failed to load bank account: $e');
+        }
       } finally {
-        setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     } else {
       // Initialize with default values for Add mode
-      setState(() {
-        _formData.addAll({
-          'bankName': '',
-          'branchName': '',
-          'IFSC': '',
-          'SWIFT': '',
-          'MICR': '',
-          'IBAN': '',
-          'accountNumber': '',
-          'accountName': '',
-          'country': 'India', // Default country
-          'currency': 'INR - Indian Rupee', // Default currency
-        });
-        _isInitialized = true;
+      ref.read(countriesDropdownProvider).whenData((countries) {
+        final indiaCountry = countries.firstWhere(
+          (country) => country['code'] == 'IN',
+          orElse: () =>
+              countries.isNotEmpty ? countries.first : <String, String>{},
+        );
+
+        if (indiaCountry.isNotEmpty && mounted) {
+          setState(() {
+            _formData['country'] = indiaCountry['id'];
+            // Set default currency to INR if available
+            final currency = ref.read(currencyByCountryCodeProvider('IN'));
+            if (currency != null) {
+              _formData['currency'] = currency['_id'];
+            }
+          });
+        }
       });
+
+      if (mounted) {
+        setState(() {
+          _formData.addAll({
+            'bankName': '',
+            'branchName': '',
+            'IFSC': '',
+            'SWIFT': '',
+            'MICR': '',
+            'IBAN': '',
+            'accountNumber': '',
+            'accountName': '',
+            'country': _formData['country'] ?? '',
+            'currency': _formData['currency'] ?? '',
+          });
+          _isInitialized = true;
+        });
+      }
     }
+  }
+
+  // Helper method to build display form data for dropdowns
+  Map<String, dynamic> _buildDisplayFormData(
+    List<Map<String, String>>? countries,
+    AsyncValue<List<Map<String, String>>> currenciesAsync,
+  ) {
+    final displayFormData = Map<String, dynamic>.from(_formData);
+
+    // Convert country ID to display name
+    if (countries != null &&
+        _formData['country'] != null &&
+        _formData['country'].isNotEmpty) {
+      final country = countries.firstWhere(
+        (c) => c['id'] == _formData['country'],
+        orElse: () => <String, String>{},
+      );
+      if (country.isNotEmpty) {
+        displayFormData['country'] = country['name'];
+      }
+    }
+
+    // Convert currency ID to display name
+    currenciesAsync.whenData((currencies) {
+      if (_formData['currency'] != null && _formData['currency'].isNotEmpty) {
+        final currency = currencies.firstWhere(
+          (c) => c['id'] == _formData['currency'],
+          orElse: () => <String, String>{},
+        );
+        if (currency.isNotEmpty) {
+          displayFormData['currency'] =
+              '${currency['code']} - ${currency['name']}';
+        }
+      }
+    });
+
+    return displayFormData;
   }
 
   void _onFieldChanged(String key, dynamic value) {
     setState(() {
       _formData[key] = value;
+
       // Clear validation error when user starts typing
       if (_validationErrors.containsKey(key)) {
         _validationErrors.remove(key);
@@ -347,29 +386,13 @@ class _BankFormState extends ConsumerState<BankForm> {
 
           _buildDivider(colors),
 
-          // Country
-          FormFieldWidgets.buildSelectField(
-            'country',
-            'Country',
-            _countryOptions,
-            onChanged: _onFieldChanged,
-            formData: _formData,
-            validationErrors: _validationErrors,
-            isRequired: true,
-          ),
+          // Country dropdown with API data
+          _buildCountryDropdown(colors),
 
           _buildDivider(colors),
 
-          // Currency
-          FormFieldWidgets.buildSelectField(
-            'currency',
-            'Currency',
-            _currencyOptions,
-            onChanged: _onFieldChanged,
-            formData: _formData,
-            validationErrors: _validationErrors,
-            isRequired: false,
-          ),
+          // Currency dropdown with API data
+          _buildCurrencyDropdown(colors),
 
           _buildDivider(colors),
 
@@ -454,6 +477,122 @@ class _BankFormState extends ConsumerState<BankForm> {
 
           SizedBox(height: 16),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCountryDropdown(WareozeColorScheme colors) {
+    final countriesAsync = ref.watch(countriesDropdownProvider);
+
+    return countriesAsync.when(
+      data: (countries) {
+        final countryOptions = countries
+            .map((country) => country['name']!)
+            .toList();
+
+        return FormFieldWidgets.buildSelectField(
+          'country',
+          'Country',
+          countryOptions,
+          onChanged: (key, value) {
+            // Find the country ID based on the selected name
+            final selectedCountry = countries.firstWhere(
+              (country) => country['name'] == value,
+              orElse: () => <String, String>{},
+            );
+
+            if (selectedCountry.isNotEmpty) {
+              _onFieldChanged(key, selectedCountry['id']);
+
+              // Auto-select currency based on country
+              final countryCode = selectedCountry['code'];
+              if (countryCode != null) {
+                final currency = ref.read(
+                  currencyByCountryCodeProvider(countryCode),
+                );
+                if (currency != null) {
+                  _formData['currency'] = currency['_id'];
+                }
+              }
+            }
+          },
+          formData: _buildDisplayFormData(
+            countries,
+            ref.watch(currenciesDropdownProvider),
+          ),
+          validationErrors: _validationErrors,
+          isRequired: true,
+        );
+      },
+      loading: () => Container(
+        padding: EdgeInsets.all(16),
+        child: Row(
+          children: [
+            CupertinoActivityIndicator(),
+            SizedBox(width: 12),
+            Text('Loading countries...'),
+          ],
+        ),
+      ),
+      error: (error, stack) => Container(
+        padding: EdgeInsets.all(16),
+        child: Text(
+          'Error loading countries: ${error.toString()}',
+          style: TextStyle(color: Colors.red),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCurrencyDropdown(WareozeColorScheme colors) {
+    final currenciesAsync = ref.watch(currenciesDropdownProvider);
+
+    return currenciesAsync.when(
+      data: (currencies) {
+        final currencyOptions = currencies
+            .map((currency) => '${currency['code']} - ${currency['name']}')
+            .toList();
+
+        return FormFieldWidgets.buildSelectField(
+          'currency',
+          'Currency',
+          currencyOptions,
+          onChanged: (key, value) {
+            // Find the currency ID based on the selected display value
+            final selectedCurrency = currencies.firstWhere(
+              (currency) =>
+                  '${currency['code']} - ${currency['name']}' == value,
+              orElse: () => <String, String>{},
+            );
+
+            if (selectedCurrency.isNotEmpty) {
+              _onFieldChanged(key, selectedCurrency['id']);
+            }
+          },
+          formData: _buildDisplayFormData(
+            ref.watch(countriesDropdownProvider).valueOrNull,
+            currenciesAsync,
+          ),
+          validationErrors: _validationErrors,
+          isRequired: false,
+        );
+      },
+      loading: () => Container(
+        padding: EdgeInsets.all(16),
+        child: Row(
+          children: [
+            CupertinoActivityIndicator(),
+            SizedBox(width: 12),
+            Text('Loading currencies...'),
+          ],
+        ),
+      ),
+      error: (error, stack) => Container(
+        padding: EdgeInsets.all(16),
+        child: Text(
+          'Error loading currencies: ${error.toString()}',
+          style: TextStyle(color: Colors.red),
+        ),
       ),
     );
   }
