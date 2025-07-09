@@ -72,6 +72,78 @@ class SupplierRepository {
 
   SupplierRepository(this.dio);
 
+  // Create supplier
+  Future<ApiResponse<Map<String, dynamic>>> createSupplier(
+    Map<String, dynamic> supplierData,
+  ) async {
+    try {
+      final url = ApiUrls.createCustomer; // Same endpoint as customer
+
+      log('Creating supplier with data: $supplierData');
+
+      // Check if there are any files in the data
+      bool hasFiles = false;
+      for (var value in supplierData.values) {
+        if (value is MultipartFile) {
+          hasFiles = true;
+          break;
+        }
+      }
+
+      dynamic requestData;
+      if (hasFiles) {
+        requestData = FormData.fromMap(supplierData);
+        log('Using FormData for file upload');
+      } else {
+        requestData = supplierData;
+        log('Using JSON data (no files)');
+      }
+
+      final response = await dio.post(url, data: requestData);
+
+      log(
+        'Create supplier response: ${response.statusCode} - ${response.data}',
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = response.data;
+        Map<String, dynamic> createdSupplier = {};
+
+        if (responseData is Map<String, dynamic>) {
+          if (responseData.containsKey('fullAccountDetails')) {
+            createdSupplier = Map<String, dynamic>.from(
+              responseData['fullAccountDetails'],
+            );
+          } else if (responseData.containsKey('data')) {
+            createdSupplier = Map<String, dynamic>.from(responseData['data']);
+          } else if (responseData.containsKey('supplier')) {
+            createdSupplier = Map<String, dynamic>.from(
+              responseData['supplier'],
+            );
+          } else {
+            createdSupplier = responseData;
+          }
+        }
+
+        return ApiResponse.success(
+          createdSupplier,
+          'Supplier created successfully',
+        );
+      } else {
+        return ApiResponse.error('Failed to create supplier');
+      }
+    } on DioException catch (e) {
+      log('Error creating supplier: ${e.message}');
+      if (e.response?.data != null) {
+        log('Error response data: ${e.response!.data}');
+      }
+      return ApiResponse.error(_handleDioError(e));
+    } catch (e) {
+      log('Unexpected error creating supplier: $e');
+      return ApiResponse.error('An unexpected error occurred');
+    }
+  }
+
   // Get Supplier list with pagination and search
   Future<ApiResponse<SupplierData>> getsupplierList({
     required String accountId,
@@ -537,6 +609,12 @@ class SupplierActions {
   final SupplierRepository _repository;
 
   SupplierActions(this._repository);
+
+  Future<ApiResponse<Map<String, dynamic>>> createSupplier(
+    Map<String, dynamic> supplierData,
+  ) async {
+    return await _repository.createSupplier(supplierData);
+  }
 
   Future<ApiResponse<Map<String, dynamic>>> updateSupplier(
     String supplierId,

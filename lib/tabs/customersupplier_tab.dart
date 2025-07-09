@@ -456,7 +456,7 @@ class _CustomerSupplierTabState extends ConsumerState<CustomerSupplierTab> {
           },
           titleKey: 'name',
           subtitleKey: 'legalName',
-          leadingKey: 'photo',
+          leadingKey: 'logo',
         );
       },
       loading: () => const BuildShimmerTile(),

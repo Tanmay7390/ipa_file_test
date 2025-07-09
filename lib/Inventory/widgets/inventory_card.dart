@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../apis/providers/inventory_provider.dart';
 import '../../theme_provider.dart';
+import 'product_detail_page.dart';
 
 class InventoryGridCard extends ConsumerWidget {
   final Map<String, dynamic> inventory;
@@ -210,16 +211,7 @@ class InventoryGridCard extends ConsumerWidget {
                               ],
                             ),
                           ),
-                          // const PopupMenuItem(
-                          //   value: 'duplicate',
-                          //   child: Row(
-                          //     children: [
-                          //       Icon(Icons.copy_outlined, size: 16),
-                          //       SizedBox(width: 8),
-                          //       Text('Duplicate'),
-                          //     ],
-                          //   ),
-                          // ),
+
                           // const PopupMenuItem(
                           //   value: 'delete',
                           //   child: Row(
@@ -625,16 +617,7 @@ class InventoryGridCard extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  // const PopupMenuItem(
-                  //   value: 'duplicate',
-                  //   child: Row(
-                  //     children: [
-                  //       Icon(Icons.copy_outlined, size: 16),
-                  //       SizedBox(width: 8),
-                  //       Text('Duplicate'),
-                  //     ],
-                  //   ),
-                  // ),
+
                   // const PopupMenuItem(
                   //   value: 'delete',
                   //   child: Row(
@@ -667,14 +650,13 @@ class InventoryGridCard extends ConsumerWidget {
     );
   }
 
-  void _showProductDetails(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => ProductDetailBottomSheet(inventory: inventory),
-    );
-  }
+void _showProductDetails(BuildContext context) {
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => ProductDetailPage(inventory: inventory),
+    ),
+  );
+}
 
   void _handleMenuAction(BuildContext context, String action) {
     final inventoryId = inventory['_id']?.toString();
@@ -692,11 +674,7 @@ class InventoryGridCard extends ConsumerWidget {
           );
         }
         break;
-      // case 'duplicate':
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     const SnackBar(content: Text('Duplicate functionality coming soon')),
-      //   );
-      //   break;
+
       // case 'delete':
       //   _showDeleteConfirmation(context, inventoryId);
       //   break;
@@ -737,238 +715,6 @@ class InventoryGridCard extends ConsumerWidget {
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Keep the existing ProductDetailBottomSheet class as is
-class ProductDetailBottomSheet extends ConsumerWidget {
-  final Map<String, dynamic> inventory;
-
-  const ProductDetailBottomSheet({Key? key, required this.inventory})
-    : super(key: key);
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colors = ref.watch(colorProvider);
-    final name = InventoryHelper.getInventoryName(inventory);
-    final description = InventoryHelper.getInventoryDescription(inventory);
-    final price = InventoryHelper.getInventoryPrice(inventory);
-    final purchasePrice = InventoryHelper.getPurchasePrice(inventory);
-    final currentStock = InventoryHelper.getCurrentStock(inventory);
-    final itemCode = InventoryHelper.getItemCode(inventory);
-    final hsnCode = InventoryHelper.getHsnCode(inventory);
-    final photos = InventoryHelper.getPhotos(inventory);
-
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          // Handle
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(top: 12),
-            decoration: BoxDecoration(
-              color: colors.border,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Text(
-                  'Product Details',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: colors.textPrimary,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: Icon(Icons.close, color: colors.textPrimary),
-                ),
-              ],
-            ),
-          ),
-
-          // Content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Product Images
-                  if (photos.isNotEmpty) ...[
-                    SizedBox(
-                      height: 200,
-                      child: PageView.builder(
-                        itemCount: photos.length,
-                        itemBuilder: (context, index) {
-                          return Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: colors.border),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.network(
-                                photos[index],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    color: colors.background,
-                                    child: Icon(
-                                      Icons.broken_image,
-                                      size: 48,
-                                      color: colors.textSecondary,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Product Info
-                  Text(
-                    name,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-
-                  if (description.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 16),
-
-                  // Price Info
-                  Row(
-                    children: [
-                      if (price > 0) ...[
-                        Text(
-                          '₹${price.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: colors.primary,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Details Grid
-                  _buildDetailItem(
-                    colors,
-                    'Item Code',
-                    itemCode.isEmpty ? '-' : itemCode,
-                  ),
-                  _buildDetailItem(
-                    colors,
-                    'HSN Code',
-                    hsnCode.isEmpty ? '-' : hsnCode,
-                  ),
-                  _buildDetailItem(
-                    colors,
-                    'Current Stock',
-                    '$currentStock units',
-                  ),
-                  if (purchasePrice > 0)
-                    _buildDetailItem(
-                      colors,
-                      'Purchase Price',
-                      '₹${purchasePrice.toStringAsFixed(2)}',
-                    ),
-                  _buildDetailItem(
-                    colors,
-                    'Item Type',
-                    InventoryHelper.getItemType(inventory),
-                  ),
-                  _buildDetailItem(
-                    colors,
-                    'Status',
-                    InventoryHelper.getStatus(inventory),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailItem(
-    WareozeColorScheme colors,
-    String label,
-    String value,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.background,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                color: colors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: colors.textPrimary,
-              ),
-              textAlign: TextAlign.right,
-            ),
           ),
         ],
       ),

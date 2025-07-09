@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:Wareozo/components/form_fields.dart';
 import '../../apis/providers/customer_provider.dart';
+import '../../apis/providers/supplier_provider.dart' as supplier;
 import 'package:Wareozo/apis/providers/auth_provider.dart';
 import '../../apis/core/dio_provider.dart';
 import '../../apis/core/api_urls.dart';
@@ -926,7 +927,8 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
   Future<void> _saveForm() async {
     log('Save form called - ${isEditMode ? 'Edit' : 'Create'} mode');
     log('Current form data: $formData');
-    log('Customer ID: ${widget.customerId}'); // ADD THIS LOG
+    log('Customer ID: ${widget.customerId}');
+    log('Selected party type: ${_selectedPartyType.name}');
 
     if (!_validateForm()) {
       log('Form validation failed: $validationErrors');
@@ -953,69 +955,197 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
       final customerData = await _buildCustomerData(accountId);
       log('Customer data to be sent: $customerData');
 
-      // Call API based on mode
-      final customerActions = ref.read(customerActionsProvider);
-      final ApiResponse<Map<String, dynamic>> result;
-
+      // Call API based on mode and party type
       if (isEditMode) {
-        log('Calling updateCustomer API with ID: ${widget.customerId}');
-        result = await customerActions.updateCustomer(
-          widget.customerId!,
-          customerData,
-        );
-      } else {
-        log('Calling createCustomer API...');
-        result = await customerActions.createCustomer(customerData);
-      }
-
-      log(
-        'API result: ${result.success}, message: ${result.message}, error: ${result.error}',
-      );
-
-      if (result.success && result.data != null) {
-        // Update local state
-        if (isEditMode) {
-          ref.read(customerListProvider.notifier).updateCustomer(result.data!);
-          log('Customer updated in local state');
-        } else {
-          ref.read(customerListProvider.notifier).addCustomer(result.data!);
-          log('Customer added to local state');
-        }
-
-        // Show success dialog
-        if (mounted) {
-          showCupertinoDialog(
-            context: context,
-            builder: (_) => CupertinoAlertDialog(
-              title: const Text('Success'),
-              content: Text(
-                result.message ??
-                    '${isEditMode ? 'Customer updated' : 'Customer created'} successfully!',
-              ),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK'),
-                  onPressed: () => Navigator.of(context)
-                    ..pop()
-                    ..pop(),
-                ),
-              ],
-            ),
+        if (_selectedPartyType == PartyType.supplier) {
+          log('Calling updateSupplier API with ID: ${widget.customerId}');
+          final supplierActions = ref.read(supplier.supplierActionsProvider);
+          final supplierResult = await supplierActions.updateSupplier(
+            widget.customerId!,
+            customerData,
           );
+
+          log(
+            'API result: ${supplierResult.success}, message: ${supplierResult.message}, error: ${supplierResult.error}',
+          );
+
+          if (supplierResult.success && supplierResult.data != null) {
+            // Update supplier local state
+            ref
+                .read(supplier.supplierListProvider.notifier)
+                .updateSupplier(supplierResult.data!);
+            log('Supplier updated in local state');
+
+            // Show success dialog
+            if (mounted) {
+              showCupertinoDialog(
+                context: context,
+                builder: (_) => CupertinoAlertDialog(
+                  title: const Text('Success'),
+                  content: Text(
+                    supplierResult.message ?? 'Supplier updated successfully!',
+                  ),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: const Text('OK'),
+                      onPressed: () => Navigator.of(context)
+                        ..pop()
+                        ..pop(),
+                    ),
+                  ],
+                ),
+              );
+            }
+          } else {
+            log('API call failed: ${supplierResult.error}');
+            _showErrorDialog(
+              supplierResult.error ?? 'Failed to update supplier',
+            );
+          }
+        } else {
+          log('Calling updateCustomer API with ID: ${widget.customerId}');
+          final customerActions = ref.read(customerActionsProvider);
+          final customerResult = await customerActions.updateCustomer(
+            widget.customerId!,
+            customerData,
+          );
+
+          log(
+            'API result: ${customerResult.success}, message: ${customerResult.message}, error: ${customerResult.error}',
+          );
+
+          if (customerResult.success && customerResult.data != null) {
+            // Update customer local state
+            ref
+                .read(customerListProvider.notifier)
+                .updateCustomer(customerResult.data!);
+            log('Customer updated in local state');
+
+            // Show success dialog
+            if (mounted) {
+              showCupertinoDialog(
+                context: context,
+                builder: (_) => CupertinoAlertDialog(
+                  title: const Text('Success'),
+                  content: Text(
+                    customerResult.message ?? 'Customer updated successfully!',
+                  ),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: const Text('OK'),
+                      onPressed: () => Navigator.of(context)
+                        ..pop()
+                        ..pop(),
+                    ),
+                  ],
+                ),
+              );
+            }
+          } else {
+            log('API call failed: ${customerResult.error}');
+            _showErrorDialog(
+              customerResult.error ?? 'Failed to update customer',
+            );
+          }
         }
       } else {
-        log('API call failed: ${result.error}');
-        _showErrorDialog(
-          result.error ??
-              'Failed to ${isEditMode ? 'update' : 'create'} customer',
-        );
+        if (_selectedPartyType == PartyType.supplier) {
+          log('Calling createSupplier API...');
+          final supplierActions = ref.read(supplier.supplierActionsProvider);
+          final supplierResult = await supplierActions.createSupplier(
+            customerData,
+          );
+
+          log(
+            'API result: ${supplierResult.success}, message: ${supplierResult.message}, error: ${supplierResult.error}',
+          );
+
+          if (supplierResult.success && supplierResult.data != null) {
+            // Add to supplier list if provider exists
+            log('Supplier created in local state');
+
+            // Show success dialog
+            if (mounted) {
+              showCupertinoDialog(
+                context: context,
+                builder: (_) => CupertinoAlertDialog(
+                  title: const Text('Success'),
+                  content: Text(
+                    supplierResult.message ?? 'Supplier created successfully!',
+                  ),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: const Text('OK'),
+                      onPressed: () => Navigator.of(context)
+                        ..pop()
+                        ..pop(),
+                    ),
+                  ],
+                ),
+              );
+            }
+          } else {
+            log('API call failed: ${supplierResult.error}');
+            _showErrorDialog(
+              supplierResult.error ?? 'Failed to create supplier',
+            );
+          }
+        } else {
+          log('Calling createCustomer API...');
+          final customerActions = ref.read(customerActionsProvider);
+          final customerResult = await customerActions.createCustomer(
+            customerData,
+          );
+
+          log(
+            'API result: ${customerResult.success}, message: ${customerResult.message}, error: ${customerResult.error}',
+          );
+
+          if (customerResult.success && customerResult.data != null) {
+            // Add customer to local state
+            ref
+                .read(customerListProvider.notifier)
+                .addCustomer(customerResult.data!);
+            log('Customer added to local state');
+
+            // Show success dialog
+            if (mounted) {
+              showCupertinoDialog(
+                context: context,
+                builder: (_) => CupertinoAlertDialog(
+                  title: const Text('Success'),
+                  content: Text(
+                    customerResult.message ?? 'Customer created successfully!',
+                  ),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: const Text('OK'),
+                      onPressed: () => Navigator.of(context)
+                        ..pop()
+                        ..pop(),
+                    ),
+                  ],
+                ),
+              );
+            }
+          } else {
+            log('API call failed: ${customerResult.error}');
+            _showErrorDialog(
+              customerResult.error ?? 'Failed to create customer',
+            );
+          }
+        }
       }
     } catch (e, stackTrace) {
-      log('Error ${isEditMode ? 'updating' : 'creating'} customer: $e');
-      log('Stack trace: $stackTrace');
-      _showErrorDialog(
-        'An error occurred while ${isEditMode ? 'updating' : 'creating'} customer: $e',
+      log(
+        'Error ${isEditMode ? 'updating' : 'creating'} ${_selectedPartyType.name}: $e',
       );
+      log('Stack trace: $stackTrace');
+      final entityType = _selectedPartyType == PartyType.supplier
+          ? 'supplier'
+          : 'customer';
+      final action = isEditMode ? 'updating' : 'creating';
+      _showErrorDialog('An error occurred while $action $entityType: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -1413,41 +1543,60 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
 
               // Basic Information Section
               _buildSection(title: 'BASIC INFORMATION', [
-                FormFieldWidgets.buildAvatarField(
-                  'logo',
-                  'Company Logo',
-                  onChanged: _updateFormData,
-                  formData: formData,
-                  validationErrors: validationErrors,
-                  context: context,
-                  initials: formData['firstName']?.isNotEmpty == true
-                      ? formData['firstName']
-                            .toString()
-                            .substring(0, 1)
-                            .toUpperCase()
-                      : 'C',
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Row(
+                    children: [
+                      FormFieldWidgets.buildAvatarField(
+                        'logo',
+                        '',
+                        onChanged: _updateFormData,
+                        formData: formData,
+                        validationErrors: validationErrors,
+                        context: context,
+
+                        initials: formData['firstName']?.isNotEmpty == true
+                            ? formData['firstName']
+                                  .toString()
+                                  .substring(0, 1)
+                                  .toUpperCase()
+                            : 'C',
+                      ),
+                      // SizedBox(width: 36),
+
+                      // Name field on right
+                      Expanded(
+                        child: Column(
+                          children: [
+                            // Split name into First Name and Last Name
+                            FormFieldWidgets.buildTextField(
+                              'firstName',
+                              'First Name',
+                              'text',
+                              context,
+                              isRequired: true,
+                              onChanged: _updateFormData,
+                              formData: formData,
+                              validationErrors: validationErrors,
+                              compact: true,
+                            ),
+                            FormFieldWidgets.buildTextField(
+                              'lastName',
+                              'Last Name',
+                              'text',
+                              context,
+                              onChanged: _updateFormData,
+                              formData: formData,
+                              validationErrors: validationErrors,
+                              compact: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
 
-                // Split name into First Name and Last Name
-                FormFieldWidgets.buildTextField(
-                  'firstName',
-                  'First Name',
-                  'text',
-                  context,
-                  isRequired: true,
-                  onChanged: _updateFormData,
-                  formData: formData,
-                  validationErrors: validationErrors,
-                ),
-                FormFieldWidgets.buildTextField(
-                  'lastName',
-                  'Last Name',
-                  'text',
-                  context,
-                  onChanged: _updateFormData,
-                  formData: formData,
-                  validationErrors: validationErrors,
-                ),
                 FormFieldWidgets.buildTextField(
                   'legalName',
                   'Legal Name',

@@ -804,6 +804,73 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
     }
   }
 
+  // Get inventory history by ID
+  Future<List<Map<String, dynamic>>?> getInventoryHistoryById(
+    String inventoryId,
+  ) async {
+    try {
+      final url = ApiUrls.replaceParams(ApiUrls.getInventoryHistorybyId, {
+        'id': inventoryId,
+      });
+
+      final response = await _dio.get(
+        url,
+        options: Options(headers: {'Authorization': 'Bearer $_authToken'}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+
+        // Handle both array response and object with data property
+        if (data is List) {
+          return data.map((item) => item as Map<String, dynamic>).toList();
+        } else if (data is Map && data['data'] is List) {
+          return (data['data'] as List)
+              .map((item) => item as Map<String, dynamic>)
+              .toList();
+        } else if (data is Map && data['history'] is List) {
+          return (data['history'] as List)
+              .map((item) => item as Map<String, dynamic>)
+              .toList();
+        }
+
+        return [];
+      }
+      return null;
+    } on DioException catch (e) {
+      String errorMessage = 'Failed to load inventory history';
+
+      if (e.response != null) {
+        print('Error Response: ${e.response!.data}');
+        print('Error Status Code: ${e.response!.statusCode}');
+
+        switch (e.response!.statusCode) {
+          case 401:
+            errorMessage = 'Authentication required';
+            break;
+          case 403:
+            errorMessage = 'Access denied';
+            break;
+          case 404:
+            errorMessage = 'Inventory history not found';
+            break;
+          case 500:
+            errorMessage = 'Server error';
+            break;
+        }
+      } else if (e.type == DioExceptionType.connectionTimeout) {
+        errorMessage = 'Connection timeout';
+      } else if (e.type == DioExceptionType.receiveTimeout) {
+        errorMessage = 'Request timeout';
+      }
+
+      throw Exception(errorMessage);
+    } catch (e) {
+      print('General Exception: $e');
+      throw Exception('An unexpected error occurred');
+    }
+  }
+
   // Legacy methods (kept for backward compatibility)
   Future<Map<String, dynamic>?> updateInventory(
     String inventoryId,
@@ -846,6 +913,20 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
       // Handle error as needed
       print('Error fetching inventory: $e');
       _ref.read(singleInventoryProvider(inventoryId).notifier).state = null;
+    }
+  }
+
+  // Method to fetch and store inventory history in provider
+  Future<void> fetchInventoryHistoryById(String inventoryId) async {
+    try {
+      final history = await getInventoryHistoryById(inventoryId);
+      if (history != null) {
+        _ref.read(inventoryHistoryProvider(inventoryId).notifier).state =
+            history;
+      }
+    } catch (e) {
+      print('Error fetching inventory history: $e');
+      _ref.read(inventoryHistoryProvider(inventoryId).notifier).state = null;
     }
   }
 
@@ -1185,6 +1266,143 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
   Future<void> refresh() async {
     await fetchInventories(isRefresh: true);
   }
+
+
+
+  // Adjust inventory stock
+  Future<InventoryResult> adjustInventoryStock({
+    required String inventoryId,
+    required int quantity,
+    required bool isAdd,
+    String? remarks,
+    String? invoiceNumber,
+  }) async {
+    if (_accountId == null) {
+      return InventoryResult.error('Account ID not found');
+    }
+
+    if (_authToken == null) {
+      return InventoryResult.error('Authentication token not found');
+    }
+
+    try {
+      // Build payload for stock adjustment
+      final Map<String, dynamic> payload = {
+        'qty': quantity,
+        'remarks': remarks ?? '',
+        'account': _accountId!,
+        'isAdd': isAdd,
+        'isSub': !isAdd,
+        'type': isAdd ? 'Add Stock' : 'Reduce Stock',
+      };
+
+      // Add invoice number if provided
+      if (invoiceNumber != null && invoiceNumber.isNotEmpty) {
+        payload['invoiceNumber'] = invoiceNumber;
+      }
+
+      final url = ApiUrls.replaceParams(ApiUrls.createAdjustStock, {
+        'id': inventoryId,
+      });
+
+      final response = await _dio.post(
+        url,
+        data: payload,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $_authToken',
+          },
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      print('Adjust Stock Response status: ${response.statusCode}');
+      print('Adjust Stock Response data: ${response.data}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data as Map<String, dynamic>;
+
+        // Update the inventory in local state if stock adjustment was successful
+        if (data['skuHistory'] != null) {
+          final skuHistory = data['skuHistory'] as Map<String, dynamic>;
+          final newClosingStock = skuHistory['closingStock'] ?? 0;
+
+          // Update the current stock in local inventory list
+          final updatedInventories = state.inventories.map((item) {
+            if (item['_id'] == inventoryId) {
+              // Update the current stock in the inventory item
+              final updatedItem = Map<String, dynamic>.from(item);
+
+              // Update stock in different possible locations
+              if (updatedItem['stock'] != null) {
+                updatedItem['stock']['currentStock'] = newClosingStock;
+              } else {
+                updatedItem['currentStock'] = newClosingStock;
+              }
+
+              return updatedItem;
+            }
+            return item;
+          }).toList();
+
+          state = state.copyWith(inventories: updatedInventories);
+
+          // Also update the inventory history if it's being watched
+          final historyList = _ref.read(inventoryHistoryProvider(inventoryId));
+          if (historyList != null) {
+            final updatedHistory = [skuHistory, ...historyList];
+            _ref.read(inventoryHistoryProvider(inventoryId).notifier).state =
+                updatedHistory;
+          }
+        }
+
+        return InventoryResult.success(
+          data,
+          message: data['message'] ?? 'Stock adjusted successfully',
+        );
+      } else {
+        return _handleErrorResponse(response, isUpdate: false);
+      }
+    } on DioException catch (e) {
+      return _handleDioException(e, isUpdate: false);
+    } catch (e) {
+      print('General Exception: $e');
+      return InventoryResult.error('An unexpected error occurred');
+    }
+  }
+
+  // Helper method to add stock (convenience method)
+  Future<InventoryResult> addStock({
+    required String inventoryId,
+    required int quantity,
+    String? remarks,
+    String? invoiceNumber,
+  }) async {
+    return adjustInventoryStock(
+      inventoryId: inventoryId,
+      quantity: quantity,
+      isAdd: true,
+      remarks: remarks,
+      invoiceNumber: invoiceNumber,
+    );
+  }
+
+  // Helper method to reduce stock (convenience method)
+  Future<InventoryResult> reduceStock({
+    required String inventoryId,
+    required int quantity,
+    String? remarks,
+    String? invoiceNumber,
+  }) async {
+    return adjustInventoryStock(
+      inventoryId: inventoryId,
+      quantity: quantity,
+      isAdd: false,
+      remarks: remarks,
+      invoiceNumber: invoiceNumber,
+    );
+  }
 }
 
 // Result class for create/update operations
@@ -1238,6 +1456,12 @@ final priceRangeFilterProvider = StateProvider<Map<String, double?>>(
 final dateFilterProvider = StateProvider<String?>((ref) => null);
 final customStartDateProvider = StateProvider<DateTime?>((ref) => null);
 final customEndDateProvider = StateProvider<DateTime?>((ref) => null);
+
+// Single inventory history provider
+final inventoryHistoryProvider =
+    StateProvider.family<List<Map<String, dynamic>>?, String>(
+      (ref, inventoryId) => null,
+    );
 
 // Helper functions for inventory data
 class InventoryHelper {

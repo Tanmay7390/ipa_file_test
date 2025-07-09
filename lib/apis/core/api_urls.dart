@@ -80,9 +80,12 @@ class ApiUrls {
   static const String inventoryList = 'sku/account/{accountId}';
   static const String createInventory = 'sku';
   static const String getInventorybyId = 'sku/{id}';
+  static const String getInventoryHistorybyId = 'sku/history/{id}';
   static const String updateInventory = 'sku/{id}';
   static const String filterInventory = 'sku/account/{accountId}?{queryParam}';
   static const String measuringUnit = 'sku/measuring-unit/get';
+
+  static const String createAdjustStock = 'sku/history/{id}/adjust-stock';
 
   // Inventory Category endpoints
   static const String inventoryCategoryList = 'sku/category/get';
