@@ -140,6 +140,14 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
         _formData['primaryPhone'] =
             employeeData['primaryPhone']?.toString().trim() ?? '';
 
+        // Split name into first and last name
+        final fullName = _formData['name']?.toString() ?? '';
+        final nameParts = fullName.split(' ');
+        _formData['firstName'] = nameParts.isNotEmpty ? nameParts.first : '';
+        _formData['lastName'] = nameParts.length > 1
+            ? nameParts.sublist(1).join(' ')
+            : '';
+
         // Client info
         if (employeeData['client'] != null && employeeData['client'] is Map) {
           _formData['clientId'] = employeeData['client']['_id'];
@@ -523,18 +531,6 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
       _validationErrors['primaryPhone'] = 'Phone is required';
     }
 
-    if (_formData['grossSalary']?.toString().trim().isEmpty ?? true) {
-      _validationErrors['grossSalary'] = 'Gross Salary is required';
-    }
-
-    if (_formData['ctc']?.toString().trim().isEmpty ?? true) {
-      _validationErrors['ctc'] = 'CTC is required';
-    }
-
-    if (_formData['assessmentYear']?.toString().trim().isEmpty ?? true) {
-      _validationErrors['assessmentYear'] = 'Assessment is required';
-    }
-
     if (_formData['dateOfJoining'] == null) {
       _validationErrors['dateOfJoining'] = 'Joining Date is required';
     }
@@ -823,51 +819,37 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
     );
   }
 
-  Future<void> _pickImage() async {
-    try {
-      showCupertinoModalPopup(
-        context: context,
-        builder: (BuildContext context) => CupertinoActionSheet(
-          title: Text('Select Photo'),
-          actions: [
-            CupertinoActionSheetAction(
-              child: Text('Camera'),
-              onPressed: () async {
-                Navigator.pop(context);
-                final ImagePicker picker = ImagePicker();
-                final XFile? image = await picker.pickImage(
-                  source: ImageSource.camera,
-                  imageQuality: 80,
-                );
-                if (image != null) {
-                  _onFieldChanged('photo', File(image.path));
-                }
-              },
-            ),
-            CupertinoActionSheetAction(
-              child: Text('Gallery'),
-              onPressed: () async {
-                Navigator.pop(context);
-                final ImagePicker picker = ImagePicker();
-                final XFile? image = await picker.pickImage(
-                  source: ImageSource.gallery,
-                  imageQuality: 80,
-                );
-                if (image != null) {
-                  _onFieldChanged('photo', File(image.path));
-                }
-              },
-            ),
-          ],
-          cancelButton: CupertinoActionSheetAction(
-            child: Text('Cancel'),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
-      );
-    } catch (e) {
-      print('Error picking image: $e');
-    }
+  // Updated form data method to match customer form pattern
+  void _updateFormData(String key, dynamic value) {
+    setState(() {
+      // For photo field, only allow File objects
+      if (key == 'photo' && value != null && value is! File) {
+        print(
+          'Warning: Photo field only accepts File objects, received: ${value.runtimeType}',
+        );
+        return;
+      }
+
+      _formData[key] = value;
+      _validationErrors.remove(key);
+
+      // Combine first and last name into the 'name' field
+      if (key == 'firstName' || key == 'lastName') {
+        final firstName = key == 'firstName'
+            ? value
+            : (_formData['firstName'] ?? '');
+        final lastName = key == 'lastName'
+            ? value
+            : (_formData['lastName'] ?? '');
+        _formData['name'] = '$firstName $lastName'.trim();
+        _validationErrors.remove('name');
+      }
+
+      // Update controller if exists
+      if (_controllers.containsKey(key) && value is String) {
+        _controllers[key]?.text = value;
+      }
+    });
   }
 
   @override
@@ -906,7 +888,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
         middle: Text(_isEditMode ? 'Edit Employee' : 'Create Employee'),
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
-          child: Icon(CupertinoIcons.back),
+          child: Text('Cancel'),
           onPressed: () => Navigator.of(context).pop(),
         ),
         trailing: _isLoading
@@ -942,92 +924,62 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                 ),
               ),
 
-              // Photo and Name in one row
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Row(
-                  children: [
-                    // Photo on left with camera icon
-                    GestureDetector(
-                      onTap: _pickImage,
-                      child: Stack(
-                        children: [
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: CupertinoColors.systemGrey5,
-                              border: Border.all(
-                                color: CupertinoColors.systemGrey4,
-                                width: 1,
-                              ),
-                            ),
-                            child: _buildPhotoWidget(), // Use the new method
-                          ),
-                          // Camera icon overlay
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: CupertinoColors.systemBlue,
-                                border: Border.all(
-                                  color: CupertinoColors.white,
-                                  width: 2,
-                                ),
-                              ),
-                              child: Icon(
-                                CupertinoIcons.camera_fill,
-                                color: CupertinoColors.white,
-                                size: 14,
-                              ),
-                            ),
-                          ),
-                        ],
+              // Basic Information Section
+              _buildSection(title: 'BASIC INFORMATION', [
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Row(
+                    children: [
+                      // Avatar using FormFieldWidgets
+                      FormFieldWidgets.buildAvatarField(
+                        'photo',
+                        '',
+                        onChanged: _updateFormData,
+                        formData: _formData,
+                        validationErrors: _validationErrors,
+                        context: context,
+                        initials: _getInitials(),
+                        size: 80,
+                        existingImageUrl: _formData['photoUrl'],
                       ),
-                    ),
 
-                    SizedBox(width: 36),
+                      SizedBox(width: 20),
 
-                    // Name field on right
-                    Expanded(
-                      child: Column(
-                        children: [
-                          FormFieldWidgets.buildTextField(
-                            'firstName',
-                            'First Name',
-                            'text',
-                            context,
-                            onChanged: _onFieldChanged,
-                            formData: _formData,
-                            validationErrors: _validationErrors,
-                            isRequired: true,
-                            compact: true,
-                            controller: _controllers['firstName'],
-                          ),
-                          // SizedBox(height: 12),
-                          FormFieldWidgets.buildTextField(
-                            'lastName',
-                            'Last Name',
-                            'text',
-                            context,
-                            onChanged: _onFieldChanged,
-                            formData: _formData,
-                            validationErrors: _validationErrors,
-                            isRequired: true,
-                            compact: true,
-                            controller: _controllers['lastName'],
-                          ),
-                        ],
+                      // Name fields on right
+                      Expanded(
+                        child: Column(
+                          children: [
+                            FormFieldWidgets.buildTextField(
+                              'firstName',
+                              'First Name',
+                              'text',
+                              context,
+                              onChanged: _updateFormData,
+                              formData: _formData,
+                              validationErrors: _validationErrors,
+                              isRequired: true,
+                              compact: true,
+                              controller: _controllers['firstName'],
+                            ),
+                            FormFieldWidgets.buildTextField(
+                              'lastName',
+                              'Last Name',
+                              'text',
+                              context,
+                              onChanged: _updateFormData,
+                              formData: _formData,
+                              validationErrors: _validationErrors,
+                              isRequired: true,
+                              compact: true,
+                              controller: _controllers['lastName'],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ]),
 
               SizedBox(height: 10),
 
@@ -1076,6 +1028,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                     ),
                   ),
                 ),
+
               // Selected Client Base Location Display
               if (_formData['baseLocation']?.isNotEmpty ?? false)
                 Container(
@@ -1121,96 +1074,94 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                     ],
                   ),
                 ),
-              SizedBox(height: 30),
 
               // General Details Section
-              _buildSectionHeader('GENERAL DETAILS'),
+              _buildSection(title: 'GENERAL DETAILS', [
+                FormFieldWidgets.buildSelectField(
+                  'gender',
+                  'Gender',
+                  ['Male', 'Female', 'Other'],
+                  onChanged: _updateFormData,
+                  formData: _formData,
+                  validationErrors: _validationErrors,
+                  isRequired: true,
+                ),
 
-              FormFieldWidgets.buildSelectField(
-                'gender',
-                'Gender',
-                ['Male', 'Female', 'Other'],
-                onChanged: _onFieldChanged,
-                formData: _formData,
-                validationErrors: _validationErrors,
-                isRequired: true,
-              ),
-
-              FormFieldWidgets.buildDateField(
-                'dob',
-                'Date of Birth',
-                context: context,
-                onChanged: _onFieldChanged,
-                formData: _formData,
-                validationErrors: _validationErrors,
-                isRequired: true,
-                maximumDate: DateTime.now(),
-              ),
-
-              SizedBox(height: 20),
+                FormFieldWidgets.buildDateField(
+                  'dob',
+                  'Date of Birth',
+                  context: context,
+                  onChanged: _updateFormData,
+                  formData: _formData,
+                  validationErrors: _validationErrors,
+                  isRequired: true,
+                  maximumDate: DateTime.now(),
+                ),
+              ]),
 
               // Languages Section
-              _buildSectionHeader('LANGUAGES'),
-
-              FormFieldWidgets.buildMultiSelectField(
-                'languages',
-                'Select Languages',
-                [
-                  'English',
-                  'Hindi',
-                  'Marathi',
-                  'Telugu',
-                  'Tamil',
-                  'Bengali',
-                  'Gujarati',
-                  'Kannada',
-                  'Malayalam',
-                  'Punjabi',
-                ],
-                onChanged: _onFieldChanged,
-                formData: _formData,
-                validationErrors: _validationErrors,
-              ),
-
-              SizedBox(height: 20),
+              _buildSection(title: 'LANGUAGES', [
+                FormFieldWidgets.buildMultiSelectField(
+                  'languages',
+                  'Select Languages',
+                  [
+                    'English',
+                    'Hindi',
+                    'Marathi',
+                    'Telugu',
+                    'Tamil',
+                    'Bengali',
+                    'Gujarati',
+                    'Kannada',
+                    'Malayalam',
+                    'Punjabi',
+                  ],
+                  onChanged: _updateFormData,
+                  formData: _formData,
+                  validationErrors: _validationErrors,
+                ),
+              ], initiallyExpanded: false),
 
               // Contact Details Section
-              _buildSectionHeader('CONTACT DETAILS'),
+              _buildSection(title: 'CONTACT DETAILS', [
+                FormFieldWidgets.buildTextField(
+                  'personalEmail',
+                  'Email',
+                  'email',
+                  context,
+                  onChanged: _updateFormData,
+                  formData: _formData,
+                  validationErrors: _validationErrors,
+                  isRequired: true,
+                  controller: _controllers['personalEmail'],
+                ),
 
-              FormFieldWidgets.buildTextField(
-                'personalEmail',
-                'Email',
-                'email',
-                context,
-                onChanged: _onFieldChanged,
-                formData: _formData,
-                validationErrors: _validationErrors,
-                isRequired: true,
-                controller: _controllers['personalEmail'],
-              ),
-
-              FormFieldWidgets.buildTextField(
-                'primaryPhone',
-                'Phone',
-                'phone',
-                context,
-                onChanged: _onFieldChanged,
-                formData: _formData,
-                validationErrors: _validationErrors,
-                isRequired: true,
-                controller: _controllers['primaryPhone'],
-              ),
-
-              SizedBox(height: 20),
+                FormFieldWidgets.buildTextField(
+                  'primaryPhone',
+                  'Phone',
+                  'phone',
+                  context,
+                  onChanged: _updateFormData,
+                  formData: _formData,
+                  validationErrors: _validationErrors,
+                  isRequired: true,
+                  controller: _controllers['primaryPhone'],
+                ),
+              ]),
 
               // Address Section
-              _buildSectionHeader('ADDRESS DETAILS'),
+              _buildSection(
+                title: 'ADDRESS DETAILS',
+                [],
+                initiallyExpanded: false,
+              ),
 
               _buildAddressButton(
                 'Add Present Address +',
                 'presentAddress',
                 false,
               ),
+
               // Display Current Address if added
               if (_hasAddressData('presentAddress'))
                 Container(
@@ -1301,6 +1252,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                     ],
                   ),
                 ),
+
               // Permanent Address Button - only show if checkbox is not checked
               if (!_isSameAsPresentAddress)
                 _buildAddressButton(
@@ -1353,74 +1305,70 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                     ],
                   ),
                 ),
-              SizedBox(height: 20),
 
               // Employment Details Section
-              _buildSectionHeader('EMPLOYMENT DETAILS'),
+              _buildSection(title: 'EMPLOYMENT DETAILS', [
+                FormFieldWidgets.buildTextField(
+                  'grossSalary',
+                  'Gross Salary',
+                  'text',
+                  context,
+                  onChanged: _updateFormData,
+                  formData: _formData,
+                  validationErrors: _validationErrors,
+                  controller: _controllers['grossSalary'],
+                ),
 
-              FormFieldWidgets.buildTextField(
-                'grossSalary',
-                'Gross Salary',
-                'text',
-                context,
-                onChanged: _onFieldChanged,
-                formData: _formData,
-                validationErrors: _validationErrors,
-                isRequired: true,
-                controller: _controllers['grossSalary'],
-              ),
+                FormFieldWidgets.buildTextField(
+                  'ctc',
+                  'CTC',
+                  'text',
+                  context,
+                  onChanged: _updateFormData,
+                  formData: _formData,
+                  validationErrors: _validationErrors,
+                  controller: _controllers['ctc'],
+                ),
 
-              FormFieldWidgets.buildTextField(
-                'ctc',
-                'CTC',
-                'text',
-                context,
-                onChanged: _onFieldChanged,
-                formData: _formData,
-                validationErrors: _validationErrors,
-                isRequired: true,
-                controller: _controllers['ctc'],
-              ),
+                FormFieldWidgets.buildTextField(
+                  'assessmentYear',
+                  'Assessment Year',
+                  'text',
+                  context,
+                  onChanged: _updateFormData,
+                  formData: _formData,
+                  validationErrors: _validationErrors,
+                  controller: _controllers['assessmentYear'],
+                ),
 
-              FormFieldWidgets.buildTextField(
-                'assessmentYear',
-                'Assessment',
-                'text',
-                context,
-                onChanged: _onFieldChanged,
-                formData: _formData,
-                validationErrors: _validationErrors,
-                isRequired: true,
-                controller: _controllers['assessmentYear'],
-              ),
+                FormFieldWidgets.buildDateField(
+                  'dateOfJoining',
+                  'Joining Date',
+                  context: context,
+                  onChanged: _updateFormData,
+                  formData: _formData,
+                  validationErrors: _validationErrors,
+                  isRequired: true,
+                ),
 
-              FormFieldWidgets.buildDateField(
-                'dateOfJoining',
-                'Joining Date',
-                context: context,
-                onChanged: _onFieldChanged,
-                formData: _formData,
-                validationErrors: _validationErrors,
-                isRequired: true,
-              ),
+                FormFieldWidgets.buildDateField(
+                  'dateofResign',
+                  'Resign Date',
+                  context: context,
+                  onChanged: _updateFormData,
+                  formData: _formData,
+                  validationErrors: _validationErrors,
+                  minimumDate: _formData['dateOfJoining'],
+                ),
 
-              FormFieldWidgets.buildDateField(
-                'dateofResign',
-                'Resign Date',
-                context: context,
-                onChanged: _onFieldChanged,
-                formData: _formData,
-                validationErrors: _validationErrors,
-                minimumDate: _formData['dateOfJoining'],
-              ),
-
-              FormFieldWidgets.buildTextAreaField(
-                'reasonOfResign',
-                'Enter Reason of Resign',
-                onChanged: _onFieldChanged,
-                formData: _formData,
-                validationErrors: _validationErrors,
-              ),
+                FormFieldWidgets.buildTextAreaField(
+                  'reasonOfResign',
+                  'Enter Reason of Resign',
+                  onChanged: _updateFormData,
+                  formData: _formData,
+                  validationErrors: _validationErrors,
+                ),
+              ], initiallyExpanded: false),
 
               SizedBox(height: 40),
             ],
@@ -1428,6 +1376,21 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
         ),
       ),
     );
+  }
+
+  // Helper method to get initials
+  String _getInitials() {
+    final firstName = _formData['firstName']?.toString().trim() ?? '';
+    final lastName = _formData['lastName']?.toString().trim() ?? '';
+
+    if (firstName.isNotEmpty && lastName.isNotEmpty) {
+      return '${firstName[0].toUpperCase()}${lastName[0].toUpperCase()}';
+    } else if (firstName.isNotEmpty) {
+      return '${firstName[0].toUpperCase()}${firstName.length > 1 ? firstName[1].toUpperCase() : 'U'}';
+    } else if (lastName.isNotEmpty) {
+      return '${lastName[0].toUpperCase()}${lastName.length > 1 ? lastName[1].toUpperCase() : 'U'}';
+    }
+    return 'UU';
   }
 
   Widget _buildSectionHeader(String title) {
@@ -1458,8 +1421,8 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
             border: Border.all(
               color: _validationErrors.containsKey(key)
                   ? CupertinoColors.systemRed
-                  : CupertinoColors.systemGrey4, // Changed to lighter grey
-              width: 1, // Reduced border width
+                  : CupertinoColors.systemGrey4,
+              width: 1,
             ),
             borderRadius: BorderRadius.circular(8),
             color: CupertinoColors.systemBackground,
@@ -1469,7 +1432,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
               Icon(
                 CupertinoIcons.location,
                 color: CupertinoColors.systemGrey,
-                size: 18, // Smaller icon
+                size: 18,
               ),
               SizedBox(width: 8),
               Expanded(
@@ -1504,74 +1467,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
     );
   }
 
-  Widget _buildPhotoWidget() {
-    // Check if there's a new photo file
-    if (_formData['photo'] != null && _formData['photo'] is File) {
-      return ClipOval(
-        child: Image.file(
-          _formData['photo'] as File,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return _buildInitialsAvatar();
-          },
-        ),
-      );
-    }
-
-    // Check if there's an existing photo URL - Fixed to handle invalid URLs
-    if (_formData['photoUrl'] != null && _formData['photoUrl'] is String) {
-      final photoUrl = _formData['photoUrl'] as String;
-      if (photoUrl.isNotEmpty &&
-          (photoUrl.startsWith('http://') || photoUrl.startsWith('https://'))) {
-        return ClipOval(
-          child: Image.network(
-            photoUrl,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return _buildInitialsAvatar();
-            },
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Center(child: CupertinoActivityIndicator());
-            },
-          ),
-        );
-      }
-    }
-
-    // Default to initials
-    return _buildInitialsAvatar();
-  }
-
-  Widget _buildInitialsAvatar() {
-    String initials = 'UU';
-
-    final firstName = _formData['firstName']?.toString().trim() ?? '';
-    final lastName = _formData['lastName']?.toString().trim() ?? '';
-
-    if (firstName.isNotEmpty && lastName.isNotEmpty) {
-      initials = '${firstName[0].toUpperCase()}${lastName[0].toUpperCase()}';
-    } else if (firstName.isNotEmpty) {
-      initials =
-          '${firstName[0].toUpperCase()}${firstName.length > 1 ? firstName[1].toUpperCase() : 'U'}';
-    } else if (lastName.isNotEmpty) {
-      initials =
-          '${lastName[0].toUpperCase()}${lastName.length > 1 ? lastName[1].toUpperCase() : 'U'}';
-    }
-
-    return Center(
-      child: Text(
-        initials,
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: CupertinoColors.systemGrey,
-        ),
-      ),
-    );
-  }
-
-  // this helper method to check if address data exists:
+  // Helper method to check if address data exists
   bool _hasAddressData(String addressType) {
     if (addressType == 'presentAddress') {
       return _formData['billingAddressLine1']?.isNotEmpty ?? false;
@@ -1602,7 +1498,6 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
     );
   }
 
-  //  the _showAddressForm method with this implementation:
   void _showAddressForm(String addressType) {
     if (addressType == 'presentAddress') {
       // Use billing address for present address
@@ -1635,7 +1530,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
     }
   }
 
-  // these helper methods to format addresses:
+  // Helper methods to format addresses
   String _formatPresentAddress(Map<String, dynamic> addressData) {
     final line1 = addressData['billingAddressLine1'] ?? '';
     final line2 = addressData['billingAddressLine2'] ?? '';
@@ -1697,4 +1592,156 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
       }
     });
   }
+}
+
+// Collapsible Section Widget
+class CollapsibleSection extends StatefulWidget {
+  final List<Widget> fields;
+  final String title;
+  final bool compact;
+  final bool initiallyExpanded;
+
+  const CollapsibleSection({
+    super.key,
+    required this.fields,
+    this.title = '',
+    this.compact = false,
+    this.initiallyExpanded = true,
+  });
+
+  @override
+  State<CollapsibleSection> createState() => _CollapsibleSectionState();
+}
+
+class _CollapsibleSectionState extends State<CollapsibleSection>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _expandAnimation;
+  late Animation<double> _iconAnimation;
+  bool _isExpanded = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _isExpanded = widget.initiallyExpanded;
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _expandAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+    _iconAnimation = Tween<double>(
+      begin: 0.0,
+      end: 0.5,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    if (_isExpanded) {
+      _controller.value = 1.0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _toggleExpansion() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+      if (_isExpanded) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.title.isNotEmpty)
+          GestureDetector(
+            onTap: widget.fields.isNotEmpty ? _toggleExpansion : null,
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              color: CupertinoColors.systemGrey6,
+              padding: const EdgeInsets.only(
+                left: 20,
+                right: 16,
+                bottom: 10,
+                top: 10,
+              ),
+              child: Transform.translate(
+                offset: const Offset(-4, 0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'SF Pro Display',
+                          letterSpacing: 0.25,
+                          fontSize: 14,
+                          color: CupertinoColors.systemGrey,
+                        ),
+                      ),
+                    ),
+                    if (widget.fields.isNotEmpty)
+                      AnimatedBuilder(
+                        animation: _iconAnimation,
+                        builder: (context, child) {
+                          return Transform.rotate(
+                            angle: _iconAnimation.value * 3.14159,
+                            child: const Icon(
+                              CupertinoIcons.chevron_right,
+                              size: 16,
+                              color: CupertinoColors.systemGrey2,
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        if (widget.fields.isNotEmpty)
+          SizeTransition(
+            sizeFactor: _expandAnimation,
+            axisAlignment: -1.0,
+            child: CupertinoListSection(
+              backgroundColor: CupertinoColors.systemBackground.resolveFrom(
+                context,
+              ),
+              dividerMargin: widget.compact ? 0 : 110,
+              margin: EdgeInsets.zero,
+              topMargin: 0,
+              additionalDividerMargin: widget.compact ? 0 : 30,
+              children: widget.fields,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// Helper method to build sections
+Widget _buildSection(
+  List<Widget> fields, {
+  String title = '',
+  bool compact = false,
+  bool initiallyExpanded = true,
+}) {
+  return CollapsibleSection(
+    fields: fields,
+    title: title,
+    compact: compact,
+    initiallyExpanded: initiallyExpanded,
+  );
 }

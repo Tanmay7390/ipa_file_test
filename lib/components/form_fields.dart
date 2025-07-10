@@ -48,9 +48,15 @@ class FormFieldWidgets {
     String? initials,
     double size = 100,
     bool isRequired = false,
+    String? existingImageUrl, // Add this parameter
   }) {
     bool hasError = validationErrors.containsKey(key);
     String required = isRequired ? '*' : '';
+
+    // Check if we have a new photo file or existing photo URL
+    bool hasNewPhoto = formData[key] != null && formData[key] is File;
+    bool hasExistingPhoto =
+        existingImageUrl != null && existingImageUrl.isNotEmpty;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -111,7 +117,7 @@ class FormFieldWidgets {
                   ),
                   onTap: () => _pickImageFromFiles(context, key, onChanged),
                 ),
-                if (formData[key] != null)
+                if (hasNewPhoto || hasExistingPhoto)
                   PullDownMenuItem(
                     title: 'Remove Photo',
                     itemTheme: PullDownMenuItemTheme(
@@ -138,50 +144,26 @@ class FormFieldWidgets {
                     border: hasError
                         ? Border.all(color: CupertinoColors.systemRed, width: 2)
                         : null,
-                    image: formData[key] != null
-                        ? DecorationImage(
-                            image: FileImage(formData[key]),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
                   ),
-                  child: formData[key] == null
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            if (initials != null && initials.isNotEmpty)
-                              Text(
-                                initials,
-                                style: TextStyle(
-                                  color: CupertinoColors.white,
-                                  fontFamily: 'SF Pro Display',
-                                  letterSpacing: 0.25,
-                                  fontSize: size * 0.24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              )
-                            else
-                              Icon(
-                                CupertinoIcons.camera,
-                                size: size * 0.3,
-                                color: CupertinoColors.systemGrey,
-                              ),
-                            if (initials == null || initials.isEmpty)
-                              Padding(
-                                padding: EdgeInsets.only(top: 4),
-                                child: Text(
-                                  'Add Photo',
-                                  style: TextStyle(
-                                    fontFamily: 'SF Pro Display',
-                                    letterSpacing: 0.25,
-                                    color: CupertinoColors.systemGrey,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        )
-                      : null,
+                  child: ClipOval(
+                    child: hasNewPhoto
+                        ? Image.file(formData[key] as File, fit: BoxFit.cover)
+                        : hasExistingPhoto
+                        ? Image.network(
+                            existingImageUrl!,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CupertinoActivityIndicator(),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildPlaceholderContent(initials, size);
+                            },
+                          )
+                        : _buildPlaceholderContent(initials, size),
+                  ),
                 ),
               ),
             ),
@@ -202,6 +184,45 @@ class FormFieldWidgets {
             ),
         ],
       ),
+    );
+  }
+
+  /// Helper method to build placeholder content for avatar
+  static Widget _buildPlaceholderContent(String? initials, double size) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (initials != null && initials.isNotEmpty)
+          Text(
+            initials,
+            style: TextStyle(
+              color: CupertinoColors.white,
+              fontFamily: 'SF Pro Display',
+              letterSpacing: 0.25,
+              fontSize: size * 0.24,
+              fontWeight: FontWeight.bold,
+            ),
+          )
+        else
+          Icon(
+            CupertinoIcons.camera,
+            size: size * 0.3,
+            color: CupertinoColors.systemGrey,
+          ),
+        if (initials == null || initials.isEmpty)
+          Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: Text(
+              'Add Photo',
+              style: TextStyle(
+                fontFamily: 'SF Pro Display',
+                letterSpacing: 0.25,
+                color: CupertinoColors.systemGrey,
+                fontSize: 12,
+              ),
+            ),
+          ),
+      ],
     );
   }
 

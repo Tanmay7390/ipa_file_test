@@ -113,6 +113,19 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
     }
 
     // Basic information
+    // Handle logo URL if it exists and is a valid string URL
+    if (customerData['logo'] != null &&
+        customerData['logo'] is String &&
+        customerData['logo'].toString().isNotEmpty &&
+        (customerData['logo'].toString().startsWith('http://') ||
+            customerData['logo'].toString().startsWith('https://'))) {
+      formData['logoUrl'] = customerData['logo'];
+    }
+
+    // Remove any invalid logo data that might cause issues
+    if (formData['logo'] != null && formData['logo'] is! File) {
+      formData.remove('logo');
+    }
     // Split name into first and last name
     final fullName = customerData['name']?.toString() ?? '';
     final nameParts = fullName.split(' ');
@@ -277,6 +290,20 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
       }
 
       // Basic information
+      // Handle logo URL if it exists and is a valid string URL
+      if (data['logo'] != null &&
+          data['logo'] is String &&
+          data['logo'].toString().isNotEmpty &&
+          (data['logo'].toString().startsWith('http://') ||
+              data['logo'].toString().startsWith('https://'))) {
+        formData['logoUrl'] = data['logo'];
+      }
+
+      // Remove any invalid logo data that might cause issues
+      if (formData['logo'] != null && formData['logo'] is! File) {
+        formData.remove('logo');
+      }
+
       final fullName = data['name']?.toString() ?? '';
       final nameParts = fullName.split(' ');
       formData['firstName'] = nameParts.isNotEmpty ? nameParts.first : '';
@@ -1561,6 +1588,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
                                   .substring(0, 1)
                                   .toUpperCase()
                             : 'C',
+                        existingImageUrl: formData['logoUrl'],
                       ),
                       // SizedBox(width: 36),
 

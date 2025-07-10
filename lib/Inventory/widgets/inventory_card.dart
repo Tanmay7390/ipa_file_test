@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../apis/providers/inventory_provider.dart';
 import '../../theme_provider.dart';
-import 'product_detail_page.dart';
+import 'inventory_product_detail_page.dart';
 
 class InventoryGridCard extends ConsumerWidget {
   final Map<String, dynamic> inventory;

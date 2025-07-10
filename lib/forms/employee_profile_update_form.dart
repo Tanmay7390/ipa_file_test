@@ -233,6 +233,20 @@ class _EmployeeSectionedFormPageState
           'signature': null,
         };
 
+        // Handle photo URL if it exists and is a valid string URL
+        if (employee['photo'] != null &&
+            employee['photo'] is String &&
+            employee['photo'].toString().isNotEmpty &&
+            (employee['photo'].toString().startsWith('http://') ||
+                employee['photo'].toString().startsWith('https://'))) {
+          formData['photoUrl'] = employee['photo'];
+        }
+
+        // Remove any invalid photo data that might cause issues
+        if (formData['photo'] != null && formData['photo'] is! File) {
+          formData.remove('photo');
+        }
+
         // Load addresses
         addresses = List<Map<String, dynamic>>.from(
           employee['addresses']?.map(
@@ -573,6 +587,7 @@ class _EmployeeSectionedFormPageState
           initials: formData['name']?.isNotEmpty == true
               ? formData['name'].toString().substring(0, 1).toUpperCase()
               : null,
+          existingImageUrl: formData['photoUrl'],
         ),
 
         FormFieldWidgets.buildTextField(

@@ -13,7 +13,6 @@ class ApiUrls {
   static const String subscriptionList = 'subscription';
   static const String updateSubscription = 'account/{accountId}';
 
-
   // Agreed Service endpoints
   static const String agreedServicesList = 'customers/single/{id}';
   static const String updateAgreedServices =
@@ -63,6 +62,10 @@ class ApiUrls {
 
   static const String deleteCustomer = 'customer/{id}';
 
+  // Supplier endpoints
+  static const String supplierList = 'suppliers/{accountId}';
+  static const String getSupplier = 'customers/single/{id}';
+
   // Customer Address endpoints
   static const String createCustomerAddress = 'customer/{customerId}/address';
   static const String updateCustomerAddress =
@@ -71,10 +74,6 @@ class ApiUrls {
       'customer/{customerId}/address/{addressId}';
   static const String getCountries = 'countries';
   static const String getStates = 'states';
-
-  // Supplier endpoints
-  static const String supplierList = 'suppliers/{accountId}';
-  static const String getSupplier = 'customers/single/{id}';
 
   // Inventory endpoints
   static const String inventoryList = 'sku/account/{accountId}';

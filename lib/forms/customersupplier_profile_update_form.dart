@@ -193,7 +193,19 @@ class _CustomerSupplierSectionedFormPageState
           'showSignatureOnInvoice':
               entityData['showSignatureOnInvoice'] ?? false,
         };
+        // Handle logo URL if it exists and is a valid string URL
+        if (entityData['logo'] != null &&
+            entityData['logo'] is String &&
+            entityData['logo'].toString().isNotEmpty &&
+            (entityData['logo'].toString().startsWith('http://') ||
+                entityData['logo'].toString().startsWith('https://'))) {
+          formData['logoUrl'] = entityData['logo'];
+        }
 
+        // Remove any invalid logo data that might cause issues
+        if (formData['logo'] != null && formData['logo'] is! File) {
+          formData.remove('logo');
+        }
         // Extract contact information
         final emails = entityData['email'] as List?;
         if (emails != null && emails.isNotEmpty) {
@@ -1190,6 +1202,7 @@ class _CustomerSupplierSectionedFormPageState
           initials: formData['name']?.isNotEmpty == true
               ? formData['name'].toString().substring(0, 1).toUpperCase()
               : null,
+          existingImageUrl: formData['logoUrl'],
         ),
 
         FormFieldWidgets.buildTextField(
@@ -1214,15 +1227,15 @@ class _CustomerSupplierSectionedFormPageState
           isRequired: true,
         ),
 
-        // FormFieldWidgets.buildTextField(
-        //   'displayName',
-        //   'Display Name',
-        //   'text',
-        //   context,
-        //   onChanged: _onFieldChanged,
-        //   formData: formData,
-        //   validationErrors: validationErrors,
-        // ),
+        FormFieldWidgets.buildTextField(
+          'displayName',
+          'Display Name',
+          'text',
+          context,
+          onChanged: _onFieldChanged,
+          formData: formData,
+          validationErrors: validationErrors,
+        ),
         FormFieldWidgets.buildTextField(
           'contactName',
           'Contact Name',
@@ -1233,39 +1246,39 @@ class _CustomerSupplierSectionedFormPageState
           validationErrors: validationErrors,
         ),
 
-        // FormFieldWidgets.buildTextAreaField(
-        //   'companyDesc',
-        //   'Company Description',
-        //   onChanged: _onFieldChanged,
-        //   formData: formData,
-        //   validationErrors: validationErrors,
-        // ),
+        FormFieldWidgets.buildTextAreaField(
+          'companyDesc',
+          'Company Description',
+          onChanged: _onFieldChanged,
+          formData: formData,
+          validationErrors: validationErrors,
+        ),
 
-        // FormFieldWidgets.buildTextField(
-        //   'industryVertical',
-        //   'Industry Vertical',
-        //   'text',
-        //   context,
-        //   onChanged: _onFieldChanged,
-        //   formData: formData,
-        //   validationErrors: validationErrors,
-        // ),
+        FormFieldWidgets.buildTextField(
+          'industryVertical',
+          'Industry Vertical',
+          'text',
+          context,
+          onChanged: _onFieldChanged,
+          formData: formData,
+          validationErrors: validationErrors,
+        ),
 
-        // FormFieldWidgets.buildSelectField(
-        //   'businessType',
-        //   'Business Type',
-        //   [
-        //     'Private Limited',
-        //     'Public Limited',
-        //     'Partnership',
-        //     'Sole Proprietorship',
-        //     'LLP',
-        //     'Other',
-        //   ],
-        //   onChanged: _onFieldChanged,
-        //   formData: formData,
-        //   validationErrors: validationErrors,
-        // ),
+        FormFieldWidgets.buildSelectField(
+          'businessType',
+          'Business Type',
+          [
+            'Private Limited',
+            'Public Limited',
+            'Partnership',
+            'Sole Proprietorship',
+            'LLP',
+            'Other',
+          ],
+          onChanged: _onFieldChanged,
+          formData: formData,
+          validationErrors: validationErrors,
+        ),
 
         // FormFieldWidgets.buildSelectField(
         //   'status',

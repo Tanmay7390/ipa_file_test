@@ -363,7 +363,7 @@ class _EmployeeProfilePageState extends ConsumerState<EmployeeProfilePage> {
             SliverToBoxAdapter(
               child: _buildSectionItem(
                 icon: CupertinoIcons.rectangle_stack,
-                title: 'Uniform',
+                title: 'Compliance & Uniform Details',
                 subtitle: _getUniformSubtitle(employee),
                 onTap: () => _navigateToUniformDetails(employee, context),
                 colors: colors,

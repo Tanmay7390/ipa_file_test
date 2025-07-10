@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_swipe_action_cell/flutter_swipe_action_cell.dart';
 import '../../../../components/page_scaffold.dart';
 import '../../../../components/swipable_row.dart';
 import '../../../../theme_provider.dart';
@@ -82,27 +83,26 @@ class _InvoiceTabState extends ConsumerState<InvoiceTab> {
         }
 
         return Container(
-          padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(20),
+          margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
             color: colors.surface,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: colors.textSecondary.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
+            border: Border(
+              bottom: BorderSide(
+                color: colors.border.withOpacity(0.3),
+                width: 0.5,
               ),
-            ],
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Expense analysis section
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Expense analysis',
+                    'Expence analysis',
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
@@ -121,7 +121,9 @@ class _InvoiceTabState extends ConsumerState<InvoiceTab> {
                 'August - Week 3',
                 style: TextStyle(fontSize: 15, color: colors.textSecondary),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
+
+              // Expenses insight section
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -140,14 +142,14 @@ class _InvoiceTabState extends ConsumerState<InvoiceTab> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     _formatCurrency(totalAmount),
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: 32,
                       fontWeight: FontWeight.bold,
                       color: colors.textPrimary,
                     ),
@@ -158,7 +160,9 @@ class _InvoiceTabState extends ConsumerState<InvoiceTab> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
+
+              // Recent expenses section
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -209,11 +213,7 @@ class _InvoiceTabState extends ConsumerState<InvoiceTab> {
       },
       loading: () => Container(
         height: 200,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(12),
-        ),
+        padding: const EdgeInsets.all(20),
         child: Center(child: CupertinoActivityIndicator(color: colors.primary)),
       ),
       error: (error, stack) => const SizedBox.shrink(),
@@ -225,56 +225,14 @@ class _InvoiceTabState extends ConsumerState<InvoiceTab> {
     String buyerName,
     WareozeColorScheme colors,
   ) {
-    final invoicePrefix = '[$invoiceNumber] ';
-
-    // Simple logic: if buyer name is longer than 25 characters, split it
-    if (buyerName.length > 25) {
-      final words = buyerName.split(' ');
-      if (words.length > 1) {
-        final halfIndex = (words.length / 2).ceil();
-        final firstHalf = words.take(halfIndex).join(' ');
-        final secondHalf = words.skip(halfIndex).join(' ');
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$invoicePrefix$firstHalf',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: colors.textPrimary,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            Text(
-              secondHalf.length > 20
-                  ? '${secondHalf.substring(0, 20)}...'
-                  : secondHalf,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: colors.textPrimary,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        );
-      }
-    }
-
-    // Default: show in single line with ellipsis if needed
     return Text(
-      '$invoicePrefix$buyerName',
+      '[$invoiceNumber] $buyerName',
       style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         color: colors.textPrimary,
       ),
-      maxLines: 2,
+      maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
   }
@@ -288,7 +246,7 @@ class _InvoiceTabState extends ConsumerState<InvoiceTab> {
     return CupertinoPageScaffold(
       child: CustomPageScaffold(
         colorScheme: colors,
-        heading: 'Invoices',
+        heading: 'Sales',
         searchController: _searchController,
         showSearchField: _showSearchField,
         isLoading: invoicesAsync.isLoading,
@@ -336,7 +294,6 @@ class _InvoiceTabState extends ConsumerState<InvoiceTab> {
           child: CupertinoButton(
             padding: EdgeInsets.zero,
             onPressed: () {
-              // Navigate to add form based on selected segment
               context.go('/invoice/add');
             },
             child: Icon(
@@ -347,6 +304,7 @@ class _InvoiceTabState extends ConsumerState<InvoiceTab> {
           ),
         ),
         customHeaderWidget: _buildExpenseInsightCard(invoicesAsync, colors),
+
         sliverList: invoicesAsync.when(
           data: (invoices) {
             if (invoices.isEmpty && !invoicesAsync.isLoading) {
@@ -383,85 +341,145 @@ class _InvoiceTabState extends ConsumerState<InvoiceTab> {
               );
             }
 
-            return SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final invoice = invoices[index];
-                final String invoiceNumber =
-                    invoice['invoiceNumber']?.toString() ?? '';
-                final String buyerName =
-                    invoice['buyer']?['name']?.toString() ?? 'Unknown Buyer';
-                final String date = _formatDate(invoice['date']?.toString());
-                final double amount =
-                    double.tryParse(invoice['amount']?.toString() ?? '0') ??
-                    0.0;
-                final String status = invoice['status']?.toString() ?? 'DRAFT';
+            // Create list items with separators
+            final listItems = invoices.map((invoice) {
+              final String invoiceNumber =
+                  invoice['invoiceNumber']?.toString() ?? '';
+              final String buyerName =
+                  invoice['buyer']?['name']?.toString() ?? 'Unknown Buyer';
+              final String date = _formatDate(invoice['date']?.toString());
+              final double amount =
+                  double.tryParse(invoice['amount']?.toString() ?? '0') ?? 0.0;
+              final String status = invoice['status']?.toString() ?? 'DRAFT';
 
-                // Determine amount color based on status or amount
-                Color amountColor = colors.error;
-                String amountPrefix = '- ';
+              // Determine amount color based on status
+              Color amountColor = colors.error;
+              String amountPrefix = '- ';
 
-                if (status == 'PAID' || amount > 0) {
-                  amountColor = colors.success;
-                  amountPrefix = '+ ';
-                }
+              if (status == 'PAID') {
+                amountColor = colors.success;
+                amountPrefix = '+ ';
+              }
 
-                return Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: colors.border, width: 0.5),
-                  ),
-                  child: CupertinoListTile(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: colors.warning.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        CupertinoIcons.doc_text,
-                        color: colors.warning,
-                        size: 20,
-                      ),
-                    ),
-                    title: _buildInvoiceTitle(invoiceNumber, buyerName, colors),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        date,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colors.textSecondary,
+              return SwipeActionCell(
+                key: ObjectKey(invoice),
+                trailingActions: <SwipeAction>[
+                  SwipeAction(
+                    title: "Delete",
+                    performsFirstActionWithFullSwipe: true,
+                    onTap: (handler) async {
+                      await handler(true);
+                      // Show confirmation dialog for delete
+                      showCupertinoDialog(
+                        context: context,
+                        builder: (context) => CupertinoAlertDialog(
+                          title: Text('Delete Invoice'),
+                          content: Text(
+                            'Are you sure you want to delete this invoice?',
+                          ),
+                          actions: [
+                            CupertinoDialogAction(
+                              child: Text('Cancel'),
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                            CupertinoDialogAction(
+                              isDestructiveAction: true,
+                              child: Text('Delete'),
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                final invoiceId = invoice['_id']?.toString();
+                                if (invoiceId != null) {
+                                  invoiceNotifier.deleteInvoice(invoiceId);
+                                }
+                              },
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
-                    trailing: Text(
-                      '$amountPrefix${_formatCurrency(amount).substring(1)}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: amountColor,
-                      ),
-                    ),
-                    onTap: () {
-                      // Navigate to invoice details using GoRouter
+                      );
+                    },
+                    color: CupertinoColors.systemRed,
+                  ),
+                  SwipeAction(
+                    title: "Edit",
+                    onTap: (handler) async {
                       final invoiceId = invoice['_id']?.toString();
                       if (invoiceId != null) {
-                        context.push('/invoices/$invoiceId');
+                        context.push('/invoice/edit/$invoiceId');
                       }
+                      await handler(false);
                     },
+                    color: CupertinoColors.systemOrange,
                   ),
-                );
-              }, childCount: invoices.length),
+                  SwipeAction(
+                    title: "Record Payment",
+                    onTap: (handler) async {
+                      final invoiceId = invoice['_id']?.toString();
+                      if (invoiceId != null) {
+                        context.push('/invoice/payment/$invoiceId');
+                      }
+                      await handler(false);
+                    },
+                    color: CupertinoColors.systemGreen,
+                  ),
+                ],
+                child: CupertinoListTile(
+                  backgroundColor: CupertinoColors.systemBackground.resolveFrom(
+                    context,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: colors.warning.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      CupertinoIcons.doc_text,
+                      color: colors.warning,
+                      size: 20,
+                    ),
+                  ),
+                  title: _buildInvoiceTitle(invoiceNumber, buyerName, colors),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      date,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  trailing: Text(
+                    '$amountPrefix${_formatCurrency(amount).substring(1)}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: amountColor,
+                    ),
+                  ),
+                  onTap: () {
+                    final invoiceId = invoice['_id']?.toString();
+                    if (invoiceId != null) {
+                      context.push('/invoices/$invoiceId');
+                    }
+                  },
+                ),
+              );
+            }).toList();
+
+            return SliverToBoxAdapter(
+              child: CupertinoListSection(
+                margin: EdgeInsets.zero,
+                additionalDividerMargin: 60, // This creates the line separators
+                backgroundColor: CupertinoColors.systemBackground,
+                topMargin: 0,
+                children: listItems,
+              ),
             );
           },
           loading: () => const BuildShimmerTile(),
