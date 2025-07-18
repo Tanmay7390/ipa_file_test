@@ -58,8 +58,7 @@ class InvoiceListNotifier
   // Get account ID from auth provider
   String? _getAccountId() {
     final authState = _ref.read(authProvider);
-    return authState.accountId ??
-        '6434642d86b9bb6018ef2528'; // Fallback to default
+    return authState.accountId; // Fallback to default
   }
 
   // Load invoices for the authenticated user's account

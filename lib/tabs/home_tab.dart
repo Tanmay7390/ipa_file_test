@@ -247,8 +247,8 @@ class HomeTab extends ConsumerWidget {
                 _buildExploreItem(
                   colors,
                   context,
-                  CupertinoIcons.chart_bar,
-                  'Sales',
+                  CupertinoIcons.doc_text,
+                  'Credit Note',
                   containerSize,
                   iconSize,
                   null, // Coming soon
@@ -265,29 +265,30 @@ class HomeTab extends ConsumerWidget {
                 _buildExploreItem(
                   colors,
                   context,
-                  CupertinoIcons.doc_text,
-                  'Credit Note',
-                  containerSize,
-                  iconSize,
-                  null, // Coming soon
-                ),
-                _buildExploreItem(
-                  colors,
-                  context,
                   CupertinoIcons.cart,
                   'Purchases',
                   containerSize,
                   iconSize,
-                  null, // Coming soon
+                  '/purchases',
                 ),
                 _buildExploreItem(
                   colors,
                   context,
-                  CupertinoIcons.money_dollar_circle,
-                  'Expenses',
+                  CupertinoIcons.chart_bar,
+                  'Sales',
                   containerSize,
                   iconSize,
-                  null, // Coming soon
+                  '/sales',
+                ),
+
+                _buildExploreItem(
+                  colors,
+                  context,
+                  Icons.currency_rupee,
+                  'Payments',
+                  containerSize,
+                  iconSize,
+                  '/payments',
                 ),
                 _buildExploreItem(
                   colors,
@@ -390,9 +391,9 @@ class HomeTab extends ConsumerWidget {
                   colors,
                   context,
                   CupertinoIcons.plus_circle,
-                  'New\n Sale',
+                  'Dashboard',
                   buttonSize,
-                  null, // Coming soon
+                  '/dashboard',
                 ),
                 _buildQuickActionItem(
                   colors,

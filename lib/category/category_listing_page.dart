@@ -35,9 +35,9 @@ class _CategoryListingPageState extends ConsumerState<CategoryListingPage> {
     for (final category in categories) {
       final categoryId = category['_id'] as String;
       await ref.read(categoryProvider.notifier).getSubCategories(categoryId);
-      // Set categories as expanded by default to show sub-categories
+      // Set categories as collapsed by default
       setState(() {
-        _expandedCategories[categoryId] = true;
+        _expandedCategories[categoryId] = false;
       });
     }
   }
@@ -72,100 +72,129 @@ class _CategoryListingPageState extends ConsumerState<CategoryListingPage> {
             letterSpacing: 0.25,
           ),
         ),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () => _showCategoryForm(context, null),
-          child: Icon(CupertinoIcons.add, color: colors.primary),
-        ),
       ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Error display
-            if (categoryState.error != null)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                color: CupertinoColors.systemRed.withOpacity(0.1),
-                child: Row(
-                  children: [
-                    const Icon(
-                      CupertinoIcons.exclamationmark_circle,
-                      color: CupertinoColors.systemRed,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        categoryState.error!,
-                        style: const TextStyle(
+      child: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                // Error display
+                if (categoryState.error != null)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    color: CupertinoColors.systemRed.withOpacity(0.1),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          CupertinoIcons.exclamationmark_circle,
                           color: CupertinoColors.systemRed,
-                          fontFamily: 'SF Pro Display',
-                          letterSpacing: 0.25,
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            categoryState.error!,
+                            style: const TextStyle(
+                              color: CupertinoColors.systemRed,
+                              fontFamily: 'SF Pro Display',
+                              letterSpacing: 0.25,
+                            ),
+                          ),
+                        ),
+                        CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () =>
+                              ref.read(categoryProvider.notifier).clearError(),
+                          child: const Icon(
+                            CupertinoIcons.xmark_circle,
+                            color: CupertinoColors.systemRed,
+                          ),
+                        ),
+                      ],
                     ),
-                    CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      onPressed: () =>
-                          ref.read(categoryProvider.notifier).clearError(),
-                      child: const Icon(
-                        CupertinoIcons.xmark_circle,
-                        color: CupertinoColors.systemRed,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
 
-            // Loading indicator
-            if (categoryState.isLoading)
-              const Padding(
-                padding: EdgeInsets.all(20),
-                child: CupertinoActivityIndicator(),
-              ),
+                // Loading indicator
+                if (categoryState.isLoading)
+                  const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: CupertinoActivityIndicator(),
+                  ),
 
-            // Refresh button
-            if (!categoryState.isLoading)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${categoryState.categories.length} Categories',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'SF Pro Display',
-                        letterSpacing: 0.25,
-                        color: CupertinoColors.systemGrey,
-                      ),
+                // Refresh button
+                if (!categoryState.isLoading)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
                     ),
-                    CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      minSize: 32,
-                      onPressed: _loadCategoriesAndSubCategories,
-                      child: const Icon(
-                        CupertinoIcons.refresh,
-                        size: 18,
-                        color: CupertinoColors.systemBlue,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${categoryState.categories.length} Categories',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'SF Pro Display',
+                            letterSpacing: 0.25,
+                            color: CupertinoColors.systemGrey,
+                          ),
+                        ),
+                        CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          minSize: 32,
+                          onPressed: _loadCategoriesAndSubCategories,
+                          child: const Icon(
+                            CupertinoIcons.refresh,
+                            size: 18,
+                            color: CupertinoColors.systemBlue,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
 
-            // Categories list
-            Expanded(
-              child:
-                  categoryState.categories.isEmpty && !categoryState.isLoading
-                  ? _buildEmptyState(colors)
-                  : _buildCategoriesList(categoryState),
+                // Categories list
+                Expanded(
+                  child:
+                      categoryState.categories.isEmpty &&
+                          !categoryState.isLoading
+                      ? _buildEmptyState(colors)
+                      : _buildCategoriesList(categoryState),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          // Floating Action Button
+          Positioned(
+            bottom: 50,
+            right: 16,
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: colors.primary,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: CupertinoColors.black.withOpacity(0.25),
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () => _showCategoryForm(context, null),
+                child: Icon(
+                  CupertinoIcons.add,
+                  color: CupertinoColors.white,
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -233,6 +262,8 @@ class _CategoryListingPageState extends ConsumerState<CategoryListingPage> {
             );
           }, childCount: categoryState.categories.length),
         ),
+        // Add padding at the bottom for the floating action button
+        SliverToBoxAdapter(child: SizedBox(height: 80)),
       ],
     );
   }
@@ -412,8 +443,8 @@ class _CategoryListingPageState extends ConsumerState<CategoryListingPage> {
             ),
           ),
 
-          // Sub-categories list
-          if (subCategories.isNotEmpty)
+          // Sub-categories list - Only show when expanded
+          if (isExpanded)
             Container(
               decoration: const BoxDecoration(
                 border: Border(
@@ -423,97 +454,87 @@ class _CategoryListingPageState extends ConsumerState<CategoryListingPage> {
                   ),
                 ),
               ),
-              child: Column(
-                children: [
-                  // Sub-categories header
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    color: CupertinoColors.systemGrey6.withOpacity(0.5),
-                    child: Row(
+              child: subCategories.isNotEmpty
+                  ? Column(
                       children: [
-                        const SizedBox(width: 52), // Indent for hierarchy
-                        Icon(
-                          CupertinoIcons.doc_text_fill,
-                          color: CupertinoColors.systemOrange,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Sub-Categories (${subCategories.length})',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: 'SF Pro Display',
-                            letterSpacing: 0.25,
-                            color: CupertinoColors.systemGrey,
+                        // Sub-categories header
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          color: CupertinoColors.systemGrey6.withOpacity(0.5),
+                          child: Row(
+                            children: [
+                              const SizedBox(width: 52), // Indent for hierarchy
+                              Icon(
+                                CupertinoIcons.doc_text_fill,
+                                color: CupertinoColors.systemOrange,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Sub-Categories (${subCategories.length})',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'SF Pro Display',
+                                  letterSpacing: 0.25,
+                                  color: CupertinoColors.systemGrey,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                        // Sub-category items
+                        ...subCategories.map((subCategory) {
+                          return _buildSubCategoryTile(subCategory, categoryId);
+                        }).toList(),
                       ],
-                    ),
-                  ),
-                  // Sub-category items
-                  ...subCategories.map((subCategory) {
-                    return _buildSubCategoryTile(subCategory, categoryId);
-                  }).toList(),
-                ],
-              ),
-            )
-          else if (isExpanded)
-            Container(
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(
-                    color: CupertinoColors.systemGrey5,
-                    width: 0.5,
-                  ),
-                ),
-              ),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-                child: Row(
-                  children: [
-                    const SizedBox(width: 52), // Indent for hierarchy
-                    Icon(
-                      CupertinoIcons.doc_text,
-                      color: CupertinoColors.systemGrey2,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'No sub-categories yet',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'SF Pro Display',
-                        letterSpacing: 0.25,
-                        color: CupertinoColors.systemGrey2,
-                        fontStyle: FontStyle.italic,
+                    )
+                  : Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 52), // Indent for hierarchy
+                          Icon(
+                            CupertinoIcons.doc_text,
+                            color: CupertinoColors.systemGrey2,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'No sub-categories yet',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'SF Pro Display',
+                              letterSpacing: 0.25,
+                              color: CupertinoColors.systemGrey2,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            minSize: 20,
+                            onPressed: () =>
+                                _showSubCategoryForm(context, categoryId, null),
+                            child: Text(
+                              'Add first sub-category',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'SF Pro Display',
+                                letterSpacing: 0.25,
+                                color: CupertinoColors.systemBlue,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      minSize: 20,
-                      onPressed: () =>
-                          _showSubCategoryForm(context, categoryId, null),
-                      child: Text(
-                        'Add first sub-category',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'SF Pro Display',
-                          letterSpacing: 0.25,
-                          color: CupertinoColors.systemBlue,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ),
         ],
       ),

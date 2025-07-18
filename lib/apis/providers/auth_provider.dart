@@ -129,8 +129,8 @@ class AuthHelper {
     await prefs.remove(_tokenKey);
     await prefs.remove(_userEmailKey);
     await prefs.remove(_accountIdKey);
-    await prefs.remove(_usernameKey); // Add this
-    await prefs.remove(_passwordKey); // Add this
+    await prefs.remove(_usernameKey); 
+    await prefs.remove(_passwordKey); 
 
     // Remove from dio headers
     final dio = ref.read(dioProvider);
@@ -167,7 +167,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final token = await _authHelper.getToken();
       final userEmail = await _authHelper.getUserEmail();
       final accountId = await _authHelper.getAccountId();
-      final credentials = await _authHelper.getStoredCredentials(); // Add this
+      final credentials = await _authHelper.getStoredCredentials(); 
 
       if (token != null && token.isNotEmpty) {
         // Set token in dio headers
@@ -179,15 +179,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
           userEmail: userEmail,
           accountId: accountId,
           isInitialized: true,
-          storedUsername: credentials['username'], // Add this
-          storedPassword: credentials['password'], // Add this
+          storedUsername: credentials['username'], 
+          storedPassword: credentials['password'], 
         );
       } else {
         state = state.copyWith(
           isAuthenticated: false,
           isInitialized: true,
-          storedUsername: credentials['username'], // Add this
-          storedPassword: credentials['password'], // Add this
+          storedUsername: credentials['username'], 
+          storedPassword: credentials['password'], 
         );
       }
     } catch (e) {

@@ -49,7 +49,14 @@ dependencies:
   flutter_svg: ^2.0.10
   shared_preferences: ^2.2.2
   google_fonts: ^6.2.1
+  flutter_hooks: ^0.20.3 # Enables functional-style reactive programming in Flutter using hooks, inspired by React.
   intl: ^0.20.0
+  hooks_riverpod: ^2.4.9 #Combines hooks with Riverpod, a state management solution that’s safer and more testable.
+  url_launcher: ^6.2.1
+  syncfusion_flutter_pdfviewer: ^30.1.40
+  http: ^1.1.0
+  webview_flutter: ^4.7.0
+
 
 dev_dependencies:
   flutter_test:

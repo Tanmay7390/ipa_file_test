@@ -40,11 +40,29 @@ class ApiUrls {
   static const String updateDocumentSettings = 'document-settings/{id}';
   static const String deleteDocumentSettings = 'document-settings/{id}';
 
+  // Payment endpoints
+  static const String addPaymentReceipt = 'invoice/payment-receipt'; // Payment In
+  static const String addVendorPayment = 'invoice/vendor-payment'; // Payment Out
+
+  static const String paymenInList = 'invoice/payment-receipt-application';
+  static const String paymenOutList = 'invoice/vendor-payment-application';
+  static const String salesList = '/invoice/account/{accountId}/sales';
+  static const String purchaseList = '/invoice/account/{accountId}/purchases';
+
   // Invoice endpoints
   static const String invoiceList = 'invoice/account/{accountId}';
   static const String invoiceTemplates = 'invoice/templates';
   static const String bankAccounts = 'account/bankaccounts/{accountId}';
   static const String invoiceSeqNumber = 'invoice/seq-number';
+
+  // Share/Dispatch endpoints
+  static const String shareInvoice = 'invoice/{invoiceId}/dispatch';
+  static const String shareQuotation = 'invoice/{invoiceId}/dispatch';
+  static const String sharePaymentReceipt = 'invoice/{invoiceId}/dispatch';
+
+  // Invoice preview/template endpoints
+  static const String invoicePreview =
+      'invoice/{invoiceId}/templates/{templateId}';
 
   // Employee endpoints
   static const String employeeList = 'employee/account/{accountId}/emp-list';

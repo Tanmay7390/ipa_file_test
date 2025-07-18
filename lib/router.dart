@@ -36,6 +36,13 @@ import 'package:Wareozo/tabs/profile_pages/customersupplier_profile_page.dart';
 import 'forms/customersupplier_profile_update_form.dart';
 import 'package:Wareozo/components/exit_confirmation_utils.dart';
 import 'package:Wareozo/category/category_listing_page.dart';
+import 'package:Wareozo/payments/payment_tab.dart';
+import 'package:Wareozo/tabs/sales_tab.dart';
+import 'package:Wareozo/tabs/purchase_tab.dart';
+import 'package:Wareozo/payments/in_add_payment_form.dart';
+import 'package:Wareozo/payments/out_add_payment_form.dart';
+
+import 'package:Wareozo/demo_dashboard/dashboard.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -67,6 +74,9 @@ class _RobustExitWrapperState extends State<RobustExitWrapper> {
       '/customersuppliers',
       '/inventory-list',
       '/invoice',
+      '/payments',
+      '/sales',
+      '/purchases',
     ].contains(widget.routePath);
   }
 
@@ -193,7 +203,7 @@ final appRouter = GoRouter(
       '/global-home',
       '/bookmarks',
       '/business-profile',
-      '/testing',
+      '/payments',
     ];
 
     final authRoutes = [
@@ -224,6 +234,14 @@ final appRouter = GoRouter(
 
   refreshListenable: GoRouterRefreshStream(ProviderContainer()),
   routes: [
+    GoRoute(
+      path: '/dashboard',
+      builder: (context, state) => RobustExitWrapper(
+        routePath: '/dashboard',
+        child: const DashboardScreen(),
+      ),
+    ),
+
     // Onboarding route
     GoRoute(
       path: '/onboarding',
@@ -408,6 +426,48 @@ final appRouter = GoRouter(
                   ),
                 ),
               ],
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/payments',
+              builder: (context, state) => const PaymentListScreen(),
+              routes: [
+                GoRoute(
+                  path: '/addPaymentIn',
+                  parentNavigatorKey: _rootNavigatorKey,
+                  builder: (context, state) => RobustExitWrapper(
+                    routePath: '/addPaymentIn',
+                    child: const AddPaymentInScreen(),
+                  ),
+                ),
+                GoRoute(
+                  path: '/addPaymentOut',
+                  parentNavigatorKey: _rootNavigatorKey,
+                  builder: (context, state) => RobustExitWrapper(
+                    routePath: '/addPaymentOut',
+                    child: const AddPaymentOutScreen(),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/sales',
+              builder: (context, state) => const SalesListingPage(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/purchases',
+              builder: (context, state) => const PurchaseListingPage(),
             ),
           ],
         ),
@@ -979,6 +1039,9 @@ class _RobustHomeScreenWithDrawerState extends State<RobustHomeScreenWithDrawer>
         '/customersuppliers',
         '/inventory-list',
         '/invoice',
+        '/payments',
+        '/sales',
+        '/purchases',
       ].contains(location);
 
       print('🔄 Main screen back navigation:');

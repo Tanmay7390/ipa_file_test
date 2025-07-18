@@ -801,17 +801,21 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                       colors,
                       CupertinoIcons.home,
                       'Home',
-                      0,
-                      navigationShell.currentIndex == 0,
-                      () => navigationShell.goBranch(0),
+                      '/home',
+                      GoRouterState.of(
+                        context,
+                      ).matchedLocation.startsWith('/home'),
+                      () => context.go('/home'),
                     ),
                     _buildNavItem(
                       context,
                       colors,
                       CupertinoIcons.cube_box,
                       'Items',
-                      3,
-                      false,
+                      '/inventory-list',
+                      GoRouterState.of(
+                        context,
+                      ).matchedLocation.startsWith('/inventory-list'),
                       () => context.go('/inventory-list'),
                     ),
                     // Middle arrow button
@@ -836,18 +840,35 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                       colors,
                       CupertinoIcons.group,
                       'Parties',
-                      4,
-                      navigationShell.currentIndex == 4,
-                      () => navigationShell.goBranch(4),
+                      '/customersuppliers',
+                      GoRouterState.of(
+                        context,
+                      ).matchedLocation.startsWith('/customersuppliers'),
+                      () => context.go('/customersuppliers'),
                     ),
                     _buildNavItem(
                       context,
                       colors,
                       CupertinoIcons.doc_text_search,
                       'Reports',
-                      -1, // Not connected to any branch
+                      '', // No route for reports yet
                       false,
-                      () {},
+                      () => showCupertinoDialog<void>(
+                        context: context,
+                        builder: (context) => CupertinoAlertDialog(
+                          title: const Text('Coming Soon'),
+                          content: const Text(
+                            'Reports feature is coming soon!',
+                          ),
+                          actions: [
+                            CupertinoDialogAction(
+                              isDefaultAction: true,
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -864,7 +885,7 @@ class ScaffoldWithNavBar extends ConsumerWidget {
     WareozeColorScheme colors,
     IconData icon,
     String label,
-    int index,
+    String route, // Changed from int index to String route
     bool isSelected,
     VoidCallback onTap,
   ) {
