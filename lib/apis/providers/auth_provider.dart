@@ -66,6 +66,12 @@ class AuthHelper {
 
   AuthHelper(this.ref);
 
+  // Add this method to clear onboarding status when app data is cleared
+  Future<void> clearOnboardingStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('has_seen_onboarding');
+  }
+
   //  methods for credential storage
   Future<void> setCredentials(String username, String password) async {
     final prefs = await SharedPreferences.getInstance();
@@ -123,14 +129,15 @@ class AuthHelper {
     return prefs.getString(_accountIdKey);
   }
 
-  // Clear token and all stored data
+  // Clear token and all stored data (but keep onboarding status)
   Future<void> clearToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userEmailKey);
     await prefs.remove(_accountIdKey);
-    await prefs.remove(_usernameKey); 
-    await prefs.remove(_passwordKey); 
+    await prefs.remove(_usernameKey);
+    await prefs.remove(_passwordKey);
+    // DON'T remove onboarding status: await prefs.remove('has_seen_onboarding');
 
     // Remove from dio headers
     final dio = ref.read(dioProvider);
@@ -167,7 +174,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final token = await _authHelper.getToken();
       final userEmail = await _authHelper.getUserEmail();
       final accountId = await _authHelper.getAccountId();
-      final credentials = await _authHelper.getStoredCredentials(); 
+      final credentials = await _authHelper.getStoredCredentials();
 
       if (token != null && token.isNotEmpty) {
         // Set token in dio headers
@@ -179,15 +186,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
           userEmail: userEmail,
           accountId: accountId,
           isInitialized: true,
-          storedUsername: credentials['username'], 
-          storedPassword: credentials['password'], 
+          storedUsername: credentials['username'],
+          storedPassword: credentials['password'],
         );
       } else {
         state = state.copyWith(
           isAuthenticated: false,
           isInitialized: true,
-          storedUsername: credentials['username'], 
-          storedPassword: credentials['password'], 
+          storedUsername: credentials['username'],
+          storedPassword: credentials['password'],
         );
       }
     } catch (e) {

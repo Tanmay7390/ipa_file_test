@@ -126,9 +126,9 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
               toggleDrawer(false);
               await ref.read(authProvider.notifier).signOut();
 
-              // Add explicit navigation to onboarding after logout
+              // Navigate to login after logout
               if (mounted) {
-                context.go('/onboarding');
+                context.go('/login');
               }
             },
             child: Text('Logout'),

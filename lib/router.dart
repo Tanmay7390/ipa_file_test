@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:Wareozo/drawer.dart';
 import 'package:Wareozo/apis/providers/auth_provider.dart';
 import 'package:Wareozo/forms/invoice_form.dart';
@@ -17,8 +18,6 @@ import 'package:Wareozo/auth/forgot_password.dart';
 import 'package:Wareozo/auth/login_with_otp.dart';
 import 'package:Wareozo/auth/otp_verification.dart';
 import 'package:Wareozo/tabs/customersupplier_tab.dart';
-import 'package:Wareozo/tabs/profile_pages/customer_profile_page.dart';
-import 'package:Wareozo/tabs/profile_pages/supplier_profile_page.dart';
 import 'package:Wareozo/forms/customersupplier_form.dart';
 import 'package:Wareozo/inventory/inventory_list.dart';
 import 'package:Wareozo/Inventory/inventory_form.dart';
@@ -183,15 +182,19 @@ class _RobustExitWrapperState extends State<RobustExitWrapper> {
 
 final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
-  initialLocation: '/onboarding',
+  initialLocation: '/login',
 
-  redirect: (context, state) {
+  redirect: (context, state) async {
     final container = ProviderScope.containerOf(context);
     final authState = container.read(authProvider);
 
     if (!authState.isInitialized) {
       return null;
     }
+
+    // Check if onboarding has been seen
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
 
     final protectedRoutes = [
       '/home',
@@ -212,7 +215,6 @@ final appRouter = GoRouter(
       '/forgot-password',
       '/login-with-otp',
       '/otp-verification',
-      '/onboarding',
     ];
 
     final currentPath = state.matchedLocation;
@@ -221,11 +223,19 @@ final appRouter = GoRouter(
     );
     final isAuthRoute = authRoutes.contains(currentPath);
 
-    if (!authState.isAuthenticated && isProtectedRoute) {
+    // If user hasn't seen onboarding and is not already on onboarding
+    if (!hasSeenOnboarding && currentPath != '/onboarding') {
       return '/onboarding';
     }
 
-    if (authState.isAuthenticated && isAuthRoute) {
+    // If user has seen onboarding but is not authenticated and trying to access protected routes
+    if (hasSeenOnboarding && !authState.isAuthenticated && isProtectedRoute) {
+      return '/login';
+    }
+
+    // If user is authenticated and trying to access auth routes or onboarding
+    if (authState.isAuthenticated &&
+        (isAuthRoute || currentPath == '/onboarding')) {
       return '/home';
     }
 
@@ -1183,28 +1193,6 @@ class GlobalHomePage extends StatelessWidget {
       ),
     );
   }
-}
-
-void _showAlert(BuildContext context) {
-  showCupertinoDialog<void>(
-    context: context,
-    builder: (context) => CupertinoAlertDialog(
-      title: const Text('Alert'),
-      content: const Text('Proceed with destructive action?'),
-      actions: [
-        CupertinoDialogAction(
-          isDefaultAction: true,
-          onPressed: () => Navigator.pop(context),
-          child: const Text('No'),
-        ),
-        CupertinoDialogAction(
-          isDestructiveAction: true,
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Yes'),
-        ),
-      ],
-    ),
-  );
 }
 
 Widget _buildCenter(
