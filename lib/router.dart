@@ -10,6 +10,7 @@ import 'package:flutter_test_22/pages/notifications_page.dart';
 import 'package:flutter_test_22/pages/profile_page.dart';
 import 'package:flutter_test_22/pages/login_page.dart';
 import 'package:flutter_test_22/pages/onboarding_page.dart';
+import 'package:flutter_test_22/services/auth_service.dart';
 import 'package:go_router/go_router.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -17,10 +18,43 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/onboarding',
+  redirect: (context, state) async {
+    final isLoggedIn = await AuthService.isLoggedIn();
+    final isOnboarding = state.matchedLocation == '/onboarding';
+    final isLogin = state.matchedLocation == '/login';
+
+    // If logged in and trying to access onboarding or login, redirect to home
+    if (isLoggedIn && (isOnboarding || isLogin)) {
+      return '/home';
+    }
+
+    // If not logged in and trying to access protected routes, redirect to onboarding
+    if (!isLoggedIn && !isOnboarding && !isLogin) {
+      return '/onboarding';
+    }
+
+    return null; // No redirect needed
+  },
   routes: [
     GoRoute(
       path: '/onboarding',
-      builder: (context, state) => const OnboardingPage(),
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: const OnboardingPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // Slide from left to right (reverse direction)
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(-1.0, 0.0),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOut,
+            )),
+            child: child,
+          );
+        },
+      ),
     ),
     GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
     GoRoute(

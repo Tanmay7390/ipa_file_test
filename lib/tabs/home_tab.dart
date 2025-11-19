@@ -10,7 +10,8 @@ class HomeTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDarkMode = ref.watch(isDarkModeProvider);
+    final systemBrightness = MediaQuery.of(context).platformBrightness;
+    final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
 
     return CupertinoPageScaffold(
       backgroundColor: isDarkMode
@@ -54,7 +55,8 @@ class HomeTab extends ConsumerWidget {
   }
 
   Widget _buildLogosSection(BuildContext context, WidgetRef ref) {
-    final isDarkMode = ref.watch(isDarkModeProvider);
+    final systemBrightness = MediaQuery.of(context).platformBrightness;
+    final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
     final textColor = isDarkMode
         ? Colors.white.withOpacity(0.9)
         : Colors.black.withOpacity(0.85);
@@ -145,7 +147,8 @@ class HomeTab extends ConsumerWidget {
   }
 
   Widget _buildAppBar(BuildContext context, WidgetRef ref) {
-    final isDarkMode = ref.watch(isDarkModeProvider);
+    final systemBrightness = MediaQuery.of(context).platformBrightness;
+    final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
     final cardBg = isDarkMode ? Colors.white.withOpacity(0.1) : Colors.white;
     final cardBorder = isDarkMode
         ? Colors.white.withOpacity(0.1)
@@ -230,7 +233,8 @@ class HomeTab extends ConsumerWidget {
   }
 
   Widget _buildHeroSection(BuildContext context, WidgetRef ref) {
-    final isDarkMode = ref.watch(isDarkModeProvider);
+    final systemBrightness = MediaQuery.of(context).platformBrightness;
+    final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
     final textColor = isDarkMode ? Colors.white : Colors.black;
     final subtextColor = isDarkMode
         ? Colors.white.withOpacity(0.7)
@@ -426,7 +430,8 @@ class HomeTab extends ConsumerWidget {
   }
 
   Widget _buildQuickActions(BuildContext context, WidgetRef ref) {
-    final isDarkMode = ref.watch(isDarkModeProvider);
+    final systemBrightness = MediaQuery.of(context).platformBrightness;
+    final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
     final textColor = isDarkMode
         ? Colors.white.withOpacity(0.9)
         : Colors.black.withOpacity(0.9);
@@ -546,7 +551,8 @@ class HomeTab extends ConsumerWidget {
   }
 
   Widget _buildFeaturedSessions(BuildContext context, WidgetRef ref) {
-    final isDarkMode = ref.watch(isDarkModeProvider);
+    final systemBrightness = MediaQuery.of(context).platformBrightness;
+    final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
     final textColor = isDarkMode
         ? Colors.white.withOpacity(0.9)
         : Colors.black.withOpacity(0.9);
@@ -621,7 +627,8 @@ class HomeTab extends ConsumerWidget {
     IconData icon,
     List<int> gradientColors,
   ) {
-    final isDarkMode = ref.watch(isDarkModeProvider);
+    final systemBrightness = MediaQuery.of(context).platformBrightness;
+    final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
     final cardBg = isDarkMode ? Colors.white.withOpacity(0.05) : Colors.white;
     final cardBorder = isDarkMode
         ? Colors.white.withOpacity(0.1)
@@ -754,7 +761,8 @@ class HomeTab extends ConsumerWidget {
   }
 
   Widget _buildCTASection(BuildContext context, WidgetRef ref) {
-    final isDarkMode = ref.watch(isDarkModeProvider);
+    final systemBrightness = MediaQuery.of(context).platformBrightness;
+    final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
     final cardBg = isDarkMode ? Colors.white.withOpacity(0.05) : Colors.white;
     final cardBorder = isDarkMode
         ? Colors.white.withOpacity(0.1)

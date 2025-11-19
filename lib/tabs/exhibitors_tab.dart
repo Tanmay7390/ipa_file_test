@@ -548,7 +548,8 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = ref.watch(isDarkModeProvider);
+    final systemBrightness = MediaQuery.of(context).platformBrightness;
+    final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
     final cardBg = isDarkMode ? const Color(0xFF1C1C1E) : Colors.white;
     final textColor = isDarkMode ? Colors.white : Colors.black;
 

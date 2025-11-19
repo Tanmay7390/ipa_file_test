@@ -293,14 +293,7 @@ class _AttendeesTabState extends State<AttendeesTab> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                    color:
-                        CupertinoTheme.of(context).brightness == Brightness.dark
-                        ? CupertinoColors.tertiarySystemFill.resolveFrom(
-                            context,
-                          )
-                        : CupertinoColors.systemGroupedBackground.resolveFrom(
-                            context,
-                          ),
+                    color: CupertinoColors.systemBackground.resolveFrom(context),
                     child: Text(
                       letter,
                       style: TextStyle(
@@ -313,11 +306,17 @@ class _AttendeesTabState extends State<AttendeesTab> {
                     ),
                   ),
                   // Attendees list for this section
-                  CupertinoListSection(
+                  CupertinoListSection.insetGrouped(
                     margin: EdgeInsets.zero,
                     additionalDividerMargin: 72,
-                    backgroundColor: CupertinoColors.white,
-                    topMargin: 0,
+                    backgroundColor: CupertinoColors.systemBackground,
+                    hasLeading: false,
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        top: BorderSide.none,
+                        bottom: BorderSide.none,
+                      ),
+                    ),
                     children: attendees.map((attendee) {
                       return CupertinoListTile(
                         backgroundColor: CupertinoColors.systemBackground

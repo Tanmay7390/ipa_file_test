@@ -15,9 +15,6 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final brightness = ref.watch(themeProvider);
-    final defaultTextTheme = const CupertinoTextThemeData();
-
     return CupertinoApp.router(
       routerConfig: appRouter,
       localizationsDelegates: const [
@@ -26,26 +23,38 @@ class MyApp extends ConsumerWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       title: 'Wareozo',
-      theme: CupertinoThemeData(
-        brightness: brightness,
-        textTheme: CupertinoTextThemeData(
-          textStyle: _applyFontFamily(defaultTextTheme.textStyle),
-          actionTextStyle: _applyFontFamily(defaultTextTheme.actionTextStyle),
-          tabLabelTextStyle: _applyFontFamily(
-            defaultTextTheme.tabLabelTextStyle,
+      builder: (context, child) {
+        // Get system brightness from MediaQuery
+        final systemBrightness = MediaQuery.of(context).platformBrightness;
+
+        // Get the resolved brightness based on theme mode and system brightness
+        final brightness = ref.watch(brightnessProvider(systemBrightness));
+        final defaultTextTheme = const CupertinoTextThemeData();
+
+        return CupertinoTheme(
+          data: CupertinoThemeData(
+            brightness: brightness,
+            textTheme: CupertinoTextThemeData(
+              textStyle: _applyFontFamily(defaultTextTheme.textStyle),
+              actionTextStyle: _applyFontFamily(defaultTextTheme.actionTextStyle),
+              tabLabelTextStyle: _applyFontFamily(
+                defaultTextTheme.tabLabelTextStyle,
+              ),
+              navTitleTextStyle: _applyFontFamily(
+                defaultTextTheme.navTitleTextStyle,
+              ),
+              navLargeTitleTextStyle: _applyFontFamily(
+                defaultTextTheme.navLargeTitleTextStyle,
+              ),
+              pickerTextStyle: _applyFontFamily(defaultTextTheme.pickerTextStyle),
+              dateTimePickerTextStyle: _applyFontFamily(
+                defaultTextTheme.dateTimePickerTextStyle,
+              ),
+            ),
           ),
-          navTitleTextStyle: _applyFontFamily(
-            defaultTextTheme.navTitleTextStyle,
-          ),
-          navLargeTitleTextStyle: _applyFontFamily(
-            defaultTextTheme.navLargeTitleTextStyle,
-          ),
-          pickerTextStyle: _applyFontFamily(defaultTextTheme.pickerTextStyle),
-          dateTimePickerTextStyle: _applyFontFamily(
-            defaultTextTheme.dateTimePickerTextStyle,
-          ),
-        ),
-      ),
+          child: child!,
+        );
+      },
     );
   }
 }

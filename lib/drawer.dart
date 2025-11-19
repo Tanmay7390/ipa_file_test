@@ -107,7 +107,8 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
   Widget buildDrawer() {
     return Consumer(
       builder: (context, ref, child) {
-        final isDarkMode = ref.watch(isDarkModeProvider);
+        final systemBrightness = MediaQuery.of(context).platformBrightness;
+        final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
 
         return Container(
           decoration: BoxDecoration(
@@ -260,7 +261,7 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                       CupertinoSwitch(
                         value: isDarkMode,
                         onChanged: (value) {
-                          ref.read(themeProvider.notifier).toggleTheme();
+                          ref.read(themeModeProvider.notifier).toggleTheme();
                         },
                         activeTrackColor: CupertinoColors.systemBlue,
                       ),
@@ -489,7 +490,8 @@ class FloatingTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer(
       builder: (context, ref, child) {
-        final isDarkMode = ref.watch(isDarkModeProvider);
+        final systemBrightness = MediaQuery.of(context).platformBrightness;
+        final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
 
         return Positioned(
           top: MediaQuery.of(context).padding.top + 20,

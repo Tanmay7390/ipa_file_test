@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 
@@ -11,49 +10,68 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _eventCodeController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController(text: 'abc@mail.com');
   final TextEditingController _passwordController = TextEditingController();
-  bool _isEventCodeStep = true;
+  bool _isEmailStep = true;
   bool _isLoading = false;
+  String? _emailError;
+  String? _passwordError;
 
   @override
   void dispose() {
-    _eventCodeController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   void _handleNext() {
-    if (_eventCodeController.text.trim().isEmpty) {
-      _showAlert('Please enter an event code');
+    final email = _emailController.text.trim();
+
+    // Simple email validation
+    if (email.isEmpty) {
+      setState(() {
+        _emailError = 'Please enter an email';
+      });
       return;
     }
+
+    if (!email.contains('@') || !email.contains('.')) {
+      setState(() {
+        _emailError = 'Please enter a valid email address';
+      });
+      return;
+    }
+
     setState(() {
-      _isEventCodeStep = false;
+      _emailError = null;
+      _isEmailStep = false;
     });
   }
 
   void _handleLogin() async {
     if (_passwordController.text.trim().isEmpty) {
-      _showAlert('Please enter a password');
+      setState(() {
+        _passwordError = 'Please enter a password';
+      });
       return;
     }
 
     setState(() {
       _isLoading = true;
+      _passwordError = null;
     });
 
     // Simulate API call
     await Future.delayed(Duration(seconds: 1));
 
     // Dummy validation
-    final eventCode = _eventCodeController.text.trim();
+    final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    // For now, accept any event code and password "123456"
+    // For now, accept any email and password "123456"
     if (password == '123456' || password == 'password') {
       // Save login info
-      await AuthService.saveLoginInfo(eventCode);
+      await AuthService.saveLoginInfo(email);
 
       // Navigate to home using GoRouter
       if (mounted) {
@@ -62,39 +80,90 @@ class _LoginPageState extends State<LoginPage> {
     } else {
       setState(() {
         _isLoading = false;
+        _passwordError = 'Invalid password. Try "123456" or "password"';
       });
-      _showAlert('Invalid password. Try "123456" or "password"');
     }
   }
 
-  void _showAlert(String message) {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: Text('Error'),
-        content: Text(message),
-        actions: [
-          CupertinoDialogAction(
-            child: Text('OK'),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ],
-      ),
-    );
+  void _goBack() {
+    if (_isEmailStep) {
+      // Go back to onboarding
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/onboarding');
+      }
+    } else {
+      // Go back to email step
+      setState(() {
+        _isEmailStep = true;
+        _passwordController.clear();
+        _passwordError = null;
+      });
+    }
   }
 
-  void _goBack() {
-    setState(() {
-      _isEventCodeStep = true;
-      _passwordController.clear();
-    });
+  Future<bool> _onWillPop() async {
+    if (!_isEmailStep) {
+      // If on password step, go back to email step
+      setState(() {
+        _isEmailStep = true;
+        _passwordController.clear();
+        _passwordError = null;
+      });
+      return false;
+    }
+    // If on email step, go back to onboarding
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/onboarding');
+    }
+    return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _onWillPop();
+        }
+      },
+      child: CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        backgroundColor: CupertinoColors.systemBackground.resolveFrom(context),
+        border: null,
+        leading: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: _goBack,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                CupertinoIcons.chevron_left,
+                size: 28,
+                color: CupertinoColors.activeBlue,
+              ),
+              SizedBox(width: 4),
+              Text(
+                _isEmailStep ? 'Back' : 'Back',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w400,
+                  color: CupertinoColors.activeBlue,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
       backgroundColor: CupertinoColors.systemBackground,
       child: SafeArea(
+        top: false,
         child: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
           child: SingleChildScrollView(
@@ -102,35 +171,7 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Back button on password step
-                if (!_isEventCodeStep) ...[
-                  SizedBox(height: 8),
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: _goBack,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          CupertinoIcons.chevron_left,
-                          size: 28,
-                          color: CupertinoColors.activeBlue,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          'Back',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w400,
-                            color: CupertinoColors.activeBlue,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                ] else
-                  SizedBox(height: 60),
+                SizedBox(height: 40),
 
                 // Icon with gradient
                 Container(
@@ -155,8 +196,8 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
                   child: Icon(
-                    _isEventCodeStep
-                        ? CupertinoIcons.ticket_fill
+                    _isEmailStep
+                        ? CupertinoIcons.mail_solid
                         : CupertinoIcons.lock_fill,
                     size: 32,
                     color: CupertinoColors.white,
@@ -167,7 +208,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 // Title
                 Text(
-                  _isEventCodeStep ? 'Continue with Event Code' : 'Enter Password',
+                  _isEmailStep ? 'Continue with Email' : 'Enter Password',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
@@ -179,8 +220,8 @@ class _LoginPageState extends State<LoginPage> {
 
                 // Subtitle
                 Text(
-                  _isEventCodeStep
-                      ? 'Enter your event code to continue.'
+                  _isEmailStep
+                      ? 'Enter your email to continue.'
                       : 'Enter your password to sign in.',
                   style: TextStyle(
                     fontSize: 17,
@@ -194,15 +235,17 @@ class _LoginPageState extends State<LoginPage> {
                 // Input Field
                 Container(
                   decoration: BoxDecoration(
-                    color: CupertinoColors.systemGrey6,
+                    color: isDark
+                        ? CupertinoColors.systemGrey6.darkColor
+                        : CupertinoColors.systemGrey6.color,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: CupertinoTextField(
-                    controller: _isEventCodeStep
-                        ? _eventCodeController
+                    controller: _isEmailStep
+                        ? _emailController
                         : _passwordController,
-                    placeholder: _isEventCodeStep ? 'Event Code' : 'Password',
+                    placeholder: _isEmailStep ? 'Email' : 'Password',
                     placeholderStyle: TextStyle(
                       color: CupertinoColors.systemGrey2,
                       fontSize: 17,
@@ -210,39 +253,88 @@ class _LoginPageState extends State<LoginPage> {
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w400,
+                      color: isDark ? CupertinoColors.white : CupertinoColors.black,
                     ),
-                    obscureText: !_isEventCodeStep,
+                    obscureText: !_isEmailStep,
+                    keyboardType: _isEmailStep ? TextInputType.emailAddress : TextInputType.text,
                     decoration: BoxDecoration(),
                     padding: EdgeInsets.symmetric(vertical: 16),
-                    textInputAction: _isEventCodeStep
+                    textInputAction: _isEmailStep
                         ? TextInputAction.next
                         : TextInputAction.done,
                     onSubmitted: (_) =>
-                        _isEventCodeStep ? _handleNext() : _handleLogin(),
-                    autofocus: !_isEventCodeStep,
+                        _isEmailStep ? _handleNext() : _handleLogin(),
+                    autofocus: !_isEmailStep,
+                    onChanged: (_) {
+                      // Clear errors on typing
+                      if (_isEmailStep && _emailError != null) {
+                        setState(() {
+                          _emailError = null;
+                        });
+                      } else if (!_isEmailStep && _passwordError != null) {
+                        setState(() {
+                          _passwordError = null;
+                        });
+                      }
+                    },
                   ),
                 ),
 
+                // Error message
+                if ((_isEmailStep && _emailError != null) || (!_isEmailStep && _passwordError != null))
+                  Padding(
+                    padding: EdgeInsets.only(top: 8, left: 4),
+                    child: Text(
+                      _isEmailStep ? _emailError! : _passwordError!,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: CupertinoColors.systemRed,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+
                 SizedBox(height: 32),
 
-                // Button with iOS Blue
-                SizedBox(
+                // Button with gradient effect
+                Container(
                   width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: _isLoading
+                        ? null
+                        : LinearGradient(
+                            colors: [
+                              Color(0xFFFFD700),
+                              Color(0xFFFF9500),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                    color: _isLoading ? CupertinoColors.systemGrey4 : null,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: _isLoading
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: Color(0xFFFF9500).withAlpha(77),
+                              blurRadius: 12,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                  ),
                   child: CupertinoButton(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    borderRadius: BorderRadius.circular(12),
-                    color: _isLoading
-                        ? CupertinoColors.systemGrey4
-                        : CupertinoColors.activeBlue,
+                    padding: EdgeInsets.symmetric(vertical: 18),
+                    borderRadius: BorderRadius.circular(14),
+                    color: Color(0x00000000),
                     onPressed: _isLoading
                         ? null
-                        : (_isEventCodeStep ? _handleNext : _handleLogin),
+                        : (_isEmailStep ? _handleNext : _handleLogin),
                     child: _isLoading
                         ? CupertinoActivityIndicator(color: CupertinoColors.white)
                         : Text(
-                            _isEventCodeStep ? 'Next' : 'Log In',
+                            _isEmailStep ? 'Next' : 'Log In',
                             style: TextStyle(
-                              fontSize: 17,
+                              fontSize: 18,
                               fontWeight: FontWeight.w600,
                               color: CupertinoColors.white,
                             ),
@@ -250,7 +342,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
 
-                if (!_isEventCodeStep) ...[
+                if (!_isEmailStep) ...[
                   SizedBox(height: 16),
                   Center(
                     child: CupertinoButton(
@@ -274,6 +366,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

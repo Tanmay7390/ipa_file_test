@@ -410,14 +410,7 @@ class _SpeakersTabState extends State<SpeakersTab> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                    color:
-                        CupertinoTheme.of(context).brightness == Brightness.dark
-                        ? CupertinoColors.tertiarySystemFill.resolveFrom(
-                            context,
-                          )
-                        : CupertinoColors.systemGroupedBackground.resolveFrom(
-                            context,
-                          ),
+                    color: CupertinoColors.systemBackground.resolveFrom(context),
                     child: Text(
                       letter,
                       style: TextStyle(
@@ -430,11 +423,17 @@ class _SpeakersTabState extends State<SpeakersTab> {
                     ),
                   ),
                   // Speakers list for this section
-                  CupertinoListSection(
+                  CupertinoListSection.insetGrouped(
                     margin: EdgeInsets.zero,
                     additionalDividerMargin: 72,
-                    backgroundColor: CupertinoColors.white,
-                    topMargin: 0,
+                    backgroundColor: CupertinoColors.systemBackground,
+                    hasLeading: false,
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        top: BorderSide.none,
+                        bottom: BorderSide.none,
+                      ),
+                    ),
                     children: speakers.map((speaker) {
                       return CupertinoListTile(
                         backgroundColor: CupertinoColors.systemBackground

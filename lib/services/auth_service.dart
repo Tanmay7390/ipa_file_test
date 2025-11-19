@@ -2,14 +2,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   static const String _keyIsLoggedIn = 'is_logged_in';
-  static const String _keyEventCode = 'event_code';
+  static const String _keyEmail = 'user_email';
   static const String _keyLoginTime = 'login_time';
 
   // Save login info
-  static Future<void> saveLoginInfo(String eventCode) async {
+  static Future<void> saveLoginInfo(String email) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyIsLoggedIn, true);
-    await prefs.setString(_keyEventCode, eventCode);
+    await prefs.setString(_keyEmail, email);
     await prefs.setString(_keyLoginTime, DateTime.now().toIso8601String());
   }
 
@@ -19,10 +19,10 @@ class AuthService {
     return prefs.getBool(_keyIsLoggedIn) ?? false;
   }
 
-  // Get event code
-  static Future<String?> getEventCode() async {
+  // Get email
+  static Future<String?> getEmail() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_keyEventCode);
+    return prefs.getString(_keyEmail);
   }
 
   // Get login time
