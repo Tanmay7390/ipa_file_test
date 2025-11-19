@@ -45,8 +45,8 @@ final appRouter = GoRouter(
           // Slide from left to right (reverse direction)
           return SlideTransition(
             position: Tween<Offset>(
-              begin: const Offset(-1.0, 0.0),
-              end: Offset.zero,
+              begin: const Offset(-1.0, 0.0), // Start from left
+              end: Offset.zero, // End at center
             ).animate(CurvedAnimation(
               parent: animation,
               curve: Curves.easeInOut,
@@ -56,7 +56,13 @@ final appRouter = GoRouter(
         },
       ),
     ),
-    GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+    GoRoute(
+      path: '/login',
+      pageBuilder: (context, state) => CupertinoPage(
+        key: state.pageKey,
+        child: const LoginPage(),
+      ),
+    ),
     GoRoute(
       path: '/bookmarks',
       builder: (context, state) => const BookmarksPageWithDrawer(),

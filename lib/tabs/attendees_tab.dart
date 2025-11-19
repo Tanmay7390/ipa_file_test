@@ -940,7 +940,7 @@ class _AttendeesTabState extends State<AttendeesTab> {
                               child: const CupertinoListTileChevron(),
                             ),
                             onTap: () {
-                              Navigator.of(context).push(
+                              Navigator.of(context, rootNavigator: true).push(
                                 CupertinoPageRoute(
                                   builder: (context) =>
                                       AttendeeDetailPage(attendee: attendee),

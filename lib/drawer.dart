@@ -1,3 +1,4 @@
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // Add this import for kIsWeb
@@ -41,7 +42,7 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
     toggleDrawer(false);
     final routes = {
       'Home': '/home',
-      'Agenda': '/agenda',
+      'Schedule': '/agenda',
       'Speakers': '/speakers',
       'Attendees': '/attendees',
       'Exhibitors': '/exhibitors',
@@ -93,7 +94,7 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
   String getCurrentPageName() {
     final location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/home')) return 'Home';
-    if (location.startsWith('/agenda')) return 'Agenda';
+    if (location.startsWith('/agenda')) return 'Schedule';
     if (location.startsWith('/speakers')) return 'Speakers';
     if (location.startsWith('/attendees')) return 'Attendees';
     if (location.startsWith('/exhibitors')) return 'Exhibitors';
@@ -209,7 +210,7 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                     padding: EdgeInsets.zero,
                     children: [
                       (CupertinoIcons.home, 'Home'),
-                      (CupertinoIcons.calendar, 'Agenda'),
+                      (CupertinoIcons.calendar, 'Schedule'),
                       (CupertinoIcons.mic_fill, 'Speakers'),
                       (CupertinoIcons.person_2_fill, 'Attendees'),
                       (CupertinoIcons.building_2_fill, 'Exhibitors'),
@@ -546,7 +547,7 @@ class FloatingTabBar extends StatelessWidget {
                     onTap: () => onTap(0),
                   ),
                   _TabBarButton(
-                    label: 'Agenda',
+                    label: 'Schedule',
                     isSelected: currentIndex == 1,
                     onTap: () => onTap(1),
                   ),
@@ -643,33 +644,59 @@ class _HomeScreenWithDrawerState extends State<HomeScreenWithDrawer>
   Widget build(BuildContext context) {
     final isTabletView = isTablet(context);
 
-    return CupertinoPageScaffold(
-      child: buildDrawerLayout(
-        Stack(
-          children: [
-            ScaffoldWithNavBar(
-              navigationShell: widget.navigationShell,
-              showBottomNav: !isTabletView,
-            ),
-            // Show floating tab bar only on tablets
-            if (isTabletView)
-              FloatingTabBar(
-                currentIndex: widget.navigationShell.currentIndex,
-                onTap: (index) => widget.navigationShell.goBranch(
-                  index,
-                  initialLocation: index == widget.navigationShell.currentIndex,
-                ),
-                onMenuTap: () => toggleDrawer(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+
+        // If drawer is open, close it and go to home tab
+        if (drawerOpen) {
+          toggleDrawer(false);
+          if (widget.navigationShell.currentIndex != 0) {
+            widget.navigationShell.goBranch(0);
+          }
+          return;
+        }
+
+        // If not on home tab, navigate to home tab
+        if (widget.navigationShell.currentIndex != 0) {
+          widget.navigationShell.goBranch(0);
+          return;
+        }
+
+        // If on home tab and drawer is closed, exit the app
+        context.pop();
+      },
+      child: CupertinoPageScaffold(
+        resizeToAvoidBottomInset: false,
+        child: buildDrawerLayout(
+          Stack(
+            children: [
+              ScaffoldWithNavBar(
+                navigationShell: widget.navigationShell,
+                showBottomNav: !isTabletView,
               ),
-          ],
+              // Show floating tab bar only on tablets
+              if (isTabletView)
+                FloatingTabBar(
+                  currentIndex: widget.navigationShell.currentIndex,
+                  onTap: (index) => widget.navigationShell.goBranch(
+                    index,
+                    initialLocation:
+                        index == widget.navigationShell.currentIndex,
+                  ),
+                  onMenuTap: () => toggleDrawer(),
+                ),
+            ],
+          ),
+          checkMainRoute: true,
         ),
-        checkMainRoute: true,
       ),
     );
   }
 }
 
-class ScaffoldWithNavBar extends StatelessWidget {
+class ScaffoldWithNavBar extends StatefulWidget {
   const ScaffoldWithNavBar({
     required this.navigationShell,
     this.showBottomNav = true,
@@ -680,46 +707,219 @@ class ScaffoldWithNavBar extends StatelessWidget {
   final bool showBottomNav;
 
   @override
+  State<ScaffoldWithNavBar> createState() => _ScaffoldWithNavBarState();
+}
+
+class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 1.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    );
+    _fadeController.value = 1.0;
+  }
+
+  @override
+  void didUpdateWidget(ScaffoldWithNavBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.navigationShell.currentIndex !=
+        widget.navigationShell.currentIndex) {
+      // Trigger fade animation
+      _fadeController.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      child: Column(
+      resizeToAvoidBottomInset: false,
+      child: Stack(
         children: [
-          Expanded(child: navigationShell),
-          // Only show bottom navigation if showBottomNav is true (mobile)
-          if (showBottomNav)
-            CupertinoTabBar(
-              currentIndex: navigationShell.currentIndex,
-              onTap: (index) => navigationShell.goBranch(
-                index,
-                initialLocation: index == navigationShell.currentIndex,
+          // Content fills entire screen and extends behind tab bar
+          Positioned.fill(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: widget.navigationShell,
+            ),
+          ),
+          // Blurred tab bar positioned at bottom
+          if (widget.showBottomNav)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: ClipRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color:
+                          CupertinoTheme.of(context).brightness ==
+                              Brightness.dark
+                          ? const Color(0xFF1C1C1E).withValues(alpha: 0.75)
+                          : CupertinoColors.systemBackground.withValues(
+                              alpha: 0.80,
+                            ),
+                      border: Border(
+                        top: BorderSide(
+                          color: CupertinoColors.systemGrey,
+                          width: 0.5,
+                        ),
+                      ),
+                    ),
+                    child: Builder(
+                      builder: (context) {
+                        final isDark =
+                            CupertinoTheme.of(context).brightness ==
+                            Brightness.dark;
+                        final currentIndex = widget.navigationShell.currentIndex;
+
+                        Widget buildLabel(String text, int index) {
+                          final isActive = currentIndex == index;
+                          return Text(
+                            text,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.0,
+                              color: isActive
+                                  ? (isDark ? const Color(0xFFFFD700) : CupertinoColors.black)
+                                  : CupertinoColors.systemGrey,
+                            ),
+                          );
+                        }
+
+                        return CupertinoTabBar(
+                          height: 55,
+                          iconSize: 28.0,
+                          currentIndex: currentIndex,
+                          onTap: (index) => widget.navigationShell.goBranch(
+                            index,
+                            initialLocation:
+                                index == widget.navigationShell.currentIndex,
+                          ),
+                          items: [
+                            BottomNavigationBarItem(
+                              icon: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: 4.0,
+                                      bottom: 4.0,
+                                    ),
+                                    child: Icon(
+                                      currentIndex == 0
+                                          ? CupertinoIcons.house_fill
+                                          : CupertinoIcons.house,
+                                    ),
+                                  ),
+                                  buildLabel('Home', 0),
+                                ],
+                              ),
+                            ),
+                            BottomNavigationBarItem(
+                              icon: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: 4.0,
+                                      bottom: 4.0,
+                                    ),
+                                    child: Icon(
+                                      currentIndex == 1
+                                          ? CupertinoIcons.calendar_circle_fill
+                                          : CupertinoIcons.calendar_circle,
+                                    ),
+                                  ),
+                                  buildLabel('Schedule', 1),
+                                ],
+                              ),
+                            ),
+                            BottomNavigationBarItem(
+                              icon: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: 4.0,
+                                      bottom: 4.0,
+                                    ),
+                                    child: Icon(
+                                      currentIndex == 2
+                                          ? CupertinoIcons.mic_fill
+                                          : CupertinoIcons.mic,
+                                    ),
+                                  ),
+                                  buildLabel('Speakers', 2),
+                                ],
+                              ),
+                            ),
+                            BottomNavigationBarItem(
+                              icon: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: 4.0,
+                                      bottom: 4.0,
+                                    ),
+                                    child: Icon(
+                                      currentIndex == 3
+                                          ? CupertinoIcons.person_2_fill
+                                          : CupertinoIcons.person_2,
+                                    ),
+                                  ),
+                                  buildLabel('Attendees', 3),
+                                ],
+                              ),
+                            ),
+                            BottomNavigationBarItem(
+                              icon: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: 4.0,
+                                      bottom: 4.0,
+                                    ),
+                                    child: Icon(
+                                      currentIndex == 4
+                                          ? CupertinoIcons.briefcase_fill
+                                          : CupertinoIcons.briefcase,
+                                    ),
+                                  ),
+                                  buildLabel('Exhibitors', 4),
+                                ],
+                              ),
+                            ),
+                          ],
+                          backgroundColor: Colors.transparent,
+                          activeColor: const Color(0xFFFFD700),
+                          inactiveColor: CupertinoColors.systemGrey,
+                          border: null,
+                        );
+                      },
+                    ),
+                  ),
+                ),
               ),
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(CupertinoIcons.home),
-                  label: 'Home',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(CupertinoIcons.calendar),
-                  label: 'Agenda',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(CupertinoIcons.mic_fill),
-                  label: 'Speakers',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(CupertinoIcons.person_2_fill),
-                  label: 'Attendees',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(CupertinoIcons.building_2_fill),
-                  label: 'Exhibitors',
-                ),
-              ],
-              backgroundColor: CupertinoTheme.of(
-                context,
-              ).scaffoldBackgroundColor.withOpacity(0.8),
-              activeColor: CupertinoColors.activeBlue,
-              inactiveColor: CupertinoColors.inactiveGray,
             ),
         ],
       ),
@@ -747,10 +947,10 @@ class _StandaloneDrawerWrapperState extends State<StandaloneDrawerWrapper>
   bool shouldShowBottomNavigation() {
     final location = GoRouterState.of(context).matchedLocation;
     return location.startsWith('/home') ||
-           location.startsWith('/agenda') ||
-           location.startsWith('/speakers') ||
-           location.startsWith('/attendees') ||
-           location.startsWith('/exhibitors');
+        location.startsWith('/agenda') ||
+        location.startsWith('/speakers') ||
+        location.startsWith('/attendees') ||
+        location.startsWith('/exhibitors');
   }
 
   @override
@@ -758,38 +958,55 @@ class _StandaloneDrawerWrapperState extends State<StandaloneDrawerWrapper>
     final isTabletView = isTablet(context);
     final showBottomNav = shouldShowBottomNavigation();
 
-    return CupertinoPageScaffold(
-      child: buildDrawerLayout(
-        Stack(
-          children: [
-            widget.child,
-            // Show floating tab bar only on tablets AND only on routes that would have bottom tabs
-            if (isTabletView && showBottomNav)
-              FloatingTabBar(
-                currentIndex: 0, // Default to first tab for standalone pages
-                onTap: (index) {
-                  // Handle navigation for standalone pages
-                  switch (index) {
-                    case 0:
-                      context.go('/home');
-                      break;
-                    case 1:
-                      context.go('/agenda');
-                      break;
-                    case 2:
-                      context.go('/speakers');
-                      break;
-                    case 3:
-                      context.go('/attendees');
-                      break;
-                    case 4:
-                      context.go('/exhibitors');
-                      break;
-                  }
-                },
-                onMenuTap: () => toggleDrawer(),
-              ),
-          ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+
+        // If drawer is open, close it and go to home tab
+        if (drawerOpen) {
+          toggleDrawer(false);
+          context.go('/home');
+          return;
+        }
+
+        // If drawer is closed, just pop normally
+        context.pop();
+      },
+      child: CupertinoPageScaffold(
+        resizeToAvoidBottomInset: false,
+        child: buildDrawerLayout(
+          Stack(
+            children: [
+              widget.child,
+              // Show floating tab bar only on tablets AND only on routes that would have bottom tabs
+              if (isTabletView && showBottomNav)
+                FloatingTabBar(
+                  currentIndex: 0, // Default to first tab for standalone pages
+                  onTap: (index) {
+                    // Handle navigation for standalone pages
+                    switch (index) {
+                      case 0:
+                        context.go('/home');
+                        break;
+                      case 1:
+                        context.go('/agenda');
+                        break;
+                      case 2:
+                        context.go('/speakers');
+                        break;
+                      case 3:
+                        context.go('/attendees');
+                        break;
+                      case 4:
+                        context.go('/exhibitors');
+                        break;
+                    }
+                  },
+                  onMenuTap: () => toggleDrawer(),
+                ),
+            ],
+          ),
         ),
       ),
     );

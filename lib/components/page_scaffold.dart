@@ -173,6 +173,7 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
+      resizeToAvoidBottomInset: false,
       child: NotificationListener<ScrollNotification>(
         onNotification: _handleScrollNotification,
         child: CustomScrollView(
@@ -208,14 +209,15 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
               ),
               onSearchableBottomTap: widget.onSearchToggle,
               bottomMode: NavigationBarBottomMode.always,
-              backgroundColor: CupertinoTheme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFF000000).withValues(alpha: 0.8)
-                  : CupertinoColors.systemBackground.withValues(alpha: 0.8),
+              backgroundColor:
+                  CupertinoTheme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF1C1C1E).withValues(alpha: 0.75)
+                  : CupertinoColors.systemBackground.withValues(alpha: 0.80),
               enableBackgroundFilterBlur: true,
-              border: const Border(
+              border: Border(
                 bottom: BorderSide(
-                  color: CupertinoColors.systemGrey5,
-                  width: 0.5,
+                  color: CupertinoColors.systemGrey,
+                  width: 0.1,
                 ),
               ),
               trailing: Row(

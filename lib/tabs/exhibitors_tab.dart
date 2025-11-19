@@ -729,7 +729,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
   ) {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(
+        Navigator.of(context, rootNavigator: true).push(
           CupertinoPageRoute(
             builder: (context) => ExhibitorDetailPage(exhibitor: exhibitor),
           ),
@@ -927,7 +927,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
   ) {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(
+        Navigator.of(context, rootNavigator: true).push(
           CupertinoPageRoute(
             builder: (context) => ExhibitorDetailPage(exhibitor: exhibitor),
           ),

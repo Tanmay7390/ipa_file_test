@@ -933,18 +933,8 @@ class _SpeakersTabState extends State<SpeakersTab> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                    decoration: BoxDecoration(
-                      color: CupertinoColors.systemBackground.resolveFrom(
-                        context,
-                      ),
-                      border: Border(
-                        bottom: BorderSide(
-                          color: CupertinoColors.systemGrey5.resolveFrom(
-                            context,
-                          ),
-                          width: 0.5,
-                        ),
-                      ),
+                    color: CupertinoColors.systemBackground.resolveFrom(
+                      context,
                     ),
                     child: Text(
                       letter,
@@ -1040,7 +1030,7 @@ class _SpeakersTabState extends State<SpeakersTab> {
                               child: const CupertinoListTileChevron(),
                             ),
                             onTap: () {
-                              Navigator.of(context).push(
+                              Navigator.of(context, rootNavigator: true).push(
                                 CupertinoPageRoute(
                                   builder: (context) =>
                                       SpeakerDetailPage(speaker: speaker),
