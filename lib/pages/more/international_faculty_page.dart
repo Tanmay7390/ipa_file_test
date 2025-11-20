@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_test_22/components/page_scaffold.dart';
+import 'package:aesurg26/components/page_scaffold.dart';
 
 class InternationalFacultyPage extends StatelessWidget {
   const InternationalFacultyPage({super.key});
@@ -29,17 +29,21 @@ class InternationalFacultyPage extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 16),
-                _buildFacultyItem('Dr. Oswaldo Saldanha', 'Brazil'),
-                _buildFacultyItem('Dr. Moustapha Hamdi', 'Belgium'),
-                _buildFacultyItem('Dr. Chiara Botti', 'Italy'),
-                _buildFacultyItem('Dr. Shailesh Vadodaria', 'UK'),
-                _buildFacultyItem('Dr. Vakis Kontoes', 'Greece'),
-                _buildFacultyItem('Dr. Francisco Villegas', 'Colombia'),
-                _buildFacultyItem('Dr. Amin Kalaaji', 'Norway'),
-                _buildFacultyItem('Dr. Tracy Pfeiffer', 'USA'),
-                _buildFacultyItem('Dr. Eduardo Yap', 'Philippines'),
-                _buildFacultyItem('Dr. Nora Nugent', 'USA'),
-                _buildFacultyItem('Dr. Melinda Haws', 'USA'),
+                _buildFacultyItem(context, 'Dr. Oswaldo Saldanha', 'Brazil'),
+                _buildFacultyItem(context, 'Dr. Moustapha Hamdi', 'Belgium'),
+                _buildFacultyItem(context, 'Dr. Chiara Botti', 'Italy'),
+                _buildFacultyItem(context, 'Dr. Shailesh Vadodaria', 'UK'),
+                _buildFacultyItem(context, 'Dr. Vakis Kontoes', 'Greece'),
+                _buildFacultyItem(
+                  context,
+                  'Dr. Francisco Villegas',
+                  'Colombia',
+                ),
+                _buildFacultyItem(context, 'Dr. Amin Kalaaji', 'Norway'),
+                _buildFacultyItem(context, 'Dr. Tracy Pfeiffer', 'USA'),
+                _buildFacultyItem(context, 'Dr. Eduardo Yap', 'Philippines'),
+                _buildFacultyItem(context, 'Dr. Nora Nugent', 'USA'),
+                _buildFacultyItem(context, 'Dr. Melinda Haws', 'USA'),
                 SizedBox(height: 16),
                 Text(
                   'And many more...',
@@ -60,7 +64,7 @@ class InternationalFacultyPage extends StatelessWidget {
     );
   }
 
-  Widget _buildFacultyItem(String name, String country) {
+  Widget _buildFacultyItem(BuildContext context, String name, String country) {
     return Padding(
       padding: EdgeInsets.only(bottom: 16),
       child: Column(
@@ -73,7 +77,7 @@ class InternationalFacultyPage extends StatelessWidget {
               fontWeight: FontWeight.w500,
               fontFamily: 'SF Pro Display',
               letterSpacing: 0.2,
-              color: CupertinoColors.label,
+              color: CupertinoTheme.of(context).textTheme.textStyle.color,
             ),
           ),
           SizedBox(height: 4),

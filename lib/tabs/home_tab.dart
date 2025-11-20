@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test_22/theme_provider.dart';
-import 'package:flutter_test_22/drawer.dart';
+import 'package:aesurg26/theme_provider.dart';
+import 'package:aesurg26/drawer.dart';
 import 'package:go_router/go_router.dart';
 
 class HomeTab extends ConsumerWidget {
@@ -502,12 +502,8 @@ class HomeTab extends ConsumerWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Color(
-                          (actions[index]['gradient'] as List)[0] as int,
-                        ),
-                        Color(
-                          (actions[index]['gradient'] as List)[1] as int,
-                        ),
+                        Color((actions[index]['gradient'] as List)[0] as int),
+                        Color((actions[index]['gradient'] as List)[1] as int),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(24),

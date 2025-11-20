@@ -1,4 +1,4 @@
-package com.wareozo.flutter_test_22
+package com.aesurg.aesurg26
 
 import io.flutter.embedding.android.FlutterActivity
 

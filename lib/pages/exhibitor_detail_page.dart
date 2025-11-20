@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_test_22/components/page_scaffold.dart';
+import 'package:aesurg26/components/page_scaffold.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
-import 'package:flutter_test_22/pages/company_representative_detail_page.dart';
+import 'package:aesurg26/pages/company_representative_detail_page.dart';
 
 class ExhibitorDetailPage extends StatefulWidget {
   final Map<String, dynamic> exhibitor;
@@ -34,7 +34,9 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
     try {
       // Try to load network video (more reliable than asset for testing)
       _videoPlayerController = VideoPlayerController.networkUrl(
-        Uri.parse('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'),
+        Uri.parse(
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        ),
       );
 
       await _videoPlayerController!.initialize();
@@ -208,7 +210,9 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
               children: [
                 // Exhibitor name
                 Text(
-                  widget.exhibitor['companyName'] ?? widget.exhibitor['name'] ?? '',
+                  widget.exhibitor['companyName'] ??
+                      widget.exhibitor['name'] ??
+                      '',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
@@ -711,14 +715,15 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
                           ),
                         )
                       else if (_chewieController != null &&
-                          _chewieController!.videoPlayerController.value.isInitialized)
+                          _chewieController!
+                              .videoPlayerController
+                              .value
+                              .isInitialized)
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: AspectRatio(
                             aspectRatio: 16 / 9,
-                            child: Chewie(
-                              controller: _chewieController!,
-                            ),
+                            child: Chewie(controller: _chewieController!),
                           ),
                         )
                       else

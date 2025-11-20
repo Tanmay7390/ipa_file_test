@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_test_22/components/page_scaffold.dart';
+import 'package:aesurg26/components/page_scaffold.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 enum ConnectionStatus { notConnected, pending, connected }
@@ -166,7 +166,9 @@ class _AttendeeDetailPageState extends State<AttendeeDetailPage> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  widget.attendee['title'] ?? widget.attendee['specialty'] ?? '',
+                  widget.attendee['title'] ??
+                      widget.attendee['specialty'] ??
+                      '',
                   style: TextStyle(
                     fontSize: 16,
                     color: CupertinoColors.secondaryLabel.resolveFrom(context),

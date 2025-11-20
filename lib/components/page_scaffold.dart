@@ -229,7 +229,7 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
                           border: Border(
                             bottom: BorderSide(
                               color: CupertinoColors.systemGrey,
-                              width: 0.1,
+                              width: 0.2,
                             ),
                           ),
                         ),
@@ -268,7 +268,7 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
                       border: Border(
                         bottom: BorderSide(
                           color: CupertinoColors.systemGrey,
-                          width: 0.1,
+                          width: 0.2,
                         ),
                       ),
                       trailing: widget.trailing,
@@ -311,7 +311,7 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
                       border: Border(
                         bottom: BorderSide(
                           color: CupertinoColors.systemGrey,
-                          width: 0.1,
+                          width: 0.2,
                         ),
                       ),
                       trailing: widget.trailing,

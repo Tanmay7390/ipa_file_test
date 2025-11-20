@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_test_22/components/page_scaffold.dart';
+import 'package:aesurg26/components/page_scaffold.dart';
 
 class AboutAesurgPage extends StatelessWidget {
   const AboutAesurgPage({super.key});
@@ -38,7 +38,7 @@ class AboutAesurgPage extends StatelessWidget {
                     height: 1.5,
                     fontFamily: 'SF Pro Display',
                     letterSpacing: 0.2,
-                    color: CupertinoColors.label,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
                 SizedBox(height: 12),
@@ -50,7 +50,7 @@ class AboutAesurgPage extends StatelessWidget {
                     height: 1.5,
                     fontFamily: 'SF Pro Display',
                     letterSpacing: 0.2,
-                    color: CupertinoColors.label,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
                 SizedBox(height: 8),
@@ -61,7 +61,7 @@ class AboutAesurgPage extends StatelessWidget {
                     height: 1.5,
                     fontFamily: 'SF Pro Display',
                     letterSpacing: 0.2,
-                    color: CupertinoColors.label,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
 
@@ -79,16 +79,43 @@ class AboutAesurgPage extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 16),
-                _buildBulletPoint('Four days of resort life in the heart of Mumbai'),
-                _buildBulletPoint('Resident\'s flexi package options'),
-                _buildBulletPoint('Stalwart international faculty from around the globe'),
-                _buildBulletPoint('Video workshops and unique dermatoplastic workshops'),
-                _buildBulletPoint('Learn from national and international masters'),
-                _buildBulletPoint('Fun-filled evenings with sumptuous dinners and cultural events'),
-                _buildBulletPoint('Vendor exhibitions and networking opportunities'),
-                _buildBulletPoint('Special competitions to encourage innovation'),
-                _buildBulletPoint('Year-long social media campaign featuring past presidents'),
-                _buildBulletPoint('Republic Day celebration with flag salutation'),
+                _buildBulletPoint(
+                  context,
+                  'Four days of resort life in the heart of Mumbai',
+                ),
+                _buildBulletPoint(context, 'Resident\'s flexi package options'),
+                _buildBulletPoint(
+                  context,
+                  'Stalwart international faculty from around the globe',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Video workshops and unique dermatoplastic workshops',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Learn from national and international masters',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Fun-filled evenings with sumptuous dinners and cultural events',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Vendor exhibitions and networking opportunities',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Special competitions to encourage innovation',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Year-long social media campaign featuring past presidents',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Republic Day celebration with flag salutation',
+                ),
 
                 SizedBox(height: 32),
 
@@ -104,11 +131,27 @@ class AboutAesurgPage extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 16),
-                _buildCommitteeItem('President', 'Dr. Medha Bhave - Organizing Chair'),
-                _buildCommitteeItem('Organizing Secretaries', 'Dr. Parag Telang, Dr. Preetish Bhavsar'),
-                _buildCommitteeItem('Scientific Chairs', 'Dr. Vinod Vij, Dr. Viraj Tambwekar'),
-                _buildCommitteeItem('Treasurer', 'Dr. Ajay Hariani'),
-                _buildCommitteeItem('Joint Organizing Secretaries', 'Dr. Devayani Barve Venkat, Dr. Nikunj Mody'),
+                _buildCommitteeItem(
+                  context,
+                  'President',
+                  'Dr. Medha Bhave - Organizing Chair',
+                ),
+                _buildCommitteeItem(
+                  context,
+                  'Organizing Secretaries',
+                  'Dr. Parag Telang, Dr. Preetish Bhavsar',
+                ),
+                _buildCommitteeItem(
+                  context,
+                  'Scientific Chairs',
+                  'Dr. Vinod Vij, Dr. Viraj Tambwekar',
+                ),
+                _buildCommitteeItem(context, 'Treasurer', 'Dr. Ajay Hariani'),
+                _buildCommitteeItem(
+                  context,
+                  'Joint Organizing Secretaries',
+                  'Dr. Devayani Barve Venkat, Dr. Nikunj Mody',
+                ),
 
                 SizedBox(height: 24),
 
@@ -118,15 +161,30 @@ class AboutAesurgPage extends StatelessWidget {
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     fontFamily: 'SF Pro Display',
-                    color: CupertinoColors.label,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
                 SizedBox(height: 12),
-                _buildBulletPoint('Dr. Umang Kothari - Souvenir Committee'),
-                _buildBulletPoint('Dr. Eulalia Desouza - Souvenir and Gifts Committee'),
-                _buildBulletPoint('Dr. Ashish Magdum - Scientific Committee and Workshops'),
-                _buildBulletPoint('Dr. Shivprasad Date - Audiovisual Department'),
-                _buildBulletPoint('Dr. Sudhanva Hemantkumar - Social Media Cell'),
+                _buildBulletPoint(
+                  context,
+                  'Dr. Umang Kothari - Souvenir Committee',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Dr. Eulalia Desouza - Souvenir and Gifts Committee',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Dr. Ashish Magdum - Scientific Committee and Workshops',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Dr. Shivprasad Date - Audiovisual Department',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Dr. Sudhanva Hemantkumar - Social Media Cell',
+                ),
 
                 SizedBox(height: 32),
 
@@ -142,10 +200,10 @@ class AboutAesurgPage extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 16),
-                _buildBulletPoint('Dr. Rakesh Kalra'),
-                _buildBulletPoint('Dr. L. D. Dhami'),
-                _buildBulletPoint('Dr. Anil Tibrewala'),
-                _buildBulletPoint('Dr. Satish Arolkar'),
+                _buildBulletPoint(context, 'Dr. Rakesh Kalra'),
+                _buildBulletPoint(context, 'Dr. L. D. Dhami'),
+                _buildBulletPoint(context, 'Dr. Anil Tibrewala'),
+                _buildBulletPoint(context, 'Dr. Satish Arolkar'),
 
                 SizedBox(height: 40),
               ],
@@ -156,7 +214,7 @@ class AboutAesurgPage extends StatelessWidget {
     );
   }
 
-  Widget _buildBulletPoint(String text) {
+  Widget _buildBulletPoint(BuildContext context, String text) {
     return Padding(
       padding: EdgeInsets.only(bottom: 14),
       child: Row(
@@ -171,7 +229,7 @@ class AboutAesurgPage extends StatelessWidget {
                 height: 1.3,
                 fontFamily: 'SF Pro Display',
                 letterSpacing: 0.2,
-                color: CupertinoColors.label,
+                color: CupertinoTheme.of(context).textTheme.textStyle.color,
               ),
             ),
           ),
@@ -184,7 +242,7 @@ class AboutAesurgPage extends StatelessWidget {
                 height: 1.5,
                 fontFamily: 'SF Pro Display',
                 letterSpacing: 0.2,
-                color: CupertinoColors.label,
+                color: CupertinoTheme.of(context).textTheme.textStyle.color,
               ),
             ),
           ),
@@ -193,7 +251,7 @@ class AboutAesurgPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCommitteeItem(String role, String names) {
+  Widget _buildCommitteeItem(BuildContext context, String role, String names) {
     return Padding(
       padding: EdgeInsets.only(bottom: 16),
       child: Column(
@@ -206,7 +264,7 @@ class AboutAesurgPage extends StatelessWidget {
               fontWeight: FontWeight.w600,
               fontFamily: 'SF Pro Display',
               letterSpacing: 0.2,
-              color: CupertinoColors.label,
+              color: CupertinoTheme.of(context).textTheme.textStyle.color,
             ),
           ),
           SizedBox(height: 4),
@@ -217,7 +275,7 @@ class AboutAesurgPage extends StatelessWidget {
               height: 1.5,
               fontFamily: 'SF Pro Display',
               letterSpacing: 0.2,
-              color: CupertinoColors.label,
+              color: CupertinoTheme.of(context).textTheme.textStyle.color,
             ),
           ),
         ],

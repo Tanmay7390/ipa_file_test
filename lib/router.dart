@@ -1,24 +1,24 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_test_22/drawer.dart';
-import 'package:flutter_test_22/tabs/home_tab.dart';
-import 'package:flutter_test_22/tabs/agenda_tab.dart';
-import 'package:flutter_test_22/tabs/speakers_tab.dart';
-import 'package:flutter_test_22/tabs/attendees_tab.dart';
-import 'package:flutter_test_22/tabs/exhibitors_tab.dart';
-import 'package:flutter_test_22/tabs/more_tab.dart';
-import 'package:flutter_test_22/pages/settings_page.dart';
-import 'package:flutter_test_22/pages/notifications_page.dart';
-import 'package:flutter_test_22/pages/profile_page.dart';
-import 'package:flutter_test_22/pages/login_page.dart';
-import 'package:flutter_test_22/pages/onboarding_page.dart';
-import 'package:flutter_test_22/pages/more/about_aesurg_page.dart';
-import 'package:flutter_test_22/pages/more/international_faculty_page.dart';
-import 'package:flutter_test_22/pages/more/committee_messages_page.dart';
-import 'package:flutter_test_22/pages/more/venue_info_page.dart';
-import 'package:flutter_test_22/pages/more/about_mumbai_page.dart';
-import 'package:flutter_test_22/pages/more/contact_info_page.dart';
-import 'package:flutter_test_22/pages/more/iaaps_member_page.dart';
-import 'package:flutter_test_22/services/auth_service.dart';
+import 'package:aesurg26/drawer.dart';
+import 'package:aesurg26/tabs/home_tab.dart';
+import 'package:aesurg26/tabs/agenda_tab.dart';
+import 'package:aesurg26/tabs/speakers_tab.dart';
+import 'package:aesurg26/tabs/attendees_tab.dart';
+import 'package:aesurg26/tabs/exhibitors_tab.dart';
+import 'package:aesurg26/tabs/more_tab.dart';
+import 'package:aesurg26/pages/settings_page.dart';
+import 'package:aesurg26/pages/notifications_page.dart';
+import 'package:aesurg26/pages/profile_page.dart';
+import 'package:aesurg26/pages/login_page.dart';
+import 'package:aesurg26/pages/onboarding_page.dart';
+import 'package:aesurg26/pages/more/about_aesurg_page.dart';
+import 'package:aesurg26/pages/more/international_faculty_page.dart';
+import 'package:aesurg26/pages/more/committee_messages_page.dart';
+import 'package:aesurg26/pages/more/venue_info_page.dart';
+import 'package:aesurg26/pages/more/about_mumbai_page.dart';
+import 'package:aesurg26/pages/more/contact_info_page.dart';
+import 'package:aesurg26/pages/more/iaaps_member_page.dart';
+import 'package:aesurg26/services/auth_service.dart';
 import 'package:go_router/go_router.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -52,13 +52,13 @@ final appRouter = GoRouter(
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           // Slide from left to right (reverse direction)
           return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(-1.0, 0.0), // Start from left
-              end: Offset.zero, // End at center
-            ).animate(CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeInOut,
-            )),
+            position:
+                Tween<Offset>(
+                  begin: const Offset(-1.0, 0.0), // Start from left
+                  end: Offset.zero, // End at center
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                ),
             child: child,
           );
         },
@@ -66,10 +66,8 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/login',
-      pageBuilder: (context, state) => CupertinoPage(
-        key: state.pageKey,
-        child: const LoginPage(),
-      ),
+      pageBuilder: (context, state) =>
+          CupertinoPage(key: state.pageKey, child: const LoginPage()),
     ),
     GoRoute(
       path: '/bookmarks',

@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_test_22/components/page_scaffold.dart';
+import 'package:aesurg26/components/page_scaffold.dart';
 
 class IaapsMemberPage extends StatelessWidget {
   const IaapsMemberPage({super.key});
@@ -25,7 +25,7 @@ class IaapsMemberPage extends StatelessWidget {
                     height: 1.5,
                     fontFamily: 'SF Pro Display',
                     letterSpacing: 0.2,
-                    color: CupertinoColors.label,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
 
@@ -43,13 +43,34 @@ class IaapsMemberPage extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 16),
-                _buildBulletPoint('Discounted conference registration rates'),
-                _buildBulletPoint('Access to members-only scientific content'),
-                _buildBulletPoint('Networking opportunities with leading aesthetic surgeons'),
-                _buildBulletPoint('Regular updates on advances in aesthetic surgery'),
-                _buildBulletPoint('Participation in IAAPS educational programs'),
-                _buildBulletPoint('Subscription to IAAPS publications'),
-                _buildBulletPoint('Voting rights in association matters'),
+                _buildBulletPoint(
+                  context,
+                  'Discounted conference registration rates',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Access to members-only scientific content',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Networking opportunities with leading aesthetic surgeons',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Regular updates on advances in aesthetic surgery',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Participation in IAAPS educational programs',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Subscription to IAAPS publications',
+                ),
+                _buildBulletPoint(
+                  context,
+                  'Voting rights in association matters',
+                ),
 
                 SizedBox(height: 32),
 
@@ -72,7 +93,7 @@ class IaapsMemberPage extends StatelessWidget {
                     height: 1.5,
                     fontFamily: 'SF Pro Display',
                     letterSpacing: 0.2,
-                    color: CupertinoColors.label,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
                 SizedBox(height: 12),
@@ -83,7 +104,7 @@ class IaapsMemberPage extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                     fontFamily: 'SF Pro Display',
                     letterSpacing: 0.2,
-                    color: CupertinoColors.label,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
                 SizedBox(height: 4),
@@ -94,7 +115,7 @@ class IaapsMemberPage extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                     fontFamily: 'SF Pro Display',
                     letterSpacing: 0.2,
-                    color: CupertinoColors.label,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
 
@@ -107,7 +128,7 @@ class IaapsMemberPage extends StatelessWidget {
     );
   }
 
-  Widget _buildBulletPoint(String text) {
+  Widget _buildBulletPoint(BuildContext context, String text) {
     return Padding(
       padding: EdgeInsets.only(bottom: 14),
       child: Row(
@@ -122,7 +143,7 @@ class IaapsMemberPage extends StatelessWidget {
                 height: 1.3,
                 fontFamily: 'SF Pro Display',
                 letterSpacing: 0.2,
-                color: CupertinoColors.label,
+                color: CupertinoTheme.of(context).textTheme.textStyle.color,
               ),
             ),
           ),
@@ -135,7 +156,7 @@ class IaapsMemberPage extends StatelessWidget {
                 height: 1.5,
                 fontFamily: 'SF Pro Display',
                 letterSpacing: 0.2,
-                color: CupertinoColors.label,
+                color: CupertinoTheme.of(context).textTheme.textStyle.color,
               ),
             ),
           ),

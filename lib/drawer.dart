@@ -3,9 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // Add this import for kIsWeb
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test_22/theme_provider.dart'; // Add this import
+import 'package:aesurg26/theme_provider.dart'; // Add this import
 import 'package:go_router/go_router.dart';
-import 'package:flutter_test_22/services/auth_service.dart';
+import 'package:aesurg26/services/auth_service.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 // Helper function to check if device is tablet
@@ -874,7 +874,7 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar>
                       border: Border(
                         top: BorderSide(
                           color: CupertinoColors.systemGrey,
-                          width: 0.5,
+                          width: 0.2,
                         ),
                       ),
                     ),

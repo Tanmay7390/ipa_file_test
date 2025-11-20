@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_test_22/components/page_scaffold.dart';
+import 'package:aesurg26/components/page_scaffold.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 enum ConnectionStatus { notConnected, pending, connected }
@@ -8,13 +8,18 @@ enum ConnectionStatus { notConnected, pending, connected }
 class CompanyRepresentativeDetailPage extends StatefulWidget {
   final Map<String, dynamic> representative;
 
-  const CompanyRepresentativeDetailPage({super.key, required this.representative});
+  const CompanyRepresentativeDetailPage({
+    super.key,
+    required this.representative,
+  });
 
   @override
-  State<CompanyRepresentativeDetailPage> createState() => _CompanyRepresentativeDetailPageState();
+  State<CompanyRepresentativeDetailPage> createState() =>
+      _CompanyRepresentativeDetailPageState();
 }
 
-class _CompanyRepresentativeDetailPageState extends State<CompanyRepresentativeDetailPage> {
+class _CompanyRepresentativeDetailPageState
+    extends State<CompanyRepresentativeDetailPage> {
   bool _isAboutExpanded = false;
   bool _isAdditionalInfoExpanded = false;
   bool _isScheduleExpanded = false;
@@ -24,8 +29,9 @@ class _CompanyRepresentativeDetailPageState extends State<CompanyRepresentativeD
   void _showMeetingSheet() {
     showCupertinoModalPopup(
       context: context,
-      builder: (BuildContext context) =>
-          _MeetingFormSheet(representativeName: widget.representative['name'] ?? ''),
+      builder: (BuildContext context) => _MeetingFormSheet(
+        representativeName: widget.representative['name'] ?? '',
+      ),
     );
   }
 
@@ -166,7 +172,9 @@ class _CompanyRepresentativeDetailPageState extends State<CompanyRepresentativeD
                 ),
                 SizedBox(height: 8),
                 Text(
-                  widget.representative['title'] ?? widget.representative['specialty'] ?? '',
+                  widget.representative['title'] ??
+                      widget.representative['specialty'] ??
+                      '',
                   style: TextStyle(
                     fontSize: 16,
                     color: CupertinoColors.secondaryLabel.resolveFrom(context),

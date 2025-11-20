@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_test_22/router.dart';
-import 'package:flutter_test_22/theme_provider.dart'; // Add this import
+import 'package:aesurg26/router.dart';
+import 'package:aesurg26/theme_provider.dart'; // Add this import
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -36,7 +36,9 @@ class MyApp extends ConsumerWidget {
             brightness: brightness,
             textTheme: CupertinoTextThemeData(
               textStyle: _applyFontFamily(defaultTextTheme.textStyle),
-              actionTextStyle: _applyFontFamily(defaultTextTheme.actionTextStyle),
+              actionTextStyle: _applyFontFamily(
+                defaultTextTheme.actionTextStyle,
+              ),
               tabLabelTextStyle: _applyFontFamily(
                 defaultTextTheme.tabLabelTextStyle,
               ),
@@ -46,7 +48,9 @@ class MyApp extends ConsumerWidget {
               navLargeTitleTextStyle: _applyFontFamily(
                 defaultTextTheme.navLargeTitleTextStyle,
               ),
-              pickerTextStyle: _applyFontFamily(defaultTextTheme.pickerTextStyle),
+              pickerTextStyle: _applyFontFamily(
+                defaultTextTheme.pickerTextStyle,
+              ),
               dateTimePickerTextStyle: _applyFontFamily(
                 defaultTextTheme.dateTimePickerTextStyle,
               ),

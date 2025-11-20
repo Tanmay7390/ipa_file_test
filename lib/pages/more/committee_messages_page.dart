@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_test_22/components/page_scaffold.dart';
+import 'package:aesurg26/components/page_scaffold.dart';
 
 class CommitteeMessagesPage extends StatelessWidget {
   const CommitteeMessagesPage({super.key});
@@ -38,7 +38,7 @@ class CommitteeMessagesPage extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                     fontFamily: 'SF Pro Display',
                     letterSpacing: 0.2,
-                    color: CupertinoColors.label,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
                 SizedBox(height: 12),
@@ -49,7 +49,7 @@ class CommitteeMessagesPage extends StatelessWidget {
                     height: 1.5,
                     fontFamily: 'SF Pro Display',
                     letterSpacing: 0.2,
-                    color: CupertinoColors.label,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
 
@@ -74,7 +74,7 @@ class CommitteeMessagesPage extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                     fontFamily: 'SF Pro Display',
                     letterSpacing: 0.2,
-                    color: CupertinoColors.label,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
                 SizedBox(height: 12),
@@ -85,7 +85,7 @@ class CommitteeMessagesPage extends StatelessWidget {
                     height: 1.5,
                     fontFamily: 'SF Pro Display',
                     letterSpacing: 0.2,
-                    color: CupertinoColors.label,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
 
@@ -110,7 +110,7 @@ class CommitteeMessagesPage extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                     fontFamily: 'SF Pro Display',
                     letterSpacing: 0.2,
-                    color: CupertinoColors.label,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
                 SizedBox(height: 12),
@@ -121,7 +121,7 @@ class CommitteeMessagesPage extends StatelessWidget {
                     height: 1.5,
                     fontFamily: 'SF Pro Display',
                     letterSpacing: 0.2,
-                    color: CupertinoColors.label,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
 
@@ -146,7 +146,7 @@ class CommitteeMessagesPage extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                     fontFamily: 'SF Pro Display',
                     letterSpacing: 0.2,
-                    color: CupertinoColors.label,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
                 SizedBox(height: 12),
@@ -157,7 +157,7 @@ class CommitteeMessagesPage extends StatelessWidget {
                     height: 1.5,
                     fontFamily: 'SF Pro Display',
                     letterSpacing: 0.2,
-                    color: CupertinoColors.label,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
 

@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test_22/theme_provider.dart';
+import 'package:aesurg26/theme_provider.dart';
 import '../components/page_scaffold.dart';
 import '../pages/exhibitor_detail_page.dart';
 
@@ -30,9 +30,12 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
       'badge': 'Platinum Sponsor',
       'website': 'www.medtechinnovations.com',
       'description': 'Leading manufacturer of advanced surgical instruments',
-      'about': 'MedTech Innovations is a leading manufacturer of advanced surgical instruments with over 25 years of experience in the medical device industry. We specialize in precision-engineered tools that enhance surgical outcomes and improve patient safety. Our commitment to innovation and quality has made us a trusted partner for hospitals and surgical centers worldwide.',
-      'photo': 'https://ui-avatars.com/api/?name=MedTech+Innovations&size=200&background=5856D6&color=fff&bold=true',
-      'mediaUrl': 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800',
+      'about':
+          'MedTech Innovations is a leading manufacturer of advanced surgical instruments with over 25 years of experience in the medical device industry. We specialize in precision-engineered tools that enhance surgical outcomes and improve patient safety. Our commitment to innovation and quality has made us a trusted partner for hospitals and surgical centers worldwide.',
+      'photo':
+          'https://ui-avatars.com/api/?name=MedTech+Innovations&size=200&background=5856D6&color=fff&bold=true',
+      'mediaUrl':
+          'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800',
       'representatives': [
         {
           'name': 'Michael Chen',
@@ -48,14 +51,8 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
         },
       ],
       'documents': [
-        {
-          'name': 'Product Catalog 2024',
-          'size': '4.2 MB',
-        },
-        {
-          'name': 'Technical Specifications',
-          'size': '1.8 MB',
-        },
+        {'name': 'Product Catalog 2024', 'size': '4.2 MB'},
+        {'name': 'Technical Specifications', 'size': '1.8 MB'},
       ],
       'sessions': [
         {
@@ -78,9 +75,12 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
       'badge': 'Gold Sponsor',
       'website': 'www.biosurgical.com',
       'description': 'Innovative medical device solutions for modern surgery',
-      'about': 'BioSurgical Solutions develops cutting-edge medical devices that revolutionize surgical procedures. Our products combine advanced biomaterials with intelligent design to minimize invasiveness and accelerate patient recovery. With a focus on research and development, we continue to push the boundaries of what\'s possible in modern surgery.',
-      'photo': 'https://ui-avatars.com/api/?name=BioSurgical+Solutions&size=200&background=34C759&color=fff&bold=true',
-      'mediaUrl': 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800',
+      'about':
+          'BioSurgical Solutions develops cutting-edge medical devices that revolutionize surgical procedures. Our products combine advanced biomaterials with intelligent design to minimize invasiveness and accelerate patient recovery. With a focus on research and development, we continue to push the boundaries of what\'s possible in modern surgery.',
+      'photo':
+          'https://ui-avatars.com/api/?name=BioSurgical+Solutions&size=200&background=34C759&color=fff&bold=true',
+      'mediaUrl':
+          'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800',
       'representatives': [
         {
           'name': 'David Kim',
@@ -90,10 +90,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
         },
       ],
       'documents': [
-        {
-          'name': 'Clinical Studies Report',
-          'size': '6.5 MB',
-        },
+        {'name': 'Clinical Studies Report', 'size': '6.5 MB'},
       ],
       'sessions': [
         {
@@ -111,9 +108,12 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
       'badge': 'Exhibitor',
       'website': 'www.surgicare.com',
       'description': 'Complete operating room equipment and systems',
-      'about': 'SurgiCare Systems provides comprehensive operating room solutions, from surgical tables and lighting systems to advanced monitoring equipment. Our integrated approach ensures seamless workflow and optimal patient care. We work closely with healthcare facilities to design custom solutions that meet their specific needs and budget requirements.',
-      'photo': 'https://ui-avatars.com/api/?name=SurgiCare+Systems&size=200&background=007AFF&color=fff&bold=true',
-      'mediaUrl': 'https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=800',
+      'about':
+          'SurgiCare Systems provides comprehensive operating room solutions, from surgical tables and lighting systems to advanced monitoring equipment. Our integrated approach ensures seamless workflow and optimal patient care. We work closely with healthcare facilities to design custom solutions that meet their specific needs and budget requirements.',
+      'photo':
+          'https://ui-avatars.com/api/?name=SurgiCare+Systems&size=200&background=007AFF&color=fff&bold=true',
+      'mediaUrl':
+          'https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=800',
       'representatives': [
         {
           'name': 'Jennifer Martinez',
@@ -129,14 +129,8 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
         },
       ],
       'documents': [
-        {
-          'name': 'Equipment Brochure',
-          'size': '3.1 MB',
-        },
-        {
-          'name': 'Installation Guide',
-          'size': '2.4 MB',
-        },
+        {'name': 'Equipment Brochure', 'size': '3.1 MB'},
+        {'name': 'Installation Guide', 'size': '2.4 MB'},
       ],
       'sessions': [
         {
@@ -154,9 +148,12 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
       'badge': 'Silver Sponsor',
       'website': 'www.advancedimaging.com',
       'description': 'State-of-the-art surgical imaging solutions',
-      'about': 'Advanced Imaging Corp specializes in cutting-edge imaging technology for surgical applications. Our high-resolution imaging systems provide surgeons with unprecedented visibility and precision during procedures. We leverage AI and machine learning to enhance image quality and assist in real-time decision-making.',
-      'photo': 'https://ui-avatars.com/api/?name=Advanced+Imaging&size=200&background=FF9500&color=fff&bold=true',
-      'mediaUrl': 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=800',
+      'about':
+          'Advanced Imaging Corp specializes in cutting-edge imaging technology for surgical applications. Our high-resolution imaging systems provide surgeons with unprecedented visibility and precision during procedures. We leverage AI and machine learning to enhance image quality and assist in real-time decision-making.',
+      'photo':
+          'https://ui-avatars.com/api/?name=Advanced+Imaging&size=200&background=FF9500&color=fff&bold=true',
+      'mediaUrl':
+          'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=800',
       'representatives': [
         {
           'name': 'Amanda Foster',
@@ -166,10 +163,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
         },
       ],
       'documents': [
-        {
-          'name': 'Imaging Solutions Overview',
-          'size': '5.7 MB',
-        },
+        {'name': 'Imaging Solutions Overview', 'size': '5.7 MB'},
       ],
       'sessions': [
         {
@@ -187,9 +181,12 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
       'badge': 'Platinum Sponsor',
       'website': 'www.precisionrobotics.com',
       'description': 'Robotic-assisted surgical systems',
-      'about': 'Precision Robotics is at the forefront of robotic-assisted surgery, developing systems that enhance surgeon capabilities and improve patient outcomes. Our robotic platforms offer unmatched precision, stability, and control, enabling minimally invasive procedures with superior results. We are committed to advancing the future of surgery through continuous innovation.',
-      'photo': 'https://ui-avatars.com/api/?name=Precision+Robotics&size=200&background=FF3B30&color=fff&bold=true',
-      'mediaUrl': 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800',
+      'about':
+          'Precision Robotics is at the forefront of robotic-assisted surgery, developing systems that enhance surgeon capabilities and improve patient outcomes. Our robotic platforms offer unmatched precision, stability, and control, enabling minimally invasive procedures with superior results. We are committed to advancing the future of surgery through continuous innovation.',
+      'photo':
+          'https://ui-avatars.com/api/?name=Precision+Robotics&size=200&background=FF3B30&color=fff&bold=true',
+      'mediaUrl':
+          'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800',
       'representatives': [
         {
           'name': 'Dr. James Wilson',
@@ -205,14 +202,8 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
         },
       ],
       'documents': [
-        {
-          'name': 'Robotic Surgery White Paper',
-          'size': '8.3 MB',
-        },
-        {
-          'name': 'Training Materials',
-          'size': '12.1 MB',
-        },
+        {'name': 'Robotic Surgery White Paper', 'size': '8.3 MB'},
+        {'name': 'Training Materials', 'size': '12.1 MB'},
       ],
       'sessions': [
         {
@@ -235,9 +226,12 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
       'badge': 'Exhibitor',
       'website': 'www.sterileguard.com',
       'description': 'Advanced sterilization and infection control',
-      'about': 'SterileGuard Technologies provides advanced sterilization equipment and infection control solutions for healthcare facilities. Our systems ensure the highest levels of sterility while maintaining efficiency and ease of use. We help hospitals meet stringent regulatory requirements and protect patient safety.',
-      'photo': 'https://ui-avatars.com/api/?name=SterileGuard&size=200&background=AF52DE&color=fff&bold=true',
-      'mediaUrl': 'https://images.unsplash.com/photo-1581093458791-9d42e2d19e0e?w=800',
+      'about':
+          'SterileGuard Technologies provides advanced sterilization equipment and infection control solutions for healthcare facilities. Our systems ensure the highest levels of sterility while maintaining efficiency and ease of use. We help hospitals meet stringent regulatory requirements and protect patient safety.',
+      'photo':
+          'https://ui-avatars.com/api/?name=SterileGuard&size=200&background=AF52DE&color=fff&bold=true',
+      'mediaUrl':
+          'https://images.unsplash.com/photo-1581093458791-9d42e2d19e0e?w=800',
       'representatives': [
         {
           'name': 'Thomas Brown',
@@ -247,10 +241,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
         },
       ],
       'documents': [
-        {
-          'name': 'Compliance Documentation',
-          'size': '2.9 MB',
-        },
+        {'name': 'Compliance Documentation', 'size': '2.9 MB'},
       ],
       'sessions': [
         {
@@ -268,9 +259,12 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
       'badge': 'Gold Sponsor',
       'website': 'www.vitalmed.com',
       'description': 'Complete range of medical and surgical supplies',
-      'about': 'VitalMed Supplies is a trusted distributor of medical and surgical supplies, serving healthcare providers with quality products at competitive prices. Our extensive inventory includes everything from basic consumables to specialized surgical supplies. We pride ourselves on reliable delivery and exceptional customer service.',
-      'photo': 'https://ui-avatars.com/api/?name=VitalMed+Supplies&size=200&background=32ADE6&color=fff&bold=true',
-      'mediaUrl': 'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800',
+      'about':
+          'VitalMed Supplies is a trusted distributor of medical and surgical supplies, serving healthcare providers with quality products at competitive prices. Our extensive inventory includes everything from basic consumables to specialized surgical supplies. We pride ourselves on reliable delivery and exceptional customer service.',
+      'photo':
+          'https://ui-avatars.com/api/?name=VitalMed+Supplies&size=200&background=32ADE6&color=fff&bold=true',
+      'mediaUrl':
+          'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800',
       'representatives': [
         {
           'name': 'Patricia Davis',
@@ -280,10 +274,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
         },
       ],
       'documents': [
-        {
-          'name': 'Supply Catalog 2024',
-          'size': '7.4 MB',
-        },
+        {'name': 'Supply Catalog 2024', 'size': '7.4 MB'},
       ],
       'sessions': [
         {
@@ -301,9 +292,12 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
       'badge': 'Exhibitor',
       'website': 'www.surgeonwear.com',
       'description': 'Premium surgical apparel and protective wear',
-      'about': 'SurgeonWear Pro manufactures premium surgical apparel designed for comfort, protection, and performance. Our products incorporate advanced fabrics and ergonomic designs to support healthcare professionals throughout their shifts. We understand the demands of the surgical environment and deliver apparel that meets those challenges.',
-      'photo': 'https://ui-avatars.com/api/?name=SurgeonWear+Pro&size=200&background=FFCC00&color=333&bold=true',
-      'mediaUrl': 'https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=800',
+      'about':
+          'SurgeonWear Pro manufactures premium surgical apparel designed for comfort, protection, and performance. Our products incorporate advanced fabrics and ergonomic designs to support healthcare professionals throughout their shifts. We understand the demands of the surgical environment and deliver apparel that meets those challenges.',
+      'photo':
+          'https://ui-avatars.com/api/?name=SurgeonWear+Pro&size=200&background=FFCC00&color=333&bold=true',
+      'mediaUrl':
+          'https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=800',
       'representatives': [
         {
           'name': 'Kevin White',
@@ -313,10 +307,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
         },
       ],
       'documents': [
-        {
-          'name': 'Apparel Catalog',
-          'size': '4.6 MB',
-        },
+        {'name': 'Apparel Catalog', 'size': '4.6 MB'},
       ],
       'sessions': [
         {
@@ -334,9 +325,12 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
       'badge': 'Silver Sponsor',
       'website': 'www.pharmasurg.com',
       'description': 'Surgical pharmaceuticals and anesthetics',
-      'about': 'PharmaSurg International specializes in surgical pharmaceuticals and anesthetics, providing safe and effective medications for perioperative care. Our research-driven approach ensures that we deliver products that meet the highest standards of quality and efficacy. We partner with healthcare providers to improve patient outcomes and surgical success.',
-      'photo': 'https://ui-avatars.com/api/?name=PharmaSurg&size=200&background=FF2D55&color=fff&bold=true',
-      'mediaUrl': 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=800',
+      'about':
+          'PharmaSurg International specializes in surgical pharmaceuticals and anesthetics, providing safe and effective medications for perioperative care. Our research-driven approach ensures that we deliver products that meet the highest standards of quality and efficacy. We partner with healthcare providers to improve patient outcomes and surgical success.',
+      'photo':
+          'https://ui-avatars.com/api/?name=PharmaSurg&size=200&background=FF2D55&color=fff&bold=true',
+      'mediaUrl':
+          'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=800',
       'representatives': [
         {
           'name': 'Dr. Rachel Green',
@@ -352,14 +346,8 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
         },
       ],
       'documents': [
-        {
-          'name': 'Product Monographs',
-          'size': '5.2 MB',
-        },
-        {
-          'name': 'Safety Data Sheets',
-          'size': '3.8 MB',
-        },
+        {'name': 'Product Monographs', 'size': '5.2 MB'},
+        {'name': 'Safety Data Sheets', 'size': '3.8 MB'},
       ],
       'sessions': [
         {
@@ -377,9 +365,12 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
       'badge': 'Platinum Sponsor',
       'website': 'www.digitalhealthanalytics.com',
       'description': 'Healthcare IT solutions and data analytics',
-      'about': 'Digital Health Analytics provides comprehensive healthcare IT solutions and data analytics platforms that transform how healthcare organizations operate. Our cloud-based systems integrate seamlessly with existing infrastructure, providing real-time insights and improving operational efficiency. We empower healthcare providers with the tools they need to deliver better patient care.',
-      'photo': 'https://ui-avatars.com/api/?name=Digital+Health&size=200&background=30B0C7&color=fff&bold=true',
-      'mediaUrl': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800',
+      'about':
+          'Digital Health Analytics provides comprehensive healthcare IT solutions and data analytics platforms that transform how healthcare organizations operate. Our cloud-based systems integrate seamlessly with existing infrastructure, providing real-time insights and improving operational efficiency. We empower healthcare providers with the tools they need to deliver better patient care.',
+      'photo':
+          'https://ui-avatars.com/api/?name=Digital+Health&size=200&background=30B0C7&color=fff&bold=true',
+      'mediaUrl':
+          'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800',
       'representatives': [
         {
           'name': 'Alex Turner',
@@ -395,14 +386,8 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
         },
       ],
       'documents': [
-        {
-          'name': 'Platform Overview',
-          'size': '6.9 MB',
-        },
-        {
-          'name': 'Integration Guide',
-          'size': '4.3 MB',
-        },
+        {'name': 'Platform Overview', 'size': '6.9 MB'},
+        {'name': 'Integration Guide', 'size': '4.3 MB'},
       ],
       'sessions': [
         {
@@ -427,7 +412,10 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
   }
 
   List<String> _getAllCategories() {
-    final categories = _exhibitors.map((e) => e['category'].toString()).toSet().toList();
+    final categories = _exhibitors
+        .map((e) => e['category'].toString())
+        .toSet()
+        .toList();
     categories.sort();
     return categories;
   }
@@ -445,7 +433,8 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
     setState(() {
       _filteredExhibitors = _exhibitors.where((exhibitor) {
         // Category filter
-        if (_selectedCategory != null && exhibitor['category'] != _selectedCategory) {
+        if (_selectedCategory != null &&
+            exhibitor['category'] != _selectedCategory) {
           return false;
         }
 
@@ -529,7 +518,11 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
             child: Icon(
               CupertinoIcons.list_bullet,
               size: 18,
-              color: !_isGridView ? Colors.white : (isDarkMode ? CupertinoColors.systemGrey : CupertinoColors.systemGrey2),
+              color: !_isGridView
+                  ? Colors.white
+                  : (isDarkMode
+                        ? CupertinoColors.systemGrey
+                        : CupertinoColors.systemGrey2),
             ),
           ),
           true: Container(
@@ -538,7 +531,11 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
             child: Icon(
               CupertinoIcons.square_grid_2x2,
               size: 18,
-              color: _isGridView ? Colors.white : (isDarkMode ? CupertinoColors.systemGrey : CupertinoColors.systemGrey2),
+              color: _isGridView
+                  ? Colors.white
+                  : (isDarkMode
+                        ? CupertinoColors.systemGrey
+                        : CupertinoColors.systemGrey2),
             ),
           ),
         },
@@ -575,13 +572,16 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
               switchInCurve: Curves.easeInOutCubic,
               switchOutCurve: Curves.easeInOutCubic,
               transitionBuilder: (child, animation) {
-                final offsetAnimation = Tween<Offset>(
-                  begin: const Offset(0.15, 0),
-                  end: Offset.zero,
-                ).animate(CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeInOutCubic,
-                ));
+                final offsetAnimation =
+                    Tween<Offset>(
+                      begin: const Offset(0.15, 0),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeInOutCubic,
+                      ),
+                    );
 
                 return FadeTransition(
                   opacity: animation,
@@ -652,8 +652,8 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
           color: isSelected
               ? CupertinoColors.activeBlue
               : (isDarkMode
-                  ? CupertinoColors.systemGrey6.darkColor
-                  : CupertinoColors.systemGrey6),
+                    ? CupertinoColors.systemGrey6.darkColor
+                    : CupertinoColors.systemGrey6),
           borderRadius: BorderRadius.circular(20),
           boxShadow: isSelected
               ? [
@@ -715,7 +715,12 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
         final isLast = index == _filteredExhibitors.length - 1;
         return Padding(
           padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
-          child: _buildExhibitorListCard(exhibitor, isDarkMode, cardBg, textColor),
+          child: _buildExhibitorListCard(
+            exhibitor,
+            isDarkMode,
+            cardBg,
+            textColor,
+          ),
         );
       },
     );
@@ -741,14 +746,8 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: isDarkMode
-                ? [
-                    const Color(0xFF1C1C1E),
-                    const Color(0xFF1A1A1C),
-                  ]
-                : [
-                    Colors.white,
-                    const Color(0xFFFAFAFA),
-                  ],
+                ? [const Color(0xFF1C1C1E), const Color(0xFF1A1A1C)]
+                : [Colors.white, const Color(0xFFFAFAFA)],
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
@@ -773,7 +772,9 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                     Container(
                       height: 120,
                       decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
                         image: DecorationImage(
                           image: NetworkImage(exhibitor['photo']),
                           fit: BoxFit.cover,
@@ -783,7 +784,9 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                     Container(
                       height: 120,
                       decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -822,7 +825,9 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                             Container(
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
-                                color: CupertinoColors.activeBlue.withValues(alpha: 0.1),
+                                color: CupertinoColors.activeBlue.withValues(
+                                  alpha: 0.1,
+                                ),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Icon(
@@ -849,9 +854,14 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                         const Spacer(),
                         // Booth Number with enhanced design
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            color: CupertinoColors.activeBlue.withValues(alpha: 0.12),
+                            color: CupertinoColors.activeBlue.withValues(
+                              alpha: 0.12,
+                            ),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -885,18 +895,25 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
               top: 12,
               right: 12,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
                       _getBadgeColor(exhibitor['badge']),
-                      _getBadgeColor(exhibitor['badge']).withValues(alpha: 0.85),
+                      _getBadgeColor(
+                        exhibitor['badge'],
+                      ).withValues(alpha: 0.85),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: _getBadgeColor(exhibitor['badge']).withValues(alpha: 0.4),
+                      color: _getBadgeColor(
+                        exhibitor['badge'],
+                      ).withValues(alpha: 0.4),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
@@ -939,14 +956,8 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
             colors: isDarkMode
-                ? [
-                    const Color(0xFF1C1C1E),
-                    const Color(0xFF1A1A1C),
-                  ]
-                : [
-                    Colors.white,
-                    const Color(0xFFFAFAFA),
-                  ],
+                ? [const Color(0xFF1C1C1E), const Color(0xFF1A1A1C)]
+                : [Colors.white, const Color(0xFFFAFAFA)],
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
@@ -989,7 +1000,9 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                             colors: [
                               Colors.transparent,
                               isDarkMode
-                                  ? const Color(0xFF1C1C1E).withValues(alpha: 0.3)
+                                  ? const Color(
+                                      0xFF1C1C1E,
+                                    ).withValues(alpha: 0.3)
                                   : Colors.white.withValues(alpha: 0.3),
                             ],
                           ),
@@ -1000,7 +1013,10 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                   // Content
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -1025,7 +1041,9 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                               Container(
                                 padding: const EdgeInsets.all(5),
                                 decoration: BoxDecoration(
-                                  color: CupertinoColors.activeBlue.withValues(alpha: 0.1),
+                                  color: CupertinoColors.activeBlue.withValues(
+                                    alpha: 0.1,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
@@ -1052,9 +1070,14 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                           const SizedBox(height: 10),
                           // Booth Number
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
-                              color: CupertinoColors.activeBlue.withValues(alpha: 0.12),
+                              color: CupertinoColors.activeBlue.withValues(
+                                alpha: 0.12,
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -1087,7 +1110,9 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: CupertinoColors.activeBlue.withValues(alpha: 0.1),
+                        color: CupertinoColors.activeBlue.withValues(
+                          alpha: 0.1,
+                        ),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -1104,18 +1129,25 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                 top: 12,
                 left: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
                         _getBadgeColor(exhibitor['badge']),
-                        _getBadgeColor(exhibitor['badge']).withValues(alpha: 0.85),
+                        _getBadgeColor(
+                          exhibitor['badge'],
+                        ).withValues(alpha: 0.85),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: _getBadgeColor(exhibitor['badge']).withValues(alpha: 0.4),
+                        color: _getBadgeColor(
+                          exhibitor['badge'],
+                        ).withValues(alpha: 0.4),
                         blurRadius: 8,
                         offset: const Offset(0, 3),
                       ),
