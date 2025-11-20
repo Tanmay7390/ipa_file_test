@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test_22/theme_provider.dart'; // Add this import
 import 'package:go_router/go_router.dart';
 import 'package:flutter_test_22/services/auth_service.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 // Helper function to check if device is tablet
 bool isTablet(BuildContext context) {
@@ -46,7 +47,7 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
       'Speakers': '/speakers',
       'Attendees': '/attendees',
       'Exhibitors': '/exhibitors',
-      'Bookmarks': '/bookmarks',
+      'More': '/more',
       'Settings': '/settings',
       'Notifications': '/notifications',
       'Profile': '/profile',
@@ -71,6 +72,7 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
           '/speakers',
           '/attendees',
           '/exhibitors',
+          '/more',
         ].contains(GoRouterState.of(context).matchedLocation)) {
       return;
     }
@@ -98,7 +100,7 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
     if (location.startsWith('/speakers')) return 'Speakers';
     if (location.startsWith('/attendees')) return 'Attendees';
     if (location.startsWith('/exhibitors')) return 'Exhibitors';
-    if (location.startsWith('/bookmarks')) return 'Bookmarks';
+    if (location.startsWith('/more')) return 'More';
     if (location.startsWith('/settings')) return 'Settings';
     if (location.startsWith('/notifications')) return 'Notifications';
     if (location.startsWith('/profile')) return 'Profile';
@@ -113,7 +115,9 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
 
         return Container(
           decoration: BoxDecoration(
-            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+            color: isDarkMode
+                ? CupertinoColors.systemFill
+                : CupertinoTheme.of(context).scaffoldBackgroundColor,
             boxShadow: [
               BoxShadow(
                 color: isDarkMode
@@ -130,105 +134,153 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
               children: [
                 Container(
                   padding: EdgeInsets.all(20),
-                  child: Column(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        radius: 30,
-                        backgroundImage: NetworkImage(
-                          'https://i.imgur.com/QCNbOAo.png',
-                        ),
-                      ),
-                      SizedBox(height: 12),
-                      Text(
-                        'iJustine',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: CupertinoTheme.of(
-                            context,
-                          ).textTheme.textStyle.color,
-                        ),
-                      ),
-                      Text(
-                        '@ijustine',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: CupertinoColors.secondaryLabel.resolveFrom(
-                            context,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Text(
-                            '3.1K ',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: CupertinoTheme.of(
-                                context,
-                              ).textTheme.textStyle.color,
-                            ),
-                          ),
-                          Text(
-                            'Following  ',
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: CupertinoColors.secondaryLabel.resolveFrom(
-                                context,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 30,
+                              backgroundImage: NetworkImage(
+                                'https://i.imgur.com/QCNbOAo.png',
                               ),
                             ),
-                          ),
-                          Text(
-                            '1.8M ',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: CupertinoTheme.of(
-                                context,
-                              ).textTheme.textStyle.color,
-                            ),
-                          ),
-                          Text(
-                            'Followers',
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: CupertinoColors.secondaryLabel.resolveFrom(
-                                context,
+                            SizedBox(height: 12),
+                            Text(
+                              'Hi, iJustine',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'SF Pro Display',
+                                letterSpacing: 0.2,
+                                color: CupertinoTheme.of(
+                                  context,
+                                ).textTheme.textStyle.color,
                               ),
                             ),
+                          ],
+                        ),
+                      ),
+                      // Logout button
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: CupertinoColors.systemRed.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () async {
+                            // Show confirmation dialog
+                            final shouldLogout =
+                                await showCupertinoDialog<bool>(
+                                  context: context,
+                                  builder: (context) => CupertinoAlertDialog(
+                                    title: Text('Logout'),
+                                    content: Text(
+                                      'Are you sure you want to logout?',
+                                    ),
+                                    actions: [
+                                      CupertinoDialogAction(
+                                        child: Text('Cancel'),
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(false),
+                                      ),
+                                      CupertinoDialogAction(
+                                        isDestructiveAction: true,
+                                        child: Text('Logout'),
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(true),
+                                      ),
+                                    ],
+                                  ),
+                                );
+
+                            if (shouldLogout == true) {
+                              await AuthService.logout();
+                              if (context.mounted) {
+                                context.go('/onboarding');
+                              }
+                            }
+                          },
+                          child: Icon(
+                            CupertinoIcons.arrow_right_square,
+                            color: CupertinoColors.systemRed,
+                            size: 20,
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
                 ),
                 Expanded(
                   child: ListView(
-                    padding: EdgeInsets.zero,
-                    children: [
-                      (CupertinoIcons.home, 'Home'),
-                      (CupertinoIcons.calendar, 'Schedule'),
-                      (CupertinoIcons.mic_fill, 'Speakers'),
-                      (CupertinoIcons.person_2_fill, 'Attendees'),
-                      (CupertinoIcons.building_2_fill, 'Exhibitors'),
-                      (CupertinoIcons.bookmark, 'Bookmarks'),
-                      (CupertinoIcons.settings, 'Settings'),
-                      (CupertinoIcons.bell, 'Notifications'),
-                      (CupertinoIcons.person_circle, 'Profile'),
-                    ].map((item) => drawerItem(item.$1, item.$2)).toList(),
+                    padding: EdgeInsets.symmetric(vertical: 0, horizontal: 5),
+                    children:
+                        [
+                              (
+                                CupertinoIcons.house_fill,
+                                CupertinoIcons.house,
+                                'Home',
+                              ),
+                              (
+                                CupertinoIcons.calendar_circle_fill,
+                                CupertinoIcons.calendar_circle,
+                                'Schedule',
+                              ),
+                              (
+                                CupertinoIcons.mic_fill,
+                                CupertinoIcons.mic,
+                                'Speakers',
+                              ),
+                              (
+                                CupertinoIcons.person_2_fill,
+                                CupertinoIcons.person_2,
+                                'Attendees',
+                              ),
+                              (
+                                CupertinoIcons.briefcase_fill,
+                                CupertinoIcons.briefcase,
+                                'Exhibitors',
+                              ),
+                              (
+                                CupertinoIcons.ellipsis_circle_fill,
+                                CupertinoIcons.ellipsis_circle,
+                                'More',
+                              ),
+                              (
+                                CupertinoIcons.gear_alt_fill,
+                                CupertinoIcons.gear_alt,
+                                'Settings',
+                              ),
+                              (
+                                CupertinoIcons.bell_fill,
+                                CupertinoIcons.bell,
+                                'Notifications',
+                              ),
+                              (
+                                CupertinoIcons.person_circle_fill,
+                                CupertinoIcons.person_circle,
+                                'Profile',
+                              ),
+                            ]
+                            .map(
+                              (item) => drawerItem(item.$1, item.$2, item.$3),
+                            )
+                            .toList(),
                   ),
                 ),
                 // Dark mode toggle section
                 Container(
-                  padding: EdgeInsets.all(20),
+                  padding: EdgeInsets.symmetric(vertical: 10, horizontal: 30),
                   decoration: BoxDecoration(
                     border: Border(
                       top: BorderSide(
                         color: CupertinoColors.separator.resolveFrom(context),
-                        width: 0.5,
+                        width: 0.1,
                       ),
                     ),
                   ),
@@ -255,6 +307,8 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                               ).textTheme.textStyle.color,
                               fontSize: 17,
                               fontWeight: FontWeight.w400,
+                              fontFamily: 'SF Pro Display',
+                              letterSpacing: 0.2,
                             ),
                           ),
                         ],
@@ -264,73 +318,97 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                         onChanged: (value) {
                           ref.read(themeModeProvider.notifier).toggleTheme();
                         },
-                        activeTrackColor: CupertinoColors.systemBlue,
+                        activeTrackColor: Color(0xFFFFD700),
                       ),
                     ],
                   ),
                 ),
-                // Logout button
+                // Social media buttons
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   decoration: BoxDecoration(
                     border: Border(
                       top: BorderSide(
                         color: CupertinoColors.separator.resolveFrom(context),
-                        width: 0.5,
+                        width: 0.1,
                       ),
                     ),
                   ),
-                  child: CupertinoButton(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    color: CupertinoColors.systemRed,
-                    borderRadius: BorderRadius.circular(12),
-                    onPressed: () async {
-                      // Show confirmation dialog
-                      final shouldLogout = await showCupertinoDialog<bool>(
-                        context: context,
-                        builder: (context) => CupertinoAlertDialog(
-                          title: Text('Logout'),
-                          content: Text('Are you sure you want to logout?'),
-                          actions: [
-                            CupertinoDialogAction(
-                              child: Text('Cancel'),
-                              onPressed: () => Navigator.of(context).pop(false),
-                            ),
-                            CupertinoDialogAction(
-                              isDestructiveAction: true,
-                              child: Text('Logout'),
-                              onPressed: () => Navigator.of(context).pop(true),
-                            ),
-                          ],
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Facebook
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Color(0xFF1877F2),
+                          shape: BoxShape.circle,
                         ),
-                      );
-
-                      if (shouldLogout == true) {
-                        await AuthService.logout();
-                        if (context.mounted) {
-                          context.go('/onboarding');
-                        }
-                      }
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          CupertinoIcons.arrow_right_square,
-                          color: CupertinoColors.white,
-                          size: 20,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Logout',
-                          style: TextStyle(
+                        child: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () {
+                            // TODO: Open Facebook link
+                          },
+                          child: FaIcon(
+                            FontAwesomeIcons.facebookF,
                             color: CupertinoColors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
+                            size: 20,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      SizedBox(width: 20),
+                      // Instagram
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Color(0xFFE4405F),
+                          shape: BoxShape.circle,
+                        ),
+                        child: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () {
+                            // TODO: Open Instagram link
+                          },
+                          child: FaIcon(
+                            FontAwesomeIcons.instagram,
+                            color: CupertinoColors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 20),
+                      // LinkedIn
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Color(0xFF0A66C2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () {
+                            // TODO: Open LinkedIn link
+                          },
+                          child: FaIcon(
+                            FontAwesomeIcons.linkedinIn,
+                            color: CupertinoColors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Logo at bottom
+                Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    height: 80,
+                    alignment: Alignment.centerLeft,
                   ),
                 ),
               ],
@@ -341,45 +419,58 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
     );
   }
 
-  Widget drawerItem(IconData icon, String title) {
+  Widget drawerItem(IconData filledIcon, IconData outlinedIcon, String title) {
     return Consumer(
       builder: (context, ref, child) {
         bool isSelected = getCurrentPageName() == title;
-        // final isDarkMode = ref.watch(isDarkModeProvider);
 
         return Container(
           margin: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          child: CupertinoButton(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            alignment: Alignment.centerLeft,
-            borderRadius: BorderRadius.circular(12),
-            color: isSelected
-                ? CupertinoColors.systemBlue
-                      .resolveFrom(context)
-                      .withOpacity(0.1)
+          child: Container(
+            decoration: isSelected
+                ? BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFFFFD700), Color(0xFFFF9500)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  )
                 : null,
-            onPressed: () => navigateToPage(title),
-            child: Row(
-              children: [
-                Icon(
-                  icon,
-                  color: isSelected
-                      ? CupertinoColors.systemBlue.resolveFrom(context)
-                      : CupertinoColors.secondaryLabel.resolveFrom(context),
-                  size: 24,
-                ),
-                SizedBox(width: 16),
-                Text(
-                  title,
-                  style: TextStyle(
+            child: CupertinoButton(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              alignment: Alignment.centerLeft,
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.transparent,
+              onPressed: () => navigateToPage(title),
+              child: Row(
+                children: [
+                  Icon(
+                    isSelected ? filledIcon : outlinedIcon,
                     color: isSelected
-                        ? CupertinoColors.systemBlue.resolveFrom(context)
-                        : CupertinoTheme.of(context).textTheme.textStyle.color,
-                    fontSize: 17,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                        ? CupertinoColors.white
+                        : CupertinoColors.secondaryLabel.resolveFrom(context),
+                    size: 24,
                   ),
-                ),
-              ],
+                  SizedBox(width: 16),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isSelected
+                          ? CupertinoColors.white
+                          : CupertinoTheme.of(
+                              context,
+                            ).textTheme.textStyle.color,
+                      fontSize: 17,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -565,6 +656,11 @@ class FloatingTabBar extends StatelessWidget {
                     label: 'Exhibitors',
                     isSelected: currentIndex == 4,
                     onTap: () => onTap(4),
+                  ),
+                  _TabBarButton(
+                    label: 'More',
+                    isSelected: currentIndex == 5,
+                    onTap: () => onTap(5),
                   ),
                 ],
               ),
@@ -787,7 +883,8 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar>
                         final isDark =
                             CupertinoTheme.of(context).brightness ==
                             Brightness.dark;
-                        final currentIndex = widget.navigationShell.currentIndex;
+                        final currentIndex =
+                            widget.navigationShell.currentIndex;
 
                         Widget buildLabel(String text, int index) {
                           final isActive = currentIndex == index;
@@ -798,7 +895,9 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar>
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.0,
                               color: isActive
-                                  ? (isDark ? const Color(0xFFFFD700) : CupertinoColors.black)
+                                  ? (isDark
+                                        ? const Color(0xFFFFD700)
+                                        : CupertinoColors.black)
                                   : CupertinoColors.systemGrey,
                             ),
                           );
@@ -909,6 +1008,25 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar>
                                 ],
                               ),
                             ),
+                            BottomNavigationBarItem(
+                              icon: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: 4.0,
+                                      bottom: 4.0,
+                                    ),
+                                    child: Icon(
+                                      currentIndex == 5
+                                          ? CupertinoIcons.ellipsis_circle_fill
+                                          : CupertinoIcons.ellipsis_circle,
+                                    ),
+                                  ),
+                                  buildLabel('More', 5),
+                                ],
+                              ),
+                            ),
                           ],
                           backgroundColor: Colors.transparent,
                           activeColor: const Color(0xFFFFD700),
@@ -950,7 +1068,8 @@ class _StandaloneDrawerWrapperState extends State<StandaloneDrawerWrapper>
         location.startsWith('/agenda') ||
         location.startsWith('/speakers') ||
         location.startsWith('/attendees') ||
-        location.startsWith('/exhibitors');
+        location.startsWith('/exhibitors') ||
+        location.startsWith('/more');
   }
 
   @override
@@ -1000,6 +1119,9 @@ class _StandaloneDrawerWrapperState extends State<StandaloneDrawerWrapper>
                         break;
                       case 4:
                         context.go('/exhibitors');
+                        break;
+                      case 5:
+                        context.go('/more');
                         break;
                     }
                   },

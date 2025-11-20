@@ -1,257 +1,296 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_test_22/components/page_scaffold.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
+import 'package:flutter_test_22/pages/company_representative_detail_page.dart';
 
-class ExhibitorDetailPage extends StatelessWidget {
+class ExhibitorDetailPage extends StatefulWidget {
   final Map<String, dynamic> exhibitor;
 
   const ExhibitorDetailPage({super.key, required this.exhibitor});
 
   @override
-  Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.systemGroupedBackground,
-      navigationBar: CupertinoNavigationBar(
-        middle: Text('Exhibitor Details'),
-        previousPageTitle: 'Exhibitors',
-        backgroundColor: CupertinoColors.systemBackground,
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with logo and basic info
-              Container(
-                color: CupertinoColors.systemBackground,
-                child: _buildHeader(),
-              ),
+  State<ExhibitorDetailPage> createState() => _ExhibitorDetailPageState();
+}
 
-              SizedBox(height: 16),
+class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
+  bool _isAboutExpanded = false;
+  bool _isVideoExpanded = true;
+  bool _isCompanyRepExpanded = false;
+  bool _isDocumentsExpanded = false;
+  VideoPlayerController? _videoPlayerController;
+  ChewieController? _chewieController;
+  bool _videoError = false;
 
-              // Action buttons row
-              Container(
-                width: double.infinity,
-                color: CupertinoColors.systemBackground,
-                padding: EdgeInsets.all(20),
-                child: _buildActionButtons(context),
-              ),
+  @override
+  void initState() {
+    super.initState();
+    _initializeVideoPlayer();
+  }
 
-              SizedBox(height: 16),
+  Future<void> _initializeVideoPlayer() async {
+    try {
+      // Try to load network video (more reliable than asset for testing)
+      _videoPlayerController = VideoPlayerController.networkUrl(
+        Uri.parse('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'),
+      );
 
-              // Video/Media section
-              if (exhibitor['videoUrl'] != null || exhibitor['mediaUrl'] != null)
-                Container(
-                  color: CupertinoColors.systemBackground,
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: _buildMediaSection(),
-                ),
+      await _videoPlayerController!.initialize();
 
-              SizedBox(height: 16),
-
-              // About section
-              if (exhibitor['about'] != null && exhibitor['about'].toString().isNotEmpty)
-                Container(
-                  color: CupertinoColors.systemBackground,
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: _buildAboutSection(),
-                ),
-
-              SizedBox(height: 16),
-
-              // Company Representatives section
-              if (exhibitor['representatives'] != null && exhibitor['representatives'].isNotEmpty)
-                Container(
-                  color: CupertinoColors.systemBackground,
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: _buildRepresentativesSection(),
-                ),
-
-              SizedBox(height: 16),
-
-              // Documents section
-              if (exhibitor['documents'] != null && exhibitor['documents'].isNotEmpty)
-                Container(
-                  color: CupertinoColors.systemBackground,
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: _buildDocumentsSection(),
-                ),
-
-              SizedBox(height: 16),
-
-              // Additional Information section
-              if (exhibitor['category'] != null || exhibitor['booth'] != null || exhibitor['website'] != null)
-                Container(
-                  color: CupertinoColors.systemBackground,
-                  child: _buildAdditionalInfoSection(),
-                ),
-
-              SizedBox(height: 16),
-
-              // Sessions section
-              if (exhibitor['sessions'] != null && exhibitor['sessions'].isNotEmpty)
-                Container(
-                  color: CupertinoColors.systemBackground,
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: _buildSessionsSection(),
-                ),
-
-              SizedBox(height: 30),
-            ],
-          ),
+      _chewieController = ChewieController(
+        videoPlayerController: _videoPlayerController!,
+        autoPlay: false,
+        looping: false,
+        allowFullScreen: true,
+        allowMuting: true,
+        showControls: true,
+        materialProgressColors: ChewieProgressColors(
+          playedColor: Color(0xFFFFD700),
+          handleColor: Color(0xFFFFD700),
+          backgroundColor: Colors.grey,
+          bufferedColor: Colors.grey.withValues(alpha: 0.5),
         ),
+      );
+
+      if (mounted) {
+        setState(() {
+          _videoError = false;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _videoError = true;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _videoPlayerController?.dispose();
+    _chewieController?.dispose();
+    super.dispose();
+  }
+
+  void _showMeetingSheet() {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) =>
+          _MeetingFormSheet(exhibitorName: widget.exhibitor['name'] ?? ''),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+
+    return CustomPageScaffold(
+      heading: 'Exhibitor Details',
+      hideSearch: true,
+      isLoading: false,
+      hideLargeTitle: true,
+      sliverList: SliverList(
+        delegate: SliverChildListDelegate([
+          // Header with photo and basic info
+          Container(
+            color: CupertinoColors.systemBackground.resolveFrom(context),
+            child: _buildHeader(isDark),
+          ),
+
+          // Action buttons
+          Container(
+            color: CupertinoColors.systemBackground.resolveFrom(context),
+            padding: EdgeInsets.only(top: 12, bottom: 12, left: 20, right: 20),
+            child: _buildActionButtons(context),
+          ),
+
+          _buildSeparator(context),
+
+          // About section
+          if (widget.exhibitor['about'] != null &&
+              widget.exhibitor['about'].toString().isNotEmpty)
+            Container(
+              color: CupertinoColors.systemBackground.resolveFrom(context),
+              padding: EdgeInsets.only(top: 12, bottom: 12),
+              child: _buildAboutSection(isDark),
+            ),
+
+          _buildSeparator(context),
+
+          // Video section
+          Container(
+            color: CupertinoColors.systemBackground.resolveFrom(context),
+            padding: EdgeInsets.zero,
+            child: _buildVideoSection(isDark),
+          ),
+
+          _buildSeparator(context),
+
+          // Company Representative section
+          Container(
+            color: CupertinoColors.systemBackground.resolveFrom(context),
+            padding: EdgeInsets.zero,
+            child: _buildCompanyRepSection(isDark),
+          ),
+
+          _buildSeparator(context),
+
+          // Social Media section
+          Container(
+            color: CupertinoColors.systemBackground.resolveFrom(context),
+            padding: EdgeInsets.only(top: 12, bottom: 12),
+            child: _buildSocialMediaSection(),
+          ),
+
+          _buildSeparator(context),
+
+          // Documents section
+          Container(
+            color: CupertinoColors.systemBackground.resolveFrom(context),
+            padding: EdgeInsets.zero,
+            child: _buildDocumentsSection(isDark),
+          ),
+
+          SizedBox(height: 20),
+        ]),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildSeparator(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        height: 0.2,
+        color: CupertinoColors.separator.resolveFrom(context),
+      ),
+    );
+  }
+
+  Widget _buildHeader(bool isDark) {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 32, horizontal: 20),
-      child: Column(
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Company logo with shadow
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: CupertinoColors.systemGrey.withOpacity(0.2),
-                  blurRadius: 20,
-                  offset: Offset(0, 8),
+          // Profile photo
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Image.network(
+              widget.exhibitor['photo'] ?? '',
+              width: 120,
+              height: 120,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: CupertinoColors.systemGrey5.resolveFrom(context),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  CupertinoIcons.person_fill,
+                  size: 60,
+                  color: CupertinoColors.systemGrey.resolveFrom(context),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: 20),
+
+          // Exhibitor details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Exhibitor name
+                Text(
+                  widget.exhibitor['companyName'] ?? widget.exhibitor['name'] ?? '',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.2,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
+                  ),
+                ),
+                SizedBox(height: 8),
+
+                // Location/Conference Room
+                Row(
+                  children: [
+                    Icon(
+                      CupertinoIcons.location_solid,
+                      size: 16,
+                      color: Color(0xFFFFD700),
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      widget.exhibitor['location'] ?? 'Conference Room 1',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFFFFD700),
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'SF Pro Display',
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12),
+
+                // Sponsor type and Exhibitor badges
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Color(0xFFE8E0F5),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        widget.exhibitor['sponsorType'] ?? 'Platinum Sponsor',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF7B5FC7),
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'SF Pro Display',
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    // Exhibitor badge
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Color(0xFFFFD700).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'Exhibitor',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFFFF9500),
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'SF Pro Display',
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Image.network(
-                exhibitor['photo'] ?? exhibitor['logo'] ?? '',
-                width: 130,
-                height: 130,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    Container(
-                      width: 130,
-                      height: 130,
-                      decoration: BoxDecoration(
-                        color: CupertinoColors.systemGrey5,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Icon(
-                        CupertinoIcons.building_2_fill,
-                        size: 64,
-                        color: CupertinoColors.systemGrey,
-                      ),
-                    ),
-              ),
-            ),
-          ),
-          SizedBox(height: 20),
-
-          // Company name
-          Text(
-            exhibitor['companyName'] ?? '',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.8,
-              height: 1.2,
-            ),
-          ),
-          SizedBox(height: 12),
-
-          // Location/Booth with icon
-          if (exhibitor['booth'] != null)
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Color(0xFFFF9500).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    CupertinoIcons.location_solid,
-                    size: 18,
-                    color: Color(0xFFFF9500),
-                  ),
-                  SizedBox(width: 6),
-                  Text(
-                    'Booth ${exhibitor['booth']}',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFFFF9500),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          SizedBox(height: 16),
-
-          // Tags/Badges
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            alignment: WrapAlignment.center,
-            children: [
-              if (exhibitor['category'] != null)
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFFE9D5FF), Color(0xFFF3E8FF)],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Color(0xFFA78BFA),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Text(
-                    exhibitor['category'],
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF7C3AED),
-                    ),
-                  ),
-                ),
-              if (exhibitor['badge'] != null)
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFFD1FAE5), Color(0xFFECFDF5)],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Color(0xFF6EE7B7),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        CupertinoIcons.star_fill,
-                        size: 14,
-                        color: Color(0xFF059669),
-                      ),
-                      SizedBox(width: 6),
-                      Text(
-                        exhibitor['badge'],
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF059669),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
           ),
         ],
       ),
@@ -259,299 +298,109 @@ class ExhibitorDetailPage extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildActionButton(
-              icon: CupertinoIcons.link,
-              label: 'Contact',
-              onPressed: () {},
-            ),
-          ),
-          SizedBox(width: 10),
-          Expanded(
-            child: _buildActionButton(
-              icon: CupertinoIcons.doc_text,
-              label: 'Notes',
-              onPressed: () {},
-            ),
-          ),
-          SizedBox(width: 10),
-          Expanded(
-            child: _buildActionButton(
-              icon: CupertinoIcons.star,
-              label: 'Favorite',
-              onPressed: () {},
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color(0xFFFF9500).withOpacity(0.1),
-            Color(0xFFFF9500).withOpacity(0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Color(0xFFFF9500),
-          width: 2,
-        ),
-      ),
-      child: CupertinoButton(
-        padding: EdgeInsets.symmetric(vertical: 14),
-        borderRadius: BorderRadius.circular(14),
-        onPressed: onPressed,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: Color(0xFFFF9500),
-              size: 26,
-            ),
-            SizedBox(height: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFFFF9500),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMediaSection() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Video section with rounded corners and shadow
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: CupertinoColors.systemGrey.withOpacity(0.3),
-                  blurRadius: 15,
-                  offset: Offset(0, 5),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                height: 220,
-                decoration: BoxDecoration(
-                  color: CupertinoColors.systemGrey5,
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    if (exhibitor['mediaUrl'] != null)
-                      Image.network(
-                        exhibitor['mediaUrl'],
-                        width: double.infinity,
-                        height: 220,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            Center(
-                              child: Icon(
-                                CupertinoIcons.photo,
-                                size: 48,
-                                color: CupertinoColors.systemGrey,
-                              ),
-                            ),
-                      ),
-                    // Gradient overlay
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            CupertinoColors.black.withOpacity(0.1),
-                            CupertinoColors.black.withOpacity(0.4),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // Play button overlay
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
-                        ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0xFF7C3AED).withOpacity(0.5),
-                            blurRadius: 20,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        CupertinoIcons.play_fill,
-                        color: CupertinoColors.white,
-                        size: 36,
-                      ),
-                    ),
-                    // Sound button
-                    Positioned(
-                      right: 16,
-                      top: 16,
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: CupertinoColors.black.withOpacity(0.5),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: CupertinoColors.white.withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Icon(
-                          CupertinoIcons.speaker_2_fill,
-                          color: CupertinoColors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          SizedBox(height: 16),
-          // Video controls mockup
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
+                colors: [Color(0xFFFFD700), Color(0xFFFF9500)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0xFF7C3AED).withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
             ),
-            child: Row(
-              children: [
-                Icon(CupertinoIcons.play_fill, color: CupertinoColors.white, size: 22),
-                SizedBox(width: 12),
-                Text(
-                  '2:14',
-                  style: TextStyle(
+            child: CupertinoButton(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              borderRadius: BorderRadius.circular(12),
+              onPressed: _showMeetingSheet,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    CupertinoIcons.calendar_badge_plus,
+                    size: 18,
                     color: CupertinoColors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
                   ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Container(
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: CupertinoColors.white.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(3),
+                  SizedBox(width: 6),
+                  Text(
+                    'Book Demo',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.2,
+                      color: CupertinoColors.white,
                     ),
-                    child: FractionallySizedBox(
-                      widthFactor: 0.35,
-                      alignment: Alignment.centerLeft,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: CupertinoColors.white,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 12),
-                Icon(CupertinoIcons.speaker_2_fill, color: CupertinoColors.white, size: 20),
-                SizedBox(width: 12),
-                Icon(CupertinoIcons.gear_alt_fill, color: CupertinoColors.white, size: 20),
-              ],
-            ),
-          ),
-          SizedBox(height: 18),
-          // Book demo button
-          SizedBox(
-            width: double.infinity,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFFFF9500), Color(0xFFFF8000)],
-                ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0xFFFF9500).withOpacity(0.4),
-                    blurRadius: 12,
-                    offset: Offset(0, 6),
                   ),
                 ],
               ),
-              child: CupertinoButton(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                borderRadius: BorderRadius.circular(14),
-                onPressed: () {},
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      CupertinoIcons.calendar_badge_plus,
+            ),
+          ),
+        ),
+        SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFFFFD700), Color(0xFFFF9500)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: CupertinoButton(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              borderRadius: BorderRadius.circular(12),
+              onPressed: _showMeetingSheet,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    CupertinoIcons.videocam_fill,
+                    size: 22,
+                    color: CupertinoColors.white,
+                  ),
+                  SizedBox(width: 6),
+                  Text(
+                    'Meeting',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.2,
                       color: CupertinoColors.white,
-                      size: 22,
                     ),
-                    SizedBox(width: 10),
-                    Text(
-                      'Book a Demo With Us!',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        color: CupertinoColors.white,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        SizedBox(width: 10),
+        Container(
+          decoration: BoxDecoration(
+            color: Color(0xFFFFD700).withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+          ),
+          child: CupertinoButton(
+            padding: EdgeInsets.all(12),
+            borderRadius: BorderRadius.circular(50),
+            onPressed: () {},
+            child: Icon(
+              CupertinoIcons.star,
+              size: 22,
+              color: Color(0xFFFFD700),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildAboutSection() {
+  Widget _buildAboutSection(bool isDark) {
+    final aboutText = widget.exhibitor['about'] ?? '';
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -562,547 +411,1075 @@ class ExhibitorDetailPage extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: CupertinoColors.systemGrey,
-              letterSpacing: 0.5,
+              color: CupertinoColors.systemGrey.resolveFrom(context),
+              fontFamily: 'SF Pro Display',
+              letterSpacing: 0.2,
             ),
           ),
           SizedBox(height: 12),
-          Text(
-            exhibitor['about'] ?? exhibitor['description'] ?? '',
-            style: TextStyle(
-              fontSize: 16,
-              height: 1.5,
-              color: CupertinoColors.label,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRepresentativesSection() {
-    final representatives = exhibitor['representatives'] as List<dynamic>;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'COMPANY REPRESENTATIVES',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: CupertinoColors.systemGrey,
-              letterSpacing: 0.5,
-            ),
-          ),
-          SizedBox(height: 16),
-          ...representatives.map((rep) => _buildRepresentativeCard(rep)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRepresentativeCard(Map<String, dynamic> rep) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            CupertinoColors.white,
-            CupertinoColors.systemGrey6.withOpacity(0.3),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: CupertinoColors.systemGrey4.withOpacity(0.5),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: CupertinoColors.systemGrey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: CupertinoColors.systemGrey.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Image.network(
-                rep['photo'] ?? '',
-                width: 64,
-                height: 64,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: CupertinoColors.systemGrey5,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Icon(
-                        CupertinoIcons.person_fill,
-                        color: CupertinoColors.systemGrey,
-                        size: 28,
-                      ),
-                    ),
-              ),
-            ),
-          ),
-          SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  rep['name'] ?? '',
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final textPainter = TextPainter(
+                text: TextSpan(
+                  text: aboutText,
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
+                    height: 1.5,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.2,
                   ),
                 ),
-                SizedBox(height: 5),
-                Text(
-                  rep['title'] ?? '',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: CupertinoColors.systemGrey,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(width: 8),
-          Container(
-            padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Color(0xFFFF9500).withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              CupertinoIcons.chat_bubble_fill,
-              color: Color(0xFFFF9500),
-              size: 20,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+                maxLines: 3,
+                textDirection: TextDirection.ltr,
+              )..layout(maxWidth: constraints.maxWidth);
 
-  Widget _buildDocumentsSection() {
-    final documents = exhibitor['documents'] as List<dynamic>;
+              final isTextOverflow = textPainter.didExceedMaxLines;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'DOCUMENTS',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: CupertinoColors.systemGrey,
-              letterSpacing: 0.5,
-            ),
-          ),
-          SizedBox(height: 16),
-          ...documents.map((doc) => _buildDocumentCard(doc)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDocumentCard(Map<String, dynamic> doc) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            CupertinoColors.white,
-            CupertinoColors.systemGrey6.withOpacity(0.3),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: CupertinoColors.systemGrey4.withOpacity(0.5),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: CupertinoColors.systemGrey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF7C3AED), Color(0xFF9333EA)],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              CupertinoIcons.doc_text_fill,
-              color: CupertinoColors.white,
-              size: 26,
-            ),
-          ),
-          SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  doc['name'] ?? '',
+              if (!isTextOverflow || _isAboutExpanded) {
+                return Text(
+                  aboutText,
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
+                    height: 1.5,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.2,
                   ),
+                );
+              }
+
+              // Calculate where to place "more"
+              final span = TextSpan(
+                text: aboutText,
+                style: TextStyle(
+                  fontSize: 16,
+                  height: 1.5,
+                  color: CupertinoTheme.of(context).textTheme.textStyle.color,
+                  fontFamily: 'SF Pro Display',
+                  letterSpacing: 0.2,
                 ),
-                SizedBox(height: 4),
-                Row(
+              );
+
+              final tp = TextPainter(
+                text: span,
+                maxLines: 3,
+                textDirection: TextDirection.ltr,
+              )..layout(maxWidth: constraints.maxWidth);
+
+              // Calculate text that fits in 3 lines minus space for "more"
+              final moreWidth = 50.0; // Approximate width for "more"
+              final truncatePos = tp.getPositionForOffset(
+                Offset(constraints.maxWidth - moreWidth, tp.size.height - 5),
+              );
+
+              final displayText = aboutText.substring(0, truncatePos.offset);
+              final trimmedText = displayText.trimRight();
+
+              return RichText(
+                text: TextSpan(
                   children: [
-                    Icon(
-                      CupertinoIcons.doc,
-                      size: 13,
-                      color: CupertinoColors.systemGrey,
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      doc['size'] ?? '',
+                    TextSpan(
+                      text: trimmedText,
                       style: TextStyle(
-                        fontSize: 14,
-                        color: CupertinoColors.systemGrey,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 16,
+                        height: 1.5,
+                        color: CupertinoTheme.of(
+                          context,
+                        ).textTheme.textStyle.color,
+                        fontFamily: 'SF Pro Display',
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    TextSpan(text: '... '),
+                    WidgetSpan(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isAboutExpanded = true;
+                          });
+                        },
+                        child: Text(
+                          'more',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: CupertinoColors.systemGrey.resolveFrom(
+                              context,
+                            ),
+                            fontFamily: 'SF Pro Display',
+                            letterSpacing: 0.2,
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
-          SizedBox(width: 8),
-          Container(
-            padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Color(0xFFFF9500).withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              CupertinoIcons.arrow_down_circle_fill,
-              color: Color(0xFFFF9500),
-              size: 24,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAdditionalInfoSection() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'ADDITIONAL INFORMATION',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: CupertinoColors.systemGrey,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              Icon(
-                CupertinoIcons.chevron_up,
-                size: 18,
-                color: CupertinoColors.systemOrange,
-              ),
-            ],
-          ),
-          SizedBox(height: 16),
-
-          if (exhibitor['category'] != null)
-            _buildInfoRow(
-              icon: CupertinoIcons.tag,
-              label: 'Category',
-              value: exhibitor['category'],
-            ),
-
-          if (exhibitor['booth'] != null)
-            _buildInfoRow(
-              icon: CupertinoIcons.location_solid,
-              label: 'Booth Number',
-              value: exhibitor['booth'],
-            ),
-
-          if (exhibitor['website'] != null)
-            _buildInfoRow(
-              icon: CupertinoIcons.globe,
-              label: 'Website',
-              value: exhibitor['website'],
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: CupertinoColors.systemGrey6,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: CupertinoColors.systemGrey),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (value.isNotEmpty) ...[
-                  SizedBox(height: 4),
-                  Text(
-                    value,
+          if (_isAboutExpanded)
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isAboutExpanded = false;
+                  });
+                },
+                child: Padding(
+                  padding: EdgeInsets.only(top: 4),
+                  child: Text(
+                    'see less',
                     style: TextStyle(
-                      fontSize: 14,
-                      color: CupertinoColors.systemGrey,
+                      fontSize: 16,
+                      color: CupertinoColors.systemGrey.resolveFrom(context),
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.2,
                     ),
                   ),
-                ],
-              ],
+                ),
+              ),
             ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildSessionsSection() {
-    final sessions = exhibitor['sessions'] as List<dynamic>;
-
+  Widget _buildSocialMediaSection() {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'SESSIONS',
+            'CONNECT VIA SOCIAL MEDIA',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: CupertinoColors.systemGrey,
-              letterSpacing: 0.5,
+              color: CupertinoColors.systemGrey.resolveFrom(context),
+              fontFamily: 'SF Pro Display',
+              letterSpacing: 0.2,
             ),
           ),
           SizedBox(height: 16),
-          ...sessions.map((session) {
-            if (session is Map<String, dynamic>) {
-              return _buildSessionCard(session);
-            } else if (session is String) {
-              return _buildSimpleSessionCard(session);
-            }
-            return SizedBox.shrink();
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSessionCard(Map<String, dynamic> session) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 14),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            CupertinoColors.white,
-            CupertinoColors.systemGrey6.withOpacity(0.3),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Color(0xFF7C3AED).withOpacity(0.2),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFF7C3AED).withOpacity(0.1),
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Facebook
               Container(
-                padding: EdgeInsets.all(8),
+                width: 50,
+                height: 50,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF7C3AED), Color(0xFF9333EA)],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
+                  color: Color(0xFF1877F2),
+                  shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  CupertinoIcons.calendar,
-                  color: CupertinoColors.white,
-                  size: 18,
+                child: CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () {},
+                  child: FaIcon(
+                    FontAwesomeIcons.facebookF,
+                    color: CupertinoColors.white,
+                    size: 20,
+                  ),
                 ),
               ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  session['title'] ?? '',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
+              SizedBox(width: 20),
+              // Instagram
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Color(0xFFE4405F),
+                  shape: BoxShape.circle,
+                ),
+                child: CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () {},
+                  child: FaIcon(
+                    FontAwesomeIcons.instagram,
+                    color: CupertinoColors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+              SizedBox(width: 20),
+              // LinkedIn
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Color(0xFF0A66C2),
+                  shape: BoxShape.circle,
+                ),
+                child: CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () {},
+                  child: FaIcon(
+                    FontAwesomeIcons.linkedinIn,
+                    color: CupertinoColors.white,
+                    size: 20,
                   ),
                 ),
               ),
             ],
           ),
-          if (session['time'] != null) ...[
-            SizedBox(height: 12),
-            Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFFF9500).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    CupertinoIcons.clock_fill,
-                    size: 16,
-                    color: Color(0xFFFF9500),
-                  ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    session['time'],
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: CupertinoColors.label,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-          if (session['location'] != null) ...[
-            SizedBox(height: 8),
-            Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Color(0xFF7C3AED).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    CupertinoIcons.location_solid,
-                    size: 16,
-                    color: Color(0xFF7C3AED),
-                  ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    session['location'],
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: CupertinoColors.label,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
         ],
       ),
     );
   }
 
-  Widget _buildSimpleSessionCard(String sessionTitle) {
+  Widget _buildVideoSection(bool isDark) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              setState(() {
+                _isVideoExpanded = !_isVideoExpanded;
+              });
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'VIDEO',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: CupertinoColors.systemGrey.resolveFrom(context),
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                Icon(
+                  _isVideoExpanded
+                      ? CupertinoIcons.chevron_up
+                      : CupertinoIcons.chevron_down,
+                  size: 18,
+                  color: Color(0xFFFFD700),
+                ),
+              ],
+            ),
+          ),
+          AnimatedSize(
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: _isVideoExpanded
+                ? Column(
+                    children: [
+                      SizedBox(height: 12),
+                      // Video player
+                      if (_videoError)
+                        Container(
+                          height: 200,
+                          decoration: BoxDecoration(
+                            color: CupertinoColors.systemRed.withValues(
+                              alpha: 0.1,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: CupertinoColors.systemRed.withValues(
+                                alpha: 0.3,
+                              ),
+                              width: 1,
+                            ),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  CupertinoIcons.exclamationmark_triangle,
+                                  color: CupertinoColors.systemRed,
+                                  size: 40,
+                                ),
+                                SizedBox(height: 12),
+                                Text(
+                                  'Video not available',
+                                  style: TextStyle(
+                                    color: CupertinoColors.systemRed,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'SF Pro Display',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else if (_chewieController != null &&
+                          _chewieController!.videoPlayerController.value.isInitialized)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: Chewie(
+                              controller: _chewieController!,
+                            ),
+                          ),
+                        )
+                      else
+                        Container(
+                          height: 200,
+                          decoration: BoxDecoration(
+                            color: CupertinoColors.black,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: CupertinoActivityIndicator(
+                              color: Color(0xFFFFD700),
+                            ),
+                          ),
+                        ),
+                    ],
+                  )
+                : SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompanyRepSection(bool isDark) {
+    // Mock company representatives data
+    final List<Map<String, dynamic>> representatives = [
+      {
+        'name': 'John Anderson',
+        'role': 'Sales Manager',
+        'photo': 'https://via.placeholder.com/60',
+        'about':
+            'Experienced sales professional with 10+ years in the industry.',
+        'email': 'john.anderson@company.com',
+        'phone': '+1 234 567 8900',
+      },
+      {
+        'name': 'Sarah Williams',
+        'role': 'Product Specialist',
+        'photo': 'https://via.placeholder.com/60',
+        'about': 'Product expert with deep knowledge of our solutions.',
+        'email': 'sarah.williams@company.com',
+        'phone': '+1 234 567 8901',
+      },
+      {
+        'name': 'Michael Chen',
+        'role': 'Technical Support',
+        'photo': 'https://via.placeholder.com/60',
+        'about': 'Technical specialist providing comprehensive support.',
+        'email': 'michael.chen@company.com',
+        'phone': '+1 234 567 8902',
+      },
+    ];
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              setState(() {
+                _isCompanyRepExpanded = !_isCompanyRepExpanded;
+              });
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'COMPANY REPRESENTATIVE',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: CupertinoColors.systemGrey.resolveFrom(context),
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                Icon(
+                  _isCompanyRepExpanded
+                      ? CupertinoIcons.chevron_up
+                      : CupertinoIcons.chevron_down,
+                  size: 18,
+                  color: Color(0xFFFFD700),
+                ),
+              ],
+            ),
+          ),
+          AnimatedSize(
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: _isCompanyRepExpanded
+                ? Column(
+                    children: [
+                      SizedBox(height: 12),
+                      ...representatives.map(
+                        (rep) => _buildRepresentativeCard(rep, isDark),
+                      ),
+                    ],
+                  )
+                : SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRepresentativeCard(
+    Map<String, dynamic> representative,
+    bool isDark,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          CupertinoPageRoute(
+            builder: (context) =>
+                CompanyRepresentativeDetailPage(representative: representative),
+          ),
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: CupertinoColors.systemGrey6.resolveFrom(context),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            // Representative icon
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: CupertinoColors.systemGrey3.resolveFrom(context),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                CupertinoIcons.person_fill,
+                color: CupertinoColors.white,
+                size: 24,
+              ),
+            ),
+            SizedBox(width: 16),
+            // Representative info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    representative['name'] ?? '',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.2,
+                      color: CupertinoTheme.of(
+                        context,
+                      ).textTheme.textStyle.color,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    representative['role'] ?? '',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: CupertinoColors.systemGrey.resolveFrom(context),
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Arrow icon
+            Icon(
+              CupertinoIcons.chevron_right,
+              color: CupertinoColors.systemGrey.resolveFrom(context),
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDocumentsSection(bool isDark) {
+    // Mock documents data - in a real app, this would come from the exhibitor data
+    final List<Map<String, String>> documents = [
+      {
+        'name': 'Company Brochure',
+        'type': 'PDF',
+        'size': '2.4 MB',
+        'icon': 'doc.fill',
+      },
+      {
+        'name': 'Product Catalog 2026',
+        'type': 'PDF',
+        'size': '5.8 MB',
+        'icon': 'doc.fill',
+      },
+      {
+        'name': 'Technical Specifications',
+        'type': 'PDF',
+        'size': '1.2 MB',
+        'icon': 'doc.fill',
+      },
+      {
+        'name': 'Certification Documents',
+        'type': 'PDF',
+        'size': '890 KB',
+        'icon': 'doc.fill',
+      },
+    ];
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              setState(() {
+                _isDocumentsExpanded = !_isDocumentsExpanded;
+              });
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'DOCUMENTS',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: CupertinoColors.systemGrey.resolveFrom(context),
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                Icon(
+                  _isDocumentsExpanded
+                      ? CupertinoIcons.chevron_up
+                      : CupertinoIcons.chevron_down,
+                  size: 18,
+                  color: Color(0xFFFFD700),
+                ),
+              ],
+            ),
+          ),
+          AnimatedSize(
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: _isDocumentsExpanded
+                ? Column(
+                    children: [
+                      SizedBox(height: 5),
+                      ...documents.map(
+                        (doc) => _buildDocumentCard(doc, isDark),
+                      ),
+                    ],
+                  )
+                : SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocumentCard(Map<String, String> document, bool isDark) {
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: CupertinoColors.systemGrey6,
+        color: CupertinoColors.systemGrey6.resolveFrom(context),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          Icon(
-            CupertinoIcons.calendar,
-            size: 20,
-            color: CupertinoColors.systemGrey,
+          // Document icon
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemGrey3.resolveFrom(context),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              CupertinoIcons.doc_fill,
+              color: CupertinoColors.white,
+              size: 24,
+            ),
           ),
-          SizedBox(width: 12),
+          SizedBox(width: 16),
+          // Document info
           Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  document['name'] ?? '',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.2,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '${document['type']} • ${document['size']}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: CupertinoColors.systemGrey.resolveFrom(context),
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Download button
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              // TODO: Handle document download
+            },
+            child: Icon(
+              CupertinoIcons.arrow_down_circle_fill,
+              color: Color(0xFFFFD700),
+              size: 28,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MeetingFormSheet extends StatefulWidget {
+  final String exhibitorName;
+
+  const _MeetingFormSheet({required this.exhibitorName});
+
+  @override
+  State<_MeetingFormSheet> createState() => _MeetingFormSheetState();
+}
+
+class _MeetingFormSheetState extends State<_MeetingFormSheet> {
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _dateController = TextEditingController();
+  final TextEditingController _startTimeController = TextEditingController();
+  final TextEditingController _endTimeController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _noteController = TextEditingController();
+  bool _isVideoMeeting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController.text = 'Meeting - ${widget.exhibitorName}';
+    _dateController.text = '23/01/2026';
+    _startTimeController.text = '10:00 AM';
+    _endTimeController.text = '10:30 AM';
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _dateController.dispose();
+    _startTimeController.dispose();
+    _endTimeController.dispose();
+    _locationController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.9,
+      decoration: BoxDecoration(
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          // Handle bar
+          Container(
+            margin: EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemGrey3.resolveFrom(context),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: EdgeInsets.all(20),
             child: Text(
-              sessionTitle,
+              'Suggest a Meeting',
               style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                fontFamily: 'SF Pro Display',
+                letterSpacing: 0.2,
+                color: CupertinoTheme.of(context).textTheme.textStyle.color,
+              ),
+            ),
+          ),
+
+          Expanded(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title
+                  Text(
+                    'Title (required)',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.2,
+                      color: CupertinoTheme.of(
+                        context,
+                      ).textTheme.textStyle.color,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  CupertinoTextField(
+                    controller: _titleController,
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.systemGrey6.resolveFrom(context),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+
+                  SizedBox(height: 20),
+
+                  // Date
+                  Text(
+                    'Date',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.2,
+                      color: CupertinoTheme.of(
+                        context,
+                      ).textTheme.textStyle.color,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  CupertinoTextField(
+                    controller: _dateController,
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.systemGrey6.resolveFrom(context),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    suffix: Padding(
+                      padding: EdgeInsets.only(right: 12),
+                      child: Icon(
+                        CupertinoIcons.calendar,
+                        color: CupertinoColors.systemGrey.resolveFrom(context),
+                      ),
+                    ),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+
+                  SizedBox(height: 20),
+
+                  // Time
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Start Time',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'SF Pro Display',
+                                letterSpacing: 0.2,
+                                color: CupertinoTheme.of(
+                                  context,
+                                ).textTheme.textStyle.color,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            CupertinoTextField(
+                              controller: _startTimeController,
+                              padding: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: CupertinoColors.systemGrey6.resolveFrom(
+                                  context,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              suffix: Padding(
+                                padding: EdgeInsets.only(right: 12),
+                                child: Icon(
+                                  CupertinoIcons.clock,
+                                  color: CupertinoColors.systemGrey.resolveFrom(
+                                    context,
+                                  ),
+                                ),
+                              ),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontFamily: 'SF Pro Display',
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'End Time',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'SF Pro Display',
+                                letterSpacing: 0.2,
+                                color: CupertinoTheme.of(
+                                  context,
+                                ).textTheme.textStyle.color,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            CupertinoTextField(
+                              controller: _endTimeController,
+                              padding: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: CupertinoColors.systemGrey6.resolveFrom(
+                                  context,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              suffix: Padding(
+                                padding: EdgeInsets.only(right: 12),
+                                child: Icon(
+                                  CupertinoIcons.clock,
+                                  color: CupertinoColors.systemGrey.resolveFrom(
+                                    context,
+                                  ),
+                                ),
+                              ),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontFamily: 'SF Pro Display',
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 20),
+
+                  // Video Meeting Checkbox
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isVideoMeeting = !_isVideoMeeting;
+                      });
+                    },
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: _isVideoMeeting
+                                  ? Color(0xFFFFD700)
+                                  : CupertinoColors.systemGrey.resolveFrom(
+                                      context,
+                                    ),
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                            color: _isVideoMeeting
+                                ? Color(0xFFFFD700)
+                                : Colors.transparent,
+                          ),
+                          child: _isVideoMeeting
+                              ? Icon(
+                                  CupertinoIcons.check_mark,
+                                  size: 16,
+                                  color: CupertinoColors.white,
+                                )
+                              : null,
+                        ),
+                        SizedBox(width: 12),
+                        Text(
+                          'Video Meeting',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontFamily: 'SF Pro Display',
+                            letterSpacing: 0.2,
+                            color: CupertinoTheme.of(
+                              context,
+                            ).textTheme.textStyle.color,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: 20),
+
+                  // Location
+                  Text(
+                    'Location',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.2,
+                      color: CupertinoTheme.of(
+                        context,
+                      ).textTheme.textStyle.color,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  CupertinoTextField(
+                    controller: _locationController,
+                    placeholder: 'Suggest a location',
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.systemGrey6.resolveFrom(context),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+
+                  SizedBox(height: 20),
+
+                  // Note
+                  Text(
+                    'Note',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.2,
+                      color: CupertinoTheme.of(
+                        context,
+                      ).textTheme.textStyle.color,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  CupertinoTextField(
+                    controller: _noteController,
+                    placeholder: 'Add a message',
+                    padding: EdgeInsets.all(16),
+                    maxLines: 4,
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.systemGrey6.resolveFrom(context),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'SF Pro Display',
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+
+                  SizedBox(height: 30),
+
+                  // Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CupertinoButton(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          borderRadius: BorderRadius.circular(12),
+                          color: CupertinoColors.systemGrey6.resolveFrom(
+                            context,
+                          ),
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'SF Pro Display',
+                              letterSpacing: 0.2,
+                              color: CupertinoTheme.of(
+                                context,
+                              ).textTheme.textStyle.color,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFFFFD700), Color(0xFFFF9500)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: CupertinoButton(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            borderRadius: BorderRadius.circular(12),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              // Handle send invite
+                            },
+                            child: Text(
+                              'Send Invite',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'SF Pro Display',
+                                letterSpacing: 0.2,
+                                color: CupertinoColors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 30),
+                ],
               ),
             ),
           ),

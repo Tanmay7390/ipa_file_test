@@ -5,16 +5,16 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 enum ConnectionStatus { notConnected, pending, connected }
 
-class SpeakerDetailPage extends StatefulWidget {
-  final Map<String, dynamic> speaker;
+class CompanyRepresentativeDetailPage extends StatefulWidget {
+  final Map<String, dynamic> representative;
 
-  const SpeakerDetailPage({super.key, required this.speaker});
+  const CompanyRepresentativeDetailPage({super.key, required this.representative});
 
   @override
-  State<SpeakerDetailPage> createState() => _SpeakerDetailPageState();
+  State<CompanyRepresentativeDetailPage> createState() => _CompanyRepresentativeDetailPageState();
 }
 
-class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
+class _CompanyRepresentativeDetailPageState extends State<CompanyRepresentativeDetailPage> {
   bool _isAboutExpanded = false;
   bool _isAdditionalInfoExpanded = false;
   bool _isScheduleExpanded = false;
@@ -25,7 +25,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
     showCupertinoModalPopup(
       context: context,
       builder: (BuildContext context) =>
-          _MeetingFormSheet(speakerName: widget.speaker['name'] ?? ''),
+          _MeetingFormSheet(representativeName: widget.representative['name'] ?? ''),
     );
   }
 
@@ -34,7 +34,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
 
     return CustomPageScaffold(
-      heading: 'Speaker Details',
+      heading: 'Representative Details',
       hideSearch: true,
       isLoading: false,
       hideLargeTitle: true,
@@ -56,8 +56,8 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
           _buildSeparator(context),
 
           // About section
-          if (widget.speaker['about'] != null &&
-              widget.speaker['about'].toString().isNotEmpty)
+          if (widget.representative['about'] != null &&
+              widget.representative['about'].toString().isNotEmpty)
             Container(
               color: CupertinoColors.systemBackground.resolveFrom(context),
               padding: EdgeInsets.only(top: 12, bottom: 12),
@@ -94,8 +94,8 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
           _buildSeparator(context),
 
           // Schedule section
-          if (widget.speaker['sessions'] != null &&
-              widget.speaker['sessions'].isNotEmpty)
+          if (widget.representative['sessions'] != null &&
+              widget.representative['sessions'].isNotEmpty)
             Container(
               color: CupertinoColors.systemBackground.resolveFrom(context),
               padding: EdgeInsets.zero,
@@ -128,7 +128,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: Image.network(
-              widget.speaker['photo'] ?? '',
+              widget.representative['photo'] ?? '',
               width: 120,
               height: 120,
               fit: BoxFit.cover,
@@ -155,7 +155,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.speaker['name'] ?? '',
+                  widget.representative['name'] ?? '',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
@@ -166,7 +166,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  widget.speaker['title'] ?? widget.speaker['specialty'] ?? '',
+                  widget.representative['title'] ?? widget.representative['specialty'] ?? '',
                   style: TextStyle(
                     fontSize: 16,
                     color: CupertinoColors.secondaryLabel.resolveFrom(context),
@@ -175,10 +175,10 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
                     letterSpacing: 0.2,
                   ),
                 ),
-                if (widget.speaker['company'] != null) ...[
+                if (widget.representative['company'] != null) ...[
                   SizedBox(height: 4),
                   Text(
-                    widget.speaker['company'],
+                    widget.representative['company'],
                     style: TextStyle(
                       fontSize: 15,
                       color: CupertinoColors.systemGrey.resolveFrom(context),
@@ -297,7 +297,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
   }
 
   Widget _buildAboutSection(bool isDark) {
-    final aboutText = widget.speaker['about'] ?? '';
+    final aboutText = widget.representative['about'] ?? '';
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -444,7 +444,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
   }
 
   Widget _buildConnectionsSection(bool isDark) {
-    // Mock data for connections - in a real app, this would come from the speaker data
+    // Mock data for connections - in a real app, this would come from the representative data
     final List<Color> connectionColors = [
       Color(0xFF4A90E2), // Blue
       Color(0xFFE94B3C), // Red
@@ -800,29 +800,29 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
                       ),
 
                       // Organization
-                      if (widget.speaker['company'] != null)
+                      if (widget.representative['company'] != null)
                         _buildInfoRow(
                           icon: CupertinoIcons.building_2_fill,
                           label: 'Organization',
-                          value: widget.speaker['company'],
+                          value: widget.representative['company'],
                           isDark: isDark,
                         ),
 
                       // Location
-                      if (widget.speaker['location'] != null)
+                      if (widget.representative['location'] != null)
                         _buildInfoRow(
                           icon: CupertinoIcons.location_solid,
                           label: 'Location',
-                          value: widget.speaker['location'],
+                          value: widget.representative['location'],
                           isDark: isDark,
                         ),
 
                       // Role
-                      if (widget.speaker['title'] != null)
+                      if (widget.representative['title'] != null)
                         _buildInfoRow(
                           icon: CupertinoIcons.person_fill,
                           label: 'Role',
-                          value: widget.speaker['title'],
+                          value: widget.representative['title'],
                           isDark: isDark,
                         ),
                     ],
@@ -897,7 +897,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
   }
 
   Widget _buildScheduleSection(bool isDark) {
-    final sessions = widget.speaker['sessions'] as List<dynamic>;
+    final sessions = widget.representative['sessions'] as List<dynamic>;
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -1100,7 +1100,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
 
                             SizedBox(height: 12),
 
-                            // Role badge (Speaker)
+                            // Role badge (Attendee)
                             if (session['role'] != null)
                               Container(
                                 padding: EdgeInsets.symmetric(
@@ -1239,9 +1239,9 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
 }
 
 class _MeetingFormSheet extends StatefulWidget {
-  final String speakerName;
+  final String representativeName;
 
-  const _MeetingFormSheet({required this.speakerName});
+  const _MeetingFormSheet({required this.representativeName});
 
   @override
   State<_MeetingFormSheet> createState() => _MeetingFormSheetState();
@@ -1259,7 +1259,7 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
   @override
   void initState() {
     super.initState();
-    _titleController.text = 'Meeting - ${widget.speakerName}';
+    _titleController.text = 'Meeting - ${widget.representativeName}';
     _dateController.text = '23/01/2026';
     _startTimeController.text = '10:00 AM';
     _endTimeController.text = '10:30 AM';

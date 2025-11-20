@@ -5,11 +5,19 @@ import 'package:flutter_test_22/tabs/agenda_tab.dart';
 import 'package:flutter_test_22/tabs/speakers_tab.dart';
 import 'package:flutter_test_22/tabs/attendees_tab.dart';
 import 'package:flutter_test_22/tabs/exhibitors_tab.dart';
+import 'package:flutter_test_22/tabs/more_tab.dart';
 import 'package:flutter_test_22/pages/settings_page.dart';
 import 'package:flutter_test_22/pages/notifications_page.dart';
 import 'package:flutter_test_22/pages/profile_page.dart';
 import 'package:flutter_test_22/pages/login_page.dart';
 import 'package:flutter_test_22/pages/onboarding_page.dart';
+import 'package:flutter_test_22/pages/more/about_aesurg_page.dart';
+import 'package:flutter_test_22/pages/more/international_faculty_page.dart';
+import 'package:flutter_test_22/pages/more/committee_messages_page.dart';
+import 'package:flutter_test_22/pages/more/venue_info_page.dart';
+import 'package:flutter_test_22/pages/more/about_mumbai_page.dart';
+import 'package:flutter_test_22/pages/more/contact_info_page.dart';
+import 'package:flutter_test_22/pages/more/iaaps_member_page.dart';
 import 'package:flutter_test_22/services/auth_service.dart';
 import 'package:go_router/go_router.dart';
 
@@ -145,7 +153,44 @@ final appRouter = GoRouter(
             ),
           ],
         ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/more',
+              builder: (context, state) => const MoreTab(),
+            ),
+          ],
+        ),
       ],
+    ),
+    // More detail pages (outside the tab structure)
+    GoRoute(
+      path: '/more/about-aesurg',
+      builder: (context, state) => const AboutAesurgPage(),
+    ),
+    GoRoute(
+      path: '/more/international-faculty',
+      builder: (context, state) => const InternationalFacultyPage(),
+    ),
+    GoRoute(
+      path: '/more/committee-messages',
+      builder: (context, state) => const CommitteeMessagesPage(),
+    ),
+    GoRoute(
+      path: '/more/venue-info',
+      builder: (context, state) => const VenueInfoPage(),
+    ),
+    GoRoute(
+      path: '/more/about-mumbai',
+      builder: (context, state) => const AboutMumbaiPage(),
+    ),
+    GoRoute(
+      path: '/more/contact-info',
+      builder: (context, state) => const ContactInfoPage(),
+    ),
+    GoRoute(
+      path: '/more/iaaps-member',
+      builder: (context, state) => const IaapsMemberPage(),
     ),
   ],
 );
