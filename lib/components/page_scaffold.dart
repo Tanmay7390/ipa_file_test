@@ -234,6 +234,7 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
                           ),
                         ),
                         child: CupertinoNavigationBar(
+                          leading: widget.leading,
                           middle: Text(widget.heading),
                           backgroundColor: const Color(0x00000000),
                           border: null,
@@ -255,6 +256,7 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
                 slivers: <Widget>[
                   if (widget.hideSearch)
                     CupertinoSliverNavigationBar(
+                      leading: widget.leading,
                       largeTitle: Text(widget.heading),
                       transitionBetweenRoutes: true,
                       backgroundColor:
@@ -275,6 +277,7 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
                     )
                   else
                     CupertinoSliverNavigationBar.search(
+                      leading: widget.leading,
                       largeTitle: Text(widget.heading),
                       transitionBetweenRoutes: true,
                       searchField: CupertinoSearchTextField(

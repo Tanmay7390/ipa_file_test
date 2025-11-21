@@ -1,114 +1,15 @@
 {
   "events": [
     {
-      "id": "1",
-      "title": "Rhinoplasty Masterclass",
-      "startTime": "09:10",
-      "endTime": "10:30",
-      "location": "Grand Ballroom",
-      "speakers": ["Dr. Sarah Johnson", "Dr. Michael Chen"],
-      "date": "2025-01-26",
-      "isAddedToSchedule": false
-    },
-    {
-      "id": "2",
-      "title": "Advanced Facelift Techniques",
-      "startTime": "13:00",
-      "endTime": "13:45",
-      "location": "Conference Room A",
-      "speakers": ["Dr. Roman Slein"],
-      "date": "2025-01-26",
-      "isAddedToSchedule": true
-    },
-    {
-      "id": "3",
-      "title": "Body Contouring Workshop",
-      "startTime": "14:30",
-      "endTime": "15:30",
-      "location": "Workshop Hall",
-      "speakers": ["Dr. Francisco Villegas", "Dr. Amin Kalaaji"],
-      "date": "2025-01-26",
-      "isAddedToSchedule": false
-    },
-    {
-      "id": "4",
-      "title": "Networking Lunch",
-      "startTime": "12:00",
-      "endTime": "13:30",
-      "location": "Exhibition Hall",
-      "speakers": [],
-      "date": "2025-01-26",
-      "isAddedToSchedule": false
-    },
-    {
-      "id": "5",
-      "title": "Body Contouring: Latest Technologies",
-      "startTime": "14:00",
-      "endTime": "15:30",
-      "location": "Grand Ballroom",
-      "speakers": ["Dr. Francisco Villegas", "Dr. Amin Kalaaji"],
-      "date": "2025-01-26",
-      "isAddedToSchedule": true
-    },
-    {
-      "id": "6",
-      "title": "Coffee Break & Networking",
-      "startTime": "15:30",
-      "endTime": "16:00",
-      "location": "Exhibition Hall",
-      "speakers": [],
-      "date": "2025-01-26",
-      "isAddedToSchedule": false
-    },
-    {
-      "id": "7",
-      "title": "Laser Skin Resurfacing",
-      "startTime": "09:00",
-      "endTime": "10:00",
-      "location": "Conference Room B",
-      "speakers": ["Dr. Emily Watson"],
-      "date": "2025-01-27",
-      "isAddedToSchedule": false
-    },
-    {
-      "id": "8",
-      "title": "Reconstructive Surgery Innovations",
-      "startTime": "10:30",
-      "endTime": "12:00",
-      "location": "Grand Ballroom",
-      "speakers": ["Dr. James Anderson", "Dr. Lisa Park"],
-      "date": "2025-01-27",
-      "isAddedToSchedule": true
-    },
-    {
-      "id": "9",
-      "title": "Lunch & Learn Session",
-      "startTime": "12:00",
-      "endTime": "13:00",
-      "location": "Exhibition Hall",
-      "speakers": [],
-      "date": "2025-01-27",
-      "isAddedToSchedule": false
-    },
-    {
-      "id": "10",
-      "title": "Non-Surgical Face Lifting",
-      "startTime": "13:30",
-      "endTime": "15:00",
-      "location": "Workshop Hall",
-      "speakers": ["Dr. Maria Santos"],
-      "date": "2025-01-27",
-      "isAddedToSchedule": false
-    },
-    {
       "id": "11",
       "title": "Breast Augmentation Techniques",
       "startTime": "10:00",
       "endTime": "11:30",
       "location": "Conference Room A",
       "speakers": ["Dr. Robert Miller"],
-      "date": "2025-01-22",
-      "isAddedToSchedule": false
+      "date": "2026-01-22",
+      "isAddedToSchedule": false,
+      "isActive": true
     },
     {
       "id": "12",
@@ -117,7 +18,7 @@
       "endTime": "15:30",
       "location": "Grand Ballroom",
       "speakers": ["Dr. Amanda Thompson", "Dr. David Lee"],
-      "date": "2025-01-22",
+      "date": "2026-01-22",
       "isAddedToSchedule": true
     },
     {
@@ -127,7 +28,7 @@
       "endTime": "11:00",
       "location": "Conference Room B",
       "speakers": ["Dr. John Smith"],
-      "date": "2025-01-23",
+      "date": "2026-01-23",
       "isAddedToSchedule": false
     },
     {
@@ -137,7 +38,7 @@
       "endTime": "13:00",
       "location": "Workshop Hall",
       "speakers": ["Dr. Sarah Johnson", "Dr. Michael Chen"],
-      "date": "2025-01-23",
+      "date": "2026-01-23",
       "isAddedToSchedule": true
     },
     {
@@ -147,7 +48,97 @@
       "endTime": "16:30",
       "location": "Conference Room A",
       "speakers": ["Dr. Richard Brown"],
-      "date": "2025-01-23",
+      "date": "2026-01-23",
+      "isAddedToSchedule": false
+    },
+    {
+      "id": "16",
+      "title": "Technical Session: AI & ML",
+      "startTime": "13:00",
+      "endTime": "14:30",
+      "location": "Tech Lab",
+      "speakers": ["Prof. Michael Chen"],
+      "date": "2026-01-24",
+      "isAddedToSchedule": false
+    },
+    {
+      "id": "17",
+      "title": "Inaugural Ceremony & Presidential Address",
+      "startTime": "16:00",
+      "endTime": "17:30",
+      "location": "Grand Ballroom, The Westin",
+      "speakers": ["Dr. Medha Bhave, President IAAPS"],
+      "date": "2026-01-25",
+      "isAddedToSchedule": false
+    },
+    {
+      "id": "18",
+      "title": "Welcome Reception & Networking Dinner",
+      "startTime": "18:00",
+      "endTime": "20:00",
+      "location": "Poolside Terrace, The Westin",
+      "speakers": [],
+      "date": "2026-01-25",
+      "isAddedToSchedule": false
+    },
+    {
+      "id": "1",
+      "title": "Rhinoplasty Masterclass",
+      "startTime": "09:10",
+      "endTime": "10:30",
+      "location": "Grand Ballroom",
+      "speakers": ["Dr. Sarah Johnson", "Dr. Michael Chen"],
+      "date": "2026-01-26",
+      "isAddedToSchedule": false
+    },
+    {
+      "id": "2",
+      "title": "Advanced Facelift Techniques",
+      "startTime": "13:00",
+      "endTime": "13:45",
+      "location": "Conference Room A",
+      "speakers": ["Dr. Roman Slein"],
+      "date": "2026-01-26",
+      "isAddedToSchedule": true
+    },
+    {
+      "id": "3",
+      "title": "Body Contouring Workshop",
+      "startTime": "14:30",
+      "endTime": "15:30",
+      "location": "Workshop Hall",
+      "speakers": ["Dr. Francisco Villegas", "Dr. Amin Kalaaji"],
+      "date": "2026-01-26",
+      "isAddedToSchedule": false
+    },
+    {
+      "id": "4",
+      "title": "Networking Lunch",
+      "startTime": "12:00",
+      "endTime": "13:30",
+      "location": "Exhibition Hall",
+      "speakers": [],
+      "date": "2026-01-26",
+      "isAddedToSchedule": false
+    },
+    {
+      "id": "5",
+      "title": "Body Contouring: Latest Technologies",
+      "startTime": "14:00",
+      "endTime": "15:30",
+      "location": "Grand Ballroom",
+      "speakers": ["Dr. Francisco Villegas", "Dr. Amin Kalaaji"],
+      "date": "2026-01-26",
+      "isAddedToSchedule": true
+    },
+    {
+      "id": "6",
+      "title": "Coffee Break & Networking",
+      "startTime": "15:30",
+      "endTime": "16:00",
+      "location": "Exhibition Hall",
+      "speakers": [],
+      "date": "2026-01-26",
       "isAddedToSchedule": false
     }
   ]

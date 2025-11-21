@@ -14,7 +14,7 @@ class ScheduleTab extends StatefulWidget {
 class _ScheduleTabState extends State<ScheduleTab>
     with SingleTickerProviderStateMixin {
   int _selectedTabIndex = 0; // 0 = All Schedules, 1 = My Schedules
-  DateTime _selectedDate = DateTime(2025, 1, 25); // Thursday, Jan 25
+  DateTime _selectedDate = DateTime(2026, 1, 22); // Thursday, Jan 22
   final Set<int> _myScheduleIds = {}; // Track added sessions
   late PageController _pageController;
   late ScrollController _scrollController;
@@ -27,41 +27,11 @@ class _ScheduleTabState extends State<ScheduleTab>
   final double _eventCardBottomPadding = 10.0; // Bottom padding for event cards
   final double _eventCardSpacing = 10.0; // Spacing between stacked cards
 
-  // 10-day event schedule (Jan 20-29, 2025)
+  // 5-day event schedule (Jan 22-26, 2026)
   final List<Map<String, dynamic>> _allSessions = [
     {
-      'id': 1,
-      'date': DateTime(2025, 1, 20),
-      'topOffset': 0.34, // 00:10 (0.17 hours from 00:00)
-      'height': 2.66,
-      'time': '2:00 PM - 3:00 PM IST',
-      'duration': '1 hour',
-      'title': 'Welcome & Registration',
-      'location': 'Grand Ballroom, The Westin',
-      'organizer': 'Organizing Committee',
-      'status': 'Open seating',
-      'category': 'Opening',
-      'categoryColor': Color(0xFFDC2626),
-      'bgColor': Color(0xFFD4F4DD),
-    },
-    {
-      'id': 2,
-      'date': DateTime(2025, 1, 21),
-      'topOffset': 4.0,
-      'height': 3.0,
-      'time': '11:00 AM - 12:30 PM IST',
-      'duration': '1.5 hours',
-      'title': 'Workshop: Advanced Techniques',
-      'location': 'Conference Room A',
-      'organizer': 'Dr. Sarah Johnson',
-      'status': 'Limited seats',
-      'category': 'Workshop',
-      'categoryColor': Color(0xFF2563EB),
-      'bgColor': Color(0xFFDCEFFF),
-    },
-    {
       'id': 3,
-      'date': DateTime(2025, 1, 22),
+      'date': DateTime(2026, 1, 22),
       'topOffset': 2.0,
       'height': 4.0,
       'time': '10:00 AM - 12:00 PM IST',
@@ -73,10 +43,27 @@ class _ScheduleTabState extends State<ScheduleTab>
       'category': 'Panel',
       'categoryColor': Color(0xFFCA8A04),
       'bgColor': Color(0xFFFFF4E6),
+      'isActive': true,
+      'currentTime': '10:30',
+    },
+    {
+      'id': 11,
+      'date': DateTime(2026, 1, 22),
+      'topOffset': 6.0,
+      'height': 2.0,
+      'time': '2:00 PM - 3:30 PM IST',
+      'duration': '1.5 hours',
+      'title': 'Breast Augmentation Techniques',
+      'location': 'Conference Room A',
+      'organizer': 'Dr. Robert Miller',
+      'status': 'Limited seats',
+      'category': 'Technical',
+      'categoryColor': Color(0xFF7C3AED),
+      'bgColor': Color(0xFFE9D5FF),
     },
     {
       'id': 4,
-      'date': DateTime(2025, 1, 23),
+      'date': DateTime(2026, 1, 23),
       'topOffset': 6.0,
       'height': 2.0,
       'time': '12:00 PM - 1:00 PM IST',
@@ -90,8 +77,23 @@ class _ScheduleTabState extends State<ScheduleTab>
       'bgColor': Color(0xFFD4F4DD),
     },
     {
+      'id': 13,
+      'date': DateTime(2026, 1, 23),
+      'topOffset': 4.0,
+      'height': 3.0,
+      'time': '9:30 AM - 11:00 AM IST',
+      'duration': '1.5 hours',
+      'title': 'Introduction to Aesthetic Medicine',
+      'location': 'Conference Room B',
+      'organizer': 'Dr. John Smith',
+      'status': 'Open seating',
+      'category': 'Workshop',
+      'categoryColor': Color(0xFF2563EB),
+      'bgColor': Color(0xFFDCEFFF),
+    },
+    {
       'id': 5,
-      'date': DateTime(2025, 1, 24),
+      'date': DateTime(2026, 1, 24),
       'topOffset': 8.0,
       'height': 3.0,
       'time': '1:00 PM - 2:30 PM IST',
@@ -106,7 +108,7 @@ class _ScheduleTabState extends State<ScheduleTab>
     },
     {
       'id': 6,
-      'date': DateTime(2025, 1, 25),
+      'date': DateTime(2026, 1, 25),
       'topOffset': 8.0,
       'height': 1.5,
       'time': '4:00 PM - 5:30 PM IST',
@@ -117,12 +119,11 @@ class _ScheduleTabState extends State<ScheduleTab>
       'status': 'Open seating',
       'category': 'Keynote',
       'categoryColor': Color(0xFFDC2626),
-      'isActive': true,
-      'currentTime': '13:02',
+      'bgColor': Color(0xFFFFE6E6),
     },
     {
       'id': 7,
-      'date': DateTime(2025, 1, 25),
+      'date': DateTime(2026, 1, 25),
       'topOffset': 11.0,
       'height': 2.0,
       'time': '6:00 PM - 8:00 PM IST',
@@ -139,7 +140,7 @@ class _ScheduleTabState extends State<ScheduleTab>
     // Multiple sessions at same time slot (8.0)
     {
       'id': 12,
-      'date': DateTime(2025, 1, 25),
+      'date': DateTime(2026, 1, 25),
       'topOffset': 8.0,
       'height': 1.5,
       'time': '4:00 PM - 4:45 PM IST',
@@ -153,8 +154,8 @@ class _ScheduleTabState extends State<ScheduleTab>
       'bgColor': Color(0xFFDCEFFF),
     },
     {
-      'id': 13,
-      'date': DateTime(2025, 1, 25),
+      'id': 14,
+      'date': DateTime(2026, 1, 25),
       'topOffset': 8.0,
       'height': 1.5,
       'time': '4:00 PM - 4:45 PM IST',
@@ -169,7 +170,7 @@ class _ScheduleTabState extends State<ScheduleTab>
     },
     {
       'id': 8,
-      'date': DateTime(2025, 1, 26),
+      'date': DateTime(2026, 1, 26),
       'topOffset': 3.0,
       'height': 3.0,
       'time': '10:30 AM - 12:00 PM IST',
@@ -183,49 +184,19 @@ class _ScheduleTabState extends State<ScheduleTab>
       'bgColor': Color(0xFFDCEFFF),
     },
     {
-      'id': 9,
-      'date': DateTime(2025, 1, 27),
-      'topOffset': 5.0,
-      'height': 2.0,
-      'time': '11:30 AM - 12:30 PM IST',
-      'duration': '1 hour',
-      'title': 'Case Study Presentation',
-      'location': 'Auditorium B',
-      'organizer': 'Research Team',
-      'status': 'Open seating',
-      'category': 'Research',
-      'categoryColor': Color(0xFF7C3AED),
-      'bgColor': Color(0xFFE9D5FF),
-    },
-    {
-      'id': 10,
-      'date': DateTime(2025, 1, 28),
-      'topOffset': 4.0,
+      'id': 15,
+      'date': DateTime(2026, 1, 26),
+      'topOffset': 7.0,
       'height': 3.0,
-      'time': '11:00 AM - 12:30 PM IST',
+      'time': '3:00 PM - 4:30 PM IST',
       'duration': '1.5 hours',
-      'title': 'Closing Ceremony',
-      'location': 'Main Hall, The Westin',
-      'organizer': 'Event Committee',
-      'status': 'All invited',
-      'category': 'Closing',
+      'title': 'Hair Restoration Techniques',
+      'location': 'Conference Room A',
+      'organizer': 'Dr. Richard Brown',
+      'status': 'Open seating',
+      'category': 'Technical',
       'categoryColor': Color(0xFF7C3AED),
       'bgColor': Color(0xFFE9D5FF),
-    },
-    {
-      'id': 11,
-      'date': DateTime(2025, 1, 29),
-      'topOffset': 1.0,
-      'height': 2.0,
-      'time': '9:30 AM - 10:30 AM IST',
-      'duration': '1 hour',
-      'title': 'Farewell Breakfast',
-      'location': 'Restaurant, The Westin',
-      'organizer': 'Organizing Committee',
-      'status': 'Open to all',
-      'category': 'Social',
-      'categoryColor': Color(0xFF16A34A),
-      'bgColor': Color(0xFFD4F4DD),
     },
   ];
 
