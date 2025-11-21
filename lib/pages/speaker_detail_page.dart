@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:aesurg26/components/page_scaffold.dart';
+import 'package:aesurg26/pages/chat_page.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 enum ConnectionStatus { notConnected, pending, connected }
@@ -211,7 +212,16 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
             child: CupertinoButton(
               padding: EdgeInsets.symmetric(vertical: 12),
               borderRadius: BorderRadius.circular(12),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.of(context).push(
+                  CupertinoPageRoute(
+                    builder: (context) => ChatPage(
+                      userName: widget.speaker['name'] ?? '',
+                      userPhoto: widget.speaker['photo'],
+                    ),
+                  ),
+                );
+              },
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

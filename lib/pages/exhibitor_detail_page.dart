@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:aesurg26/components/page_scaffold.dart';
+import 'package:aesurg26/pages/chat_page.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
@@ -356,18 +357,27 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
             child: CupertinoButton(
               padding: EdgeInsets.symmetric(vertical: 12),
               borderRadius: BorderRadius.circular(12),
-              onPressed: _showMeetingSheet,
+              onPressed: () {
+                Navigator.of(context).push(
+                  CupertinoPageRoute(
+                    builder: (context) => ChatPage(
+                      userName: widget.exhibitor['companyName'] ?? widget.exhibitor['name'] ?? '',
+                      userPhoto: widget.exhibitor['photo'],
+                    ),
+                  ),
+                );
+              },
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    CupertinoIcons.videocam_fill,
-                    size: 22,
+                    CupertinoIcons.chat_bubble_fill,
+                    size: 18,
                     color: CupertinoColors.white,
                   ),
                   SizedBox(width: 6),
                   Text(
-                    'Meeting',
+                    'Message',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,

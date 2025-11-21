@@ -32,7 +32,7 @@ class _ScheduleTabState extends State<ScheduleTab>
     {
       'id': 3,
       'date': DateTime(2026, 1, 22),
-      'topOffset': 2.0,
+      'topOffset': 20.0, // 10:00 AM = (10 * 2) + 0
       'height': 4.0,
       'time': '10:00 AM - 12:00 PM IST',
       'duration': '2 hours',
@@ -46,11 +46,27 @@ class _ScheduleTabState extends State<ScheduleTab>
       'isActive': true,
       'currentTime': '10:30',
     },
+    // 2 sessions at same time slot - 10:00 AM on Jan 22
+    {
+      'id': 16,
+      'date': DateTime(2026, 1, 22),
+      'topOffset': 20.0, // 10:00 AM = (10 * 2) + 0
+      'height': 4.0,
+      'time': '10:00 AM - 12:00 PM IST',
+      'duration': '2 hours',
+      'title': 'Advanced Cosmetic Procedures',
+      'location': 'Conference Room C',
+      'organizer': 'Dr. Sarah Williams',
+      'status': 'Limited seats',
+      'category': 'Workshop',
+      'categoryColor': Color(0xFF2563EB),
+      'bgColor': Color(0xFFDCEFFF),
+    },
     {
       'id': 11,
       'date': DateTime(2026, 1, 22),
-      'topOffset': 6.0,
-      'height': 2.0,
+      'topOffset': 28.0, // 2:00 PM = (14 * 2) + 0
+      'height': 3.0,
       'time': '2:00 PM - 3:30 PM IST',
       'duration': '1.5 hours',
       'title': 'Breast Augmentation Techniques',
@@ -64,7 +80,7 @@ class _ScheduleTabState extends State<ScheduleTab>
     {
       'id': 4,
       'date': DateTime(2026, 1, 23),
-      'topOffset': 6.0,
+      'topOffset': 24.0, // 12:00 PM = (12 * 2) + 0
       'height': 2.0,
       'time': '12:00 PM - 1:00 PM IST',
       'duration': '1 hour',
@@ -79,7 +95,7 @@ class _ScheduleTabState extends State<ScheduleTab>
     {
       'id': 13,
       'date': DateTime(2026, 1, 23),
-      'topOffset': 4.0,
+      'topOffset': 19.0, // 9:30 AM = (9 * 2) + 1
       'height': 3.0,
       'time': '9:30 AM - 11:00 AM IST',
       'duration': '1.5 hours',
@@ -94,7 +110,7 @@ class _ScheduleTabState extends State<ScheduleTab>
     {
       'id': 5,
       'date': DateTime(2026, 1, 24),
-      'topOffset': 8.0,
+      'topOffset': 26.0, // 1:00 PM = (13 * 2) + 0
       'height': 3.0,
       'time': '1:00 PM - 2:30 PM IST',
       'duration': '1.5 hours',
@@ -109,8 +125,8 @@ class _ScheduleTabState extends State<ScheduleTab>
     {
       'id': 6,
       'date': DateTime(2026, 1, 25),
-      'topOffset': 8.0,
-      'height': 1.5,
+      'topOffset': 32.0, // 4:00 PM = (16 * 2) + 0
+      'height': 3.0,
       'time': '4:00 PM - 5:30 PM IST',
       'duration': '1.5 hours',
       'title': 'Inaugural Ceremony & Presidential Address',
@@ -124,8 +140,8 @@ class _ScheduleTabState extends State<ScheduleTab>
     {
       'id': 7,
       'date': DateTime(2026, 1, 25),
-      'topOffset': 11.0,
-      'height': 2.0,
+      'topOffset': 36.0, // 6:00 PM = (18 * 2) + 0
+      'height': 4.0,
       'time': '6:00 PM - 8:00 PM IST',
       'duration': '2 hours',
       'title': 'Welcome Reception & Networking Dinner',
@@ -137,11 +153,11 @@ class _ScheduleTabState extends State<ScheduleTab>
       'bgColor': Color(0xFFFFF4E6),
       'showAvatar': true,
     },
-    // Multiple sessions at same time slot (8.0)
+    // Multiple sessions at same time slot - 3 sessions at 4:00 PM
     {
       'id': 12,
       'date': DateTime(2026, 1, 25),
-      'topOffset': 8.0,
+      'topOffset': 32.0, // 4:00 PM = (16 * 2) + 0
       'height': 1.5,
       'time': '4:00 PM - 4:45 PM IST',
       'duration': '45 minutes',
@@ -156,7 +172,7 @@ class _ScheduleTabState extends State<ScheduleTab>
     {
       'id': 14,
       'date': DateTime(2026, 1, 25),
-      'topOffset': 8.0,
+      'topOffset': 32.0, // 4:00 PM = (16 * 2) + 0
       'height': 1.5,
       'time': '4:00 PM - 4:45 PM IST',
       'duration': '45 minutes',
@@ -171,7 +187,7 @@ class _ScheduleTabState extends State<ScheduleTab>
     {
       'id': 8,
       'date': DateTime(2026, 1, 26),
-      'topOffset': 3.0,
+      'topOffset': 21.0, // 10:30 AM = (10 * 2) + 1
       'height': 3.0,
       'time': '10:30 AM - 12:00 PM IST',
       'duration': '1.5 hours',
@@ -186,7 +202,7 @@ class _ScheduleTabState extends State<ScheduleTab>
     {
       'id': 15,
       'date': DateTime(2026, 1, 26),
-      'topOffset': 7.0,
+      'topOffset': 30.0, // 3:00 PM = (15 * 2) + 0
       'height': 3.0,
       'time': '3:00 PM - 4:30 PM IST',
       'duration': '1.5 hours',
@@ -1411,7 +1427,7 @@ class _ScheduleTabState extends State<ScheduleTab>
       height: cardHeight,
       child: GestureDetector(
         onTap: () {
-          Navigator.of(context).push(
+          Navigator.of(context, rootNavigator: true).push(
             CupertinoPageRoute(
               builder: (context) => SessionDetailPage(session: sessionData),
             ),
