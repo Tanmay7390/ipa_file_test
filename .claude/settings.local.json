@@ -4,7 +4,10 @@
       "Bash(flutter analyze --no-fatal-infos)",
       "Bash(flutter analyze:*)",
       "Bash(flutter clean:*)",
-      "Bash(dart run:*)"
+      "Bash(dart run:*)",
+      "Read(//Users/tanmaybuardkar/Desktop/ipa_file_test-main/**)",
+      "Bash(keytool:*)",
+      "Bash(flutter build:*)"
     ],
     "deny": [],
     "ask": []

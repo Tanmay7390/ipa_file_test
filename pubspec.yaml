@@ -124,6 +124,8 @@ flutter_launcher_icons:
   image_path_ios: "assets/images/logo-light.png"
   image_path_ios_dark_transparent: "assets/images/logo-dark.png"
   remove_alpha_ios: true
-  # Android adaptive icons (optional, for better Android support)
+  # Android adaptive icons with dark mode support
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/images/logo-light.png"
+  adaptive_icon_foreground: "assets/images/logo-light-no-bg.png"
+  # Android 13+ themed icons (appears as monochrome in dark mode)
+  adaptive_icon_monochrome: "assets/images/logo-dark-no-bg.png"

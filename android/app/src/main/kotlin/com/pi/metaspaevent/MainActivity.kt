@@ -1,4 +1,4 @@
-package com.aesurg.aesurg26
+package com.pi.metaspaevent
 
 import io.flutter.embedding.android.FlutterActivity
 
