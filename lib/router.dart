@@ -75,22 +75,104 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/settings',
-      builder: (context, state) =>
-          const StandaloneDrawerWrapper(child: SettingsPage()),
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: const StandaloneDrawerWrapper(child: SettingsPage()),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // Slide from right to left when entering
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1.0, 0.0), // Start from right
+              end: Offset.zero, // End at center
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+            ),
+            child: child,
+          );
+        },
+      ),
     ),
     GoRoute(
       path: '/notifications',
-      builder: (context, state) =>
-          const StandaloneDrawerWrapper(child: NotificationsPage()),
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: const StandaloneDrawerWrapper(child: NotificationsPage()),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // Slide from right to left when entering
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1.0, 0.0), // Start from right
+              end: Offset.zero, // End at center
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+            ),
+            child: child,
+          );
+        },
+      ),
     ),
     GoRoute(
       path: '/profile',
-      builder: (context, state) =>
-          const StandaloneDrawerWrapper(child: ProfilePage()),
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: const StandaloneDrawerWrapper(child: ProfilePage()),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // Slide from right to left when entering
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1.0, 0.0), // Start from right
+              end: Offset.zero, // End at center
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+            ),
+            child: child,
+          );
+        },
+      ),
     ),
     StatefulShellRoute.indexedStack(
-      builder: (context, state, navigationShell) =>
-          HomeScreenWithDrawer(navigationShell: navigationShell),
+      pageBuilder: (context, state, navigationShell) {
+        // Check navigation source
+        final isComingFromDetail = state.extra is Map &&
+            (state.extra as Map)['fromDetail'] == true;
+        final isComingFromLogin = state.extra is Map &&
+            (state.extra as Map)['fromLogin'] == true;
+
+        return CustomTransitionPage(
+          key: state.pageKey,
+          child: HomeScreenWithDrawer(navigationShell: navigationShell),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            // If coming from detail page, slide from left (reverse animation)
+            if (isComingFromDetail) {
+              return SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(-1.0, 0.0), // Start from left
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                ),
+                child: child,
+              );
+            }
+
+            // If coming from login, slide from right (forward animation)
+            if (isComingFromLogin) {
+              return SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(1.0, 0.0), // Start from right
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                ),
+                child: child,
+              );
+            }
+
+            // No animation for tab switching
+            return child;
+          },
+        );
+      },
       branches: [
         StatefulShellBranch(
           routes: [

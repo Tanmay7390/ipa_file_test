@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/cupertino.dart';
 import 'package:aesurg26/components/page_scaffold.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +9,9 @@ class MoreTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = brightness == Brightness.dark;
+
     return CustomPageScaffold(
       heading: 'More',
       hideSearch: true,
@@ -19,6 +24,9 @@ class MoreTab extends StatelessWidget {
           CupertinoListSection(
             topMargin: 0,
             margin: EdgeInsets.symmetric(horizontal: 0),
+            backgroundColor: CupertinoColors.systemBackground.resolveFrom(
+              context,
+            ),
             children: [
               _buildMenuItem(
                 context,
@@ -106,6 +114,8 @@ class MoreTab extends StatelessWidget {
                       'assets/images/floormap.jpg',
                       width: double.infinity,
                       fit: BoxFit.cover,
+                      cacheHeight: 800,
+                      cacheWidth: 1200,
                     ),
                     Positioned(
                       top: 8,
@@ -134,7 +144,8 @@ class MoreTab extends StatelessWidget {
   }
 
   void _showFullScreenFloorMap(BuildContext context) {
-    Navigator.of(context).push(
+    // Use root navigator to ensure bottom tabs are hidden
+    Navigator.of(context, rootNavigator: true).push(
       CupertinoPageRoute(
         fullscreenDialog: true,
         builder: (context) => _FloorMapViewer(),
@@ -149,6 +160,7 @@ class MoreTab extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return CupertinoListTile(
+      backgroundColor: CupertinoColors.systemBackground.resolveFrom(context),
       leading: Icon(icon, color: CupertinoColors.systemGrey, size: 28),
       title: Text(
         title,
@@ -181,47 +193,284 @@ class _FloorMapViewerState extends State<_FloorMapViewer> {
   final TransformationController _transformationController =
       TransformationController();
 
+  double _currentScale = 1.0;
+  static const double _minScale = 0.5;
+  static const double _maxScale = 5.0;
+
   @override
   void dispose() {
     _transformationController.dispose();
     super.dispose();
   }
 
+  void _resetZoom() {
+    _transformationController.value = Matrix4.identity();
+    setState(() {
+      _currentScale = 1.0;
+    });
+  }
+
+  void _handleDoubleTapDown(TapDownDetails details) {
+    // Toggle between 100% and 200% zoom on double tap
+    final newScale = _currentScale < 2.0 ? 2.0 : 1.0;
+
+    if (newScale == 1.0) {
+      // Reset to original
+      _transformationController.value = Matrix4.identity();
+    } else {
+      // Zoom in centered on tap position
+      final position = details.localPosition;
+      _transformationController.value = Matrix4.identity()
+        ..translate(
+          -position.dx * (newScale - 1),
+          -position.dy * (newScale - 1),
+        )
+        ..scale(newScale);
+    }
+
+    setState(() {
+      _currentScale = newScale;
+    });
+  }
+
+  void _setZoomFromSlider(double value) {
+    final matrix = Matrix4.identity()..scale(value);
+    _transformationController.value = matrix;
+    setState(() {
+      _currentScale = value;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Detect system brightness for adaptive colors
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = brightness == Brightness.dark;
+
+    // Adaptive colors
+    final buttonBg = isDark
+        ? CupertinoColors.white.withValues(alpha: 0.15)
+        : CupertinoColors.black.withValues(alpha: 0.15);
+    final buttonFg = isDark
+        ? CupertinoColors.systemGrey
+        : CupertinoColors.black;
+    final sliderBg = isDark
+        ? CupertinoColors.systemBackground.withValues(alpha: 0.15)
+        : CupertinoColors.white.withValues(alpha: 0.15);
+
     return CupertinoPageScaffold(
       backgroundColor: CupertinoColors.black,
       child: SafeArea(
         child: Stack(
           children: [
-            InteractiveViewer(
-              transformationController: _transformationController,
-              minScale: 1.0,
-              maxScale: 5.0,
-              panEnabled: true,
-              scaleEnabled: true,
-              child: Center(
-                child: Image.asset(
-                  'assets/images/floormap.jpg',
-                  fit: BoxFit.contain,
+            // Interactive floor map viewer with double-tap
+            GestureDetector(
+              onDoubleTapDown: _handleDoubleTapDown,
+              child: InteractiveViewer(
+                transformationController: _transformationController,
+                minScale: _minScale,
+                maxScale: _maxScale,
+                panEnabled: true,
+                scaleEnabled: true,
+                boundaryMargin: EdgeInsets.all(double.infinity),
+                onInteractionUpdate: (details) {
+                  setState(() {
+                    _currentScale = _transformationController.value
+                        .getMaxScaleOnAxis();
+                  });
+                },
+                child: Center(
+                  child: Image.asset(
+                    'assets/images/floormap.jpg',
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ),
+            // Top controls
             Positioned(
               top: 16,
+              left: 16,
               right: 16,
-              child: GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: Container(
-                  padding: EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: CupertinoColors.white.withValues(alpha: 0.9),
-                    shape: BoxShape.circle,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Reset zoom button
+                  GestureDetector(
+                    onTap: _resetZoom,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: buttonBg,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                CupertinoIcons.arrow_counterclockwise,
+                                size: 18,
+                                color: buttonFg,
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                'Reset',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: buttonFg,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  child: Icon(
-                    CupertinoIcons.xmark,
-                    size: 24,
-                    color: CupertinoColors.black,
+                  // Close button
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: ClipOval(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                        child: Container(
+                          padding: EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: buttonBg,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            CupertinoIcons.xmark,
+                            size: 24,
+                            color: buttonFg,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // iOS-style zoom slider at bottom
+            Positioned(
+              bottom: 20,
+              left: 20,
+              right: 20,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: sliderBg,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: CupertinoColors.black.withValues(alpha: 0.15),
+                          blurRadius: 20,
+                          offset: Offset(0, 4),
+                          spreadRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        // Zoom out button
+                        CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () {
+                            final newScale = (_currentScale - 0.5).clamp(
+                              _minScale,
+                              _maxScale,
+                            );
+                            _setZoomFromSlider(newScale);
+                          },
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? CupertinoColors.systemGrey5.darkColor
+                                  : CupertinoColors.systemGrey5,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              CupertinoIcons.minus,
+                              size: 20,
+                              color: buttonFg,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        // iOS-style slider
+                        Expanded(
+                          child: SizedBox(
+                            height: 44,
+                            child: CupertinoSlider(
+                              value: _currentScale,
+                              min: _minScale,
+                              max: _maxScale,
+                              divisions: 18,
+                              activeColor: CupertinoColors.systemBlue,
+                              thumbColor: CupertinoColors.white,
+                              onChanged: _setZoomFromSlider,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        // Zoom in button
+                        CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () {
+                            final newScale = (_currentScale + 0.5).clamp(
+                              _minScale,
+                              _maxScale,
+                            );
+                            _setZoomFromSlider(newScale);
+                          },
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? CupertinoColors.systemGrey5.darkColor
+                                  : CupertinoColors.systemGrey5,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              CupertinoIcons.plus,
+                              size: 20,
+                              color: buttonFg,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        // Zoom percentage with iOS styling
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          child: Text(
+                            '${(_currentScale * 100).toInt()}%',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: buttonFg,
+                              fontFamily: 'SF Pro Display',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

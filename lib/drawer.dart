@@ -273,9 +273,9 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                             .toList(),
                   ),
                 ),
-                // Dark mode toggle section
+                // Bottom section with logo and controls side by side
                 Container(
-                  padding: EdgeInsets.symmetric(vertical: 10, horizontal: 30),
+                  padding: EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     border: Border(
                       top: BorderSide(
@@ -285,132 +285,110 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                     ),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Row(
+                      // Left column: Logo and social icons
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
+                          // Logo
+                          Image.asset(
+                            'assets/images/logo.png',
+                            height: 80,
+                          ),
+                          SizedBox(height: 12),
+                          // Social media icons row
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                                // Facebook
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFF1877F2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: CupertinoButton(
+                                    padding: EdgeInsets.zero,
+                                    onPressed: () {
+                                      // TODO: Open Facebook link
+                                    },
+                                    child: FaIcon(
+                                      FontAwesomeIcons.facebookF,
+                                      color: CupertinoColors.white,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                // Instagram
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFFE4405F),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: CupertinoButton(
+                                    padding: EdgeInsets.zero,
+                                    onPressed: () {
+                                      // TODO: Open Instagram link
+                                    },
+                                    child: FaIcon(
+                                      FontAwesomeIcons.instagram,
+                                      color: CupertinoColors.white,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                // LinkedIn
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFF0A66C2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: CupertinoButton(
+                                    padding: EdgeInsets.zero,
+                                    onPressed: () {
+                                      // TODO: Open LinkedIn link
+                                    },
+                                    child: FaIcon(
+                                      FontAwesomeIcons.linkedinIn,
+                                      color: CupertinoColors.white,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Spacer(),
+                        // Dark mode icon button on bottom right
+                        CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () {
+                            ref.read(themeModeProvider.notifier).toggleTheme();
+                          },
+                          child: Icon(
                             isDarkMode
                                 ? CupertinoIcons.moon_fill
                                 : CupertinoIcons.sun_max_fill,
-                            color: CupertinoColors.secondaryLabel.resolveFrom(
+                            color:
+                                CupertinoColors.secondaryLabel.resolveFrom(
                               context,
                             ),
-                            size: 24,
+                            size: 28,
                           ),
-                          SizedBox(width: 16),
-                          Text(
-                            'Dark Mode',
-                            style: TextStyle(
-                              color: CupertinoTheme.of(
-                                context,
-                              ).textTheme.textStyle.color,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w400,
-                              fontFamily: 'SF Pro Display',
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                      CupertinoSwitch(
-                        value: isDarkMode,
-                        onChanged: (value) {
-                          ref.read(themeModeProvider.notifier).toggleTheme();
-                        },
-                        activeTrackColor: Color(0xFFFFD700),
-                      ),
-                    ],
-                  ),
-                ),
-                // Social media buttons
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(
-                        color: CupertinoColors.separator.resolveFrom(context),
-                        width: 0.1,
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Facebook
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Color(0xFF1877F2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () {
-                            // TODO: Open Facebook link
-                          },
-                          child: FaIcon(
-                            FontAwesomeIcons.facebookF,
-                            color: CupertinoColors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 20),
-                      // Instagram
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Color(0xFFE4405F),
-                          shape: BoxShape.circle,
-                        ),
-                        child: CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () {
-                            // TODO: Open Instagram link
-                          },
-                          child: FaIcon(
-                            FontAwesomeIcons.instagram,
-                            color: CupertinoColors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 20),
-                      // LinkedIn
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Color(0xFF0A66C2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () {
-                            // TODO: Open LinkedIn link
-                          },
-                          child: FaIcon(
-                            FontAwesomeIcons.linkedinIn,
-                            color: CupertinoColors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Logo at bottom
-                Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    height: 80,
-                    alignment: Alignment.centerLeft,
-                  ),
-                ),
               ],
             ),
           ),
@@ -600,8 +578,8 @@ class FloatingTabBar extends StatelessWidget {
                 boxShadow: [
                   BoxShadow(
                     color: isDarkMode
-                        ? CupertinoColors.black.withOpacity(0.2)
-                        : CupertinoColors.systemGrey.withOpacity(0.15),
+                        ? CupertinoColors.black.withValues(alpha: 0.2)
+                        : CupertinoColors.systemGrey.withValues(alpha: 0.15),
                     blurRadius: 16,
                     offset: Offset(0, 4),
                   ),
@@ -745,16 +723,13 @@ class _HomeScreenWithDrawerState extends State<HomeScreenWithDrawer>
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
 
-        // If drawer is open, close it and go to home tab
+        // If drawer is open, just close it and stay on current tab
         if (drawerOpen) {
           toggleDrawer(false);
-          if (widget.navigationShell.currentIndex != 0) {
-            widget.navigationShell.goBranch(0);
-          }
           return;
         }
 
-        // If not on home tab, navigate to home tab
+        // If drawer is closed and not on home tab, navigate to home tab
         if (widget.navigationShell.currentIndex != 0) {
           widget.navigationShell.goBranch(0);
           return;
@@ -842,6 +817,9 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar>
 
   @override
   Widget build(BuildContext context) {
+    // Define the tab bar height as a constant
+    const double tabBarHeight = 55.0;
+
     return CupertinoPageScaffold(
       resizeToAvoidBottomInset: false,
       child: Stack(
@@ -850,7 +828,16 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar>
           Positioned.fill(
             child: FadeTransition(
               opacity: _fadeAnimation,
-              child: widget.navigationShell,
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  padding: MediaQuery.of(context).padding.copyWith(
+                    bottom: widget.showBottomNav
+                        ? MediaQuery.of(context).padding.bottom + tabBarHeight
+                        : MediaQuery.of(context).padding.bottom,
+                  ),
+                ),
+                child: widget.navigationShell,
+              ),
             ),
           ),
           // Blurred tab bar positioned at bottom
@@ -1076,21 +1063,33 @@ class _StandaloneDrawerWrapperState extends State<StandaloneDrawerWrapper>
   Widget build(BuildContext context) {
     final isTabletView = isTablet(context);
     final showBottomNav = shouldShowBottomNavigation();
+    final location = GoRouterState.of(context).matchedLocation;
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
 
-        // If drawer is open, close it and go to home tab
+        // If drawer is open, just close it and don't do anything else
         if (drawerOpen) {
           toggleDrawer(false);
-          context.go('/home');
           return;
         }
 
-        // If drawer is closed, just pop normally
-        context.pop();
+        // If drawer is closed, handle navigation based on current route
+        // Check if we're on a detail page (settings, profile, notifications)
+        if (location == '/settings' ||
+            location == '/notifications' ||
+            location == '/profile') {
+          // Navigate back to home with reverse animation
+          context.go('/home', extra: {'fromDetail': true});
+          return;
+        }
+
+        // If on a main route, try to pop or exit
+        if (Navigator.canPop(context)) {
+          context.pop();
+        }
       },
       child: CupertinoPageScaffold(
         resizeToAvoidBottomInset: false,

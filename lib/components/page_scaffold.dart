@@ -207,6 +207,12 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
                       widget.sliverList,
                       if (!widget.hideLargeTitle)
                         _buildBottomRefreshIndicator(),
+                      // Add bottom safe area padding so content is visible above bottom bar
+                      SliverPadding(
+                        padding: EdgeInsets.only(
+                          bottom: MediaQuery.of(context).padding.bottom,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -329,6 +335,13 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
 
                   // Bottom refresh indicator (disabled when hideLargeTitle is true)
                   if (!widget.hideLargeTitle) _buildBottomRefreshIndicator(),
+
+                  // Add bottom safe area padding so content is visible above bottom bar
+                  SliverPadding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).padding.bottom,
+                    ),
+                  ),
                 ],
               ),
             ),

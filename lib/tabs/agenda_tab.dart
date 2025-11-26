@@ -1,4 +1,3 @@
-import 'dart:ui' show ImageFilter;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../components/page_scaffold.dart';
@@ -21,10 +20,8 @@ class _ScheduleTabState extends State<ScheduleTab>
   late AnimationController _tabAnimationController;
   late Animation<double> _tabAnimation;
 
-  // Height per 30 minutes
-  final double _halfHourHeightEmpty = 40.0; // Height for empty slots
   final double _eventCardTopPadding = 10.0; // Top padding for event cards
-  final double _eventCardBottomPadding = 10.0; // Bottom padding for event cards
+  final double _eventCardBottomPadding = 5.0; // Bottom padding for event cards
   final double _eventCardSpacing = 10.0; // Spacing between stacked cards
 
   // 5-day event schedule (Jan 22-26, 2026)
@@ -361,21 +358,11 @@ class _ScheduleTabState extends State<ScheduleTab>
   void _scrollToFirstSession() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_filteredSessions.isNotEmpty && _scrollController.hasClients) {
-        final firstSession = _filteredSessions.first;
-        final topOffset = firstSession['topOffset'] as double;
-
-        // Calculate the absolute position of the first session
-        double position = 0;
-        for (int i = 0; i < topOffset.floor(); i++) {
-          position += _getSlotHeight(i);
-        }
-
-        // Account for the fixed header height (190px)
-        // Scroll to position with some padding
-        final scrollPosition = position > 50 ? position - 50 : 0.0;
-
+        // The first session is always at the top of the timeline now
+        // since we only show slots with events
+        // Just scroll to the top
         _scrollController.animateTo(
-          scrollPosition.toDouble(),
+          0.0,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
@@ -592,7 +579,7 @@ class _ScheduleTabState extends State<ScheduleTab>
                 CupertinoIcons.chevron_left,
                 color: currentIdx > 0
                     ? CupertinoColors.activeBlue
-                    : CupertinoColors.systemGrey4,
+                    : CupertinoColors.systemGrey4.resolveFrom(context),
                 size: 24,
               ),
             ),
@@ -696,7 +683,7 @@ class _ScheduleTabState extends State<ScheduleTab>
                 CupertinoIcons.chevron_right,
                 color: currentIdx < _weeks.length - 1
                     ? CupertinoColors.activeBlue
-                    : CupertinoColors.systemGrey4,
+                    : CupertinoColors.systemGrey4.resolveFrom(context),
                 size: 24,
               ),
             ),
@@ -829,24 +816,6 @@ class _ScheduleTabState extends State<ScheduleTab>
     );
   }
 
-  // Check if there's a session at a specific half-hour slot
-  bool _hasSessionAtSlot(int slotIndex) {
-    for (var session in _filteredSessions) {
-      final topOffset = session['topOffset'] as double;
-      final height = session['height'] as double;
-
-      // Calculate session start and end in half-hour slots
-      final sessionStartSlot = topOffset;
-      final sessionEndSlot = topOffset + height;
-
-      // Check if this slot falls within the session
-      if (slotIndex >= sessionStartSlot && slotIndex < sessionEndSlot) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   // Calculate height for event card based on title length
   double _calculateCardHeight(String title) {
     // Base height for card content:
@@ -887,49 +856,77 @@ class _ScheduleTabState extends State<ScheduleTab>
     return _calculateCardHeight(title);
   }
 
-  // Get the height for a specific time slot
-  double _getSlotHeight(int slotIndex) {
-    // Find all sessions that start at this slot
-    final sessionsAtSlot = <Map<String, dynamic>>[];
+  // Create timeline slots structure (events and gaps)
+  List<Map<String, dynamic>> _buildTimelineSlots() {
+    if (_filteredSessions.isEmpty) return [];
 
-    for (var session in _filteredSessions) {
-      final topOffset = session['topOffset'] as double;
-      if (slotIndex == topOffset.floor()) {
-        sessionsAtSlot.add(session);
-      }
+    final slots = <Map<String, dynamic>>[];
+
+    // Sort sessions by start time
+    final sortedSessions = List<Map<String, dynamic>>.from(_filteredSessions);
+    sortedSessions.sort((a, b) {
+      final aOffset = a['topOffset'] as double;
+      final bOffset = b['topOffset'] as double;
+      return aOffset.compareTo(bOffset);
+    });
+
+    // Group sessions that start at the same time
+    final Map<double, List<Map<String, dynamic>>> sessionsByStartTime = {};
+    for (var session in sortedSessions) {
+      final startOffset = session['topOffset'] as double;
+      sessionsByStartTime.putIfAbsent(startOffset, () => []).add(session);
     }
 
-    if (sessionsAtSlot.isNotEmpty) {
-      // Calculate total height for stacked cards
-      double totalHeight = _eventCardTopPadding;
+    // Get sorted unique start times
+    final startTimes = sessionsByStartTime.keys.toList()..sort();
 
-      for (int i = 0; i < sessionsAtSlot.length; i++) {
-        totalHeight += _estimateCardHeight(sessionsAtSlot[i]);
-        if (i < sessionsAtSlot.length - 1) {
-          totalHeight += _eventCardSpacing;
+    for (int i = 0; i < startTimes.length; i++) {
+      final currentStartTime = startTimes[i];
+      final sessionsAtTime = sessionsByStartTime[currentStartTime]!;
+
+      // Add event slot
+      slots.add({
+        'type': 'event',
+        'slotIndex': currentStartTime,
+        'sessions': sessionsAtTime,
+      });
+
+      // Check if there's a gap before the next event
+      if (i < startTimes.length - 1) {
+        final nextStartTime = startTimes[i + 1];
+
+        // Find the maximum end time of all sessions at current time
+        double maxEndTime = currentStartTime;
+        for (var session in sessionsAtTime) {
+          final sessionEnd = (session['topOffset'] as double) + (session['height'] as double);
+          if (sessionEnd > maxEndTime) {
+            maxEndTime = sessionEnd;
+          }
+        }
+
+        // If there's a gap, add a gap slot
+        if (maxEndTime < nextStartTime) {
+          final gapDuration = nextStartTime - maxEndTime;
+          slots.add({
+            'type': 'gap',
+            'slotIndex': maxEndTime,
+            'duration': gapDuration,
+            'endSlotIndex': nextStartTime,
+          });
         }
       }
-
-      totalHeight += _eventCardBottomPadding;
-      return totalHeight;
-    } else if (_hasSessionAtSlot(slotIndex)) {
-      // This slot is within a session but not the start, so it's already accounted for
-      return 0;
-    } else {
-      // Empty slot
-      return _halfHourHeightEmpty;
     }
+
+    return slots;
   }
 
-  // Get sessions that overlap at a specific time slot
-  List<Map<String, dynamic>> _getSessionsAtSlot(int slotIndex) {
-    return _filteredSessions.where((session) {
-      final topOffset = session['topOffset'] as double;
-      final height = session['height'] as double;
-      final sessionStartSlot = topOffset;
-      final sessionEndSlot = topOffset + height;
-      return slotIndex >= sessionStartSlot && slotIndex < sessionEndSlot;
-    }).toList();
+  // Convert slot index to time string
+  String _slotIndexToTime(double slotIndex) {
+    final hour = (slotIndex / 2).floor();
+    final minute = (slotIndex % 2) == 0 ? 0 : 30;
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    return '${displayHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period';
   }
 
   Widget _buildTimelineGrid() {
@@ -962,153 +959,234 @@ class _ScheduleTabState extends State<ScheduleTab>
       );
     }
 
-    // Calculate total height based on dynamic slot heights
+    final timelineSlots = _buildTimelineSlots();
+
+    // Calculate total height based on slots
     double totalHeight = 0;
-    for (int i = 0; i < 48; i++) {
-      // 48 half-hour slots in 24 hours
-      totalHeight += _getSlotHeight(i);
+    for (var slot in timelineSlots) {
+      if (slot['type'] == 'event') {
+        final sessions = slot['sessions'] as List<Map<String, dynamic>>;
+
+        // Calculate height for stacked events
+        double slotHeight = _eventCardTopPadding;
+        for (int i = 0; i < sessions.length; i++) {
+          slotHeight += _estimateCardHeight(sessions[i]);
+          if (i < sessions.length - 1) {
+            slotHeight += _eventCardSpacing;
+          }
+        }
+        slotHeight += _eventCardBottomPadding;
+        totalHeight += slotHeight;
+      } else if (slot['type'] == 'gap') {
+        // Fixed height for gap indicators
+        totalHeight += 40.0; // Height for gap display
+      }
     }
 
     return SizedBox(
       height: totalHeight,
       child: Stack(
         children: [
-          // Time markers and lines
-          ..._buildTimeMarkersAndLines(),
+          // Time markers and gap indicators
+          ..._buildTimeMarkersAndGaps(timelineSlots),
           // Events positioned absolutely
-          ..._buildEvents(),
+          ..._buildEventsFromSlots(timelineSlots),
         ],
       ),
     );
   }
 
-  List<Widget> _buildTimeMarkersAndLines() {
-    final times = <Widget>[];
+  List<Widget> _buildTimeMarkersAndGaps(List<Map<String, dynamic>> timelineSlots) {
+    final widgets = <Widget>[];
     double currentTop = 0;
 
-    for (int hour = 0; hour < 24; hour++) {
-      for (int minute = 0; minute < 60; minute += 30) {
-        final slotIndex = hour * 2 + (minute ~/ 30);
-        final height = _getSlotHeight(slotIndex);
+    for (var slot in timelineSlots) {
+      if (slot['type'] == 'event') {
+        final sessions = slot['sessions'] as List<Map<String, dynamic>>;
+        final slotIndex = slot['slotIndex'] as double;
+        final timeString = _slotIndexToTime(slotIndex);
 
-        // Only show timestamp if it has height (not in middle of session)
-        if (height > 0) {
-          final period = hour >= 12 ? 'PM' : 'AM';
-          final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-          final timeString =
-              '${displayHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period';
+        // Calculate height for this event slot
+        double slotHeight = _eventCardTopPadding;
+        for (int i = 0; i < sessions.length; i++) {
+          slotHeight += _estimateCardHeight(sessions[i]);
+          if (i < sessions.length - 1) {
+            slotHeight += _eventCardSpacing;
+          }
+        }
+        slotHeight += _eventCardBottomPadding;
 
-          times.add(
-            Positioned(
-              top: currentTop,
-              left: 0,
-              right: 0,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // TIME ON LEFT
-                  SizedBox(
-                    width: 80,
-                    child: Text(
-                      timeString,
-                      style: const TextStyle(
-                        fontFamily: 'SF Pro Display',
-                        fontSize: 14,
-                        letterSpacing: 0.2,
-                        fontWeight: FontWeight.w500,
-                        color: CupertinoColors.systemGrey,
-                      ),
+        // Add time marker at the start of event
+        widgets.add(
+          Positioned(
+            top: currentTop,
+            left: 0,
+            right: 0,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 80,
+                  child: Text(
+                    timeString,
+                    style: const TextStyle(
+                      fontFamily: 'SF Pro Display',
+                      fontSize: 14,
+                      letterSpacing: 0.2,
+                      fontWeight: FontWeight.w500,
+                      color: CupertinoColors.systemGrey,
                     ),
                   ),
-                  // LINE
-                  Expanded(
-                    child: Container(
-                      height: 1,
-                      color: Colors.grey.withValues(alpha: 0.2),
-                      margin: const EdgeInsets.only(left: 8),
+                ),
+                Expanded(
+                  child: Container(
+                    height: 1,
+                    color: Colors.grey.withValues(alpha: 0.2),
+                    margin: const EdgeInsets.only(left: 8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        currentTop += slotHeight;
+      } else if (slot['type'] == 'gap') {
+        final startSlotIndex = slot['slotIndex'] as double;
+        final endSlotIndex = slot['endSlotIndex'] as double;
+
+        final startTime = _slotIndexToTime(startSlotIndex);
+        final endTime = _slotIndexToTime(endSlotIndex);
+
+        // Add gap start time with border line
+        widgets.add(
+          Positioned(
+            top: currentTop,
+            left: 0,
+            right: 0,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 80,
+                  child: Text(
+                    startTime,
+                    style: const TextStyle(
+                      fontFamily: 'SF Pro Display',
+                      fontSize: 14,
+                      letterSpacing: 0.2,
+                      fontWeight: FontWeight.w500,
+                      color: CupertinoColors.systemGrey,
                     ),
                   ),
-                ],
+                ),
+                Expanded(
+                  child: Container(
+                    height: 1,
+                    color: Colors.grey.withValues(alpha: 0.2),
+                    margin: const EdgeInsets.only(left: 8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        // Add gap end time
+        widgets.add(
+          Positioned(
+            top: currentTop + 20,
+            left: 0,
+            child: SizedBox(
+              width: 80,
+              child: Text(
+                endTime,
+                style: const TextStyle(
+                  fontFamily: 'SF Pro Display',
+                  fontSize: 14,
+                  letterSpacing: 0.2,
+                  fontWeight: FontWeight.w500,
+                  color: CupertinoColors.systemGrey,
+                ),
               ),
             ),
-          );
+          ),
+        );
 
-          currentTop += height;
-        }
+        currentTop += 40.0;
       }
     }
 
-    return times;
+    return widgets;
   }
 
-  List<Widget> _buildEvents() {
+  List<Widget> _buildEventsFromSlots(List<Map<String, dynamic>> timelineSlots) {
     final widgets = <Widget>[];
-    final processedSlots = <int>{};
+    double currentTop = 0;
 
-    for (var event in _filteredSessions) {
-      final topOffset = (event['topOffset'] as double);
-      final startSlot = topOffset.floor();
+    for (var slot in timelineSlots) {
+      if (slot['type'] == 'event') {
+        final sessions = slot['sessions'] as List<Map<String, dynamic>>;
 
-      // Calculate absolute position based on actual slot heights
-      double topPosition = 0;
-      for (int i = 0; i < startSlot; i++) {
-        topPosition += _getSlotHeight(i);
-      }
+        // Stack multiple events vertically
+        double cardTopOffset = currentTop + _eventCardTopPadding;
+        for (int i = 0; i < sessions.length; i++) {
+          final evt = sessions[i];
+          final cardHeight = _estimateCardHeight(evt);
 
-      // Find all events at this slot
-      final eventsAtSlot = _filteredSessions
-          .where((s) => (s['topOffset'] as double).floor() == startSlot)
-          .toList();
+          if (evt['isActive'] == true) {
+            widgets.add(
+              _buildActiveEventCard(
+                topOffset: cardTopOffset,
+                time: evt['time'] as String,
+                duration: evt['duration'] as String,
+                title: evt['title'] as String,
+                location: evt['location'] as String,
+                organizer: evt['organizer'] as String,
+                status: evt['status'] as String,
+                category: evt['category'] as String,
+                categoryColor: evt['categoryColor'] as Color,
+                currentTime: evt['currentTime'] as String,
+                sessionId: evt['id'] as int,
+              ),
+            );
+          } else {
+            widgets.add(
+              _buildEventCard(
+                topOffset: cardTopOffset,
+                time: evt['time'] as String,
+                duration: evt['duration'] as String,
+                title: evt['title'] as String,
+                location: evt['location'] as String,
+                organizer: evt['organizer'] as String,
+                status: evt['status'] as String,
+                category: evt['category'] as String,
+                categoryColor: evt['categoryColor'] as Color,
+                color: evt['bgColor'] as Color,
+                showAvatar: evt['showAvatar'] as bool? ?? false,
+                sessionId: evt['id'] as int,
+              ),
+            );
+          }
 
-      // Skip if we've already processed this slot
-      if (processedSlots.contains(startSlot)) {
-        continue;
-      }
-      processedSlots.add(startSlot);
-
-      // Stack multiple events vertically
-      double cardTopOffset = topPosition + _eventCardTopPadding;
-      for (int i = 0; i < eventsAtSlot.length; i++) {
-        final evt = eventsAtSlot[i];
-        final cardHeight = _estimateCardHeight(evt);
-
-        if (evt['isActive'] == true) {
-          widgets.add(
-            _buildActiveEventCard(
-              topOffset: cardTopOffset,
-              time: evt['time'] as String,
-              duration: evt['duration'] as String,
-              title: evt['title'] as String,
-              location: evt['location'] as String,
-              organizer: evt['organizer'] as String,
-              status: evt['status'] as String,
-              category: evt['category'] as String,
-              categoryColor: evt['categoryColor'] as Color,
-              currentTime: evt['currentTime'] as String,
-              sessionId: evt['id'] as int,
-            ),
-          );
-        } else {
-          widgets.add(
-            _buildEventCard(
-              topOffset: cardTopOffset,
-              time: evt['time'] as String,
-              duration: evt['duration'] as String,
-              title: evt['title'] as String,
-              location: evt['location'] as String,
-              organizer: evt['organizer'] as String,
-              status: evt['status'] as String,
-              category: evt['category'] as String,
-              categoryColor: evt['categoryColor'] as Color,
-              color: evt['bgColor'] as Color,
-              showAvatar: evt['showAvatar'] as bool? ?? false,
-              sessionId: evt['id'] as int,
-            ),
-          );
+          // Move to next card position
+          cardTopOffset += cardHeight + _eventCardSpacing;
         }
 
-        // Move to next card position
-        cardTopOffset += cardHeight + _eventCardSpacing;
+        // Calculate height for this event slot
+        double slotHeight = _eventCardTopPadding;
+        for (int i = 0; i < sessions.length; i++) {
+          slotHeight += _estimateCardHeight(sessions[i]);
+          if (i < sessions.length - 1) {
+            slotHeight += _eventCardSpacing;
+          }
+        }
+        slotHeight += _eventCardBottomPadding;
+
+        currentTop += slotHeight;
+      } else if (slot['type'] == 'gap') {
+        // Gap takes fixed height
+        currentTop += 40.0;
       }
     }
 

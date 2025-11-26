@@ -73,9 +73,9 @@ class _LoginPageState extends State<LoginPage> {
       // Save login info
       await AuthService.saveLoginInfo(email);
 
-      // Navigate to home using GoRouter
+      // Navigate to home using GoRouter with forward animation
       if (mounted) {
-        context.go('/home');
+        context.go('/home', extra: {'fromLogin': true});
       }
     } else {
       setState(() {
