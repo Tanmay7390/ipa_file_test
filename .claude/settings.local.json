@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(flutter analyze --no-fatal-infos)",
-      "Bash(flutter analyze:*)"
+      "Bash(flutter analyze:*)",
+      "Bash(flutter clean:*)",
+      "Bash(dart run:*)"
     ],
     "deny": [],
     "ask": []

@@ -20,7 +20,7 @@ class _ScheduleTabState extends State<ScheduleTab>
   late AnimationController _tabAnimationController;
   late Animation<double> _tabAnimation;
 
-  final double _eventCardTopPadding = 10.0; // Top padding for event cards
+  final double _eventCardTopPadding = 15.0; // Top padding for event cards
   final double _eventCardBottomPadding = 5.0; // Bottom padding for event cards
   final double _eventCardSpacing = 10.0; // Spacing between stacked cards
 
@@ -898,7 +898,8 @@ class _ScheduleTabState extends State<ScheduleTab>
         // Find the maximum end time of all sessions at current time
         double maxEndTime = currentStartTime;
         for (var session in sessionsAtTime) {
-          final sessionEnd = (session['topOffset'] as double) + (session['height'] as double);
+          final sessionEnd =
+              (session['topOffset'] as double) + (session['height'] as double);
           if (sessionEnd > maxEndTime) {
             maxEndTime = sessionEnd;
           }
@@ -996,7 +997,9 @@ class _ScheduleTabState extends State<ScheduleTab>
     );
   }
 
-  List<Widget> _buildTimeMarkersAndGaps(List<Map<String, dynamic>> timelineSlots) {
+  List<Widget> _buildTimeMarkersAndGaps(
+    List<Map<String, dynamic>> timelineSlots,
+  ) {
     final widgets = <Widget>[];
     double currentTop = 0;
 
@@ -1042,7 +1045,7 @@ class _ScheduleTabState extends State<ScheduleTab>
                   child: Container(
                     height: 1,
                     color: Colors.grey.withValues(alpha: 0.2),
-                    margin: const EdgeInsets.only(left: 8),
+                    margin: const EdgeInsets.only(left: 8, top: 5),
                   ),
                 ),
               ],
@@ -1053,12 +1056,10 @@ class _ScheduleTabState extends State<ScheduleTab>
         currentTop += slotHeight;
       } else if (slot['type'] == 'gap') {
         final startSlotIndex = slot['slotIndex'] as double;
-        final endSlotIndex = slot['endSlotIndex'] as double;
 
         final startTime = _slotIndexToTime(startSlotIndex);
-        final endTime = _slotIndexToTime(endSlotIndex);
 
-        // Add gap start time with border line
+        // Add gap start time with border line (end time will be shown by next event)
         widgets.add(
           Positioned(
             top: currentTop,
@@ -1084,31 +1085,10 @@ class _ScheduleTabState extends State<ScheduleTab>
                   child: Container(
                     height: 1,
                     color: Colors.grey.withValues(alpha: 0.2),
-                    margin: const EdgeInsets.only(left: 8),
+                    margin: const EdgeInsets.only(left: 8, top: 5),
                   ),
                 ),
               ],
-            ),
-          ),
-        );
-
-        // Add gap end time
-        widgets.add(
-          Positioned(
-            top: currentTop + 20,
-            left: 0,
-            child: SizedBox(
-              width: 80,
-              child: Text(
-                endTime,
-                style: const TextStyle(
-                  fontFamily: 'SF Pro Display',
-                  fontSize: 14,
-                  letterSpacing: 0.2,
-                  fontWeight: FontWeight.w500,
-                  color: CupertinoColors.systemGrey,
-                ),
-              ),
             ),
           ),
         );

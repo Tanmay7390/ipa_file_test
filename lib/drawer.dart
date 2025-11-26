@@ -294,101 +294,102 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                         children: [
                           // Logo
                           Image.asset(
-                            'assets/images/logo.png',
-                            height: 80,
+                            isDarkMode
+                                ? 'assets/images/logo-dark-no-bg.png'
+                                : 'assets/images/logo-light-no-bg.png',
+                            height: 110,
                           ),
                           SizedBox(height: 12),
                           // Social media icons row
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                                // Facebook
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: Color(0xFF1877F2),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: CupertinoButton(
-                                    padding: EdgeInsets.zero,
-                                    onPressed: () {
-                                      // TODO: Open Facebook link
-                                    },
-                                    child: FaIcon(
-                                      FontAwesomeIcons.facebookF,
-                                      color: CupertinoColors.white,
-                                      size: 16,
-                                    ),
+                              // Facebook
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: Color(0xFF1877F2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: CupertinoButton(
+                                  padding: EdgeInsets.zero,
+                                  onPressed: () {
+                                    // TODO: Open Facebook link
+                                  },
+                                  child: FaIcon(
+                                    FontAwesomeIcons.facebookF,
+                                    color: CupertinoColors.white,
+                                    size: 16,
                                   ),
                                 ),
-                                SizedBox(width: 12),
-                                // Instagram
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: Color(0xFFE4405F),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: CupertinoButton(
-                                    padding: EdgeInsets.zero,
-                                    onPressed: () {
-                                      // TODO: Open Instagram link
-                                    },
-                                    child: FaIcon(
-                                      FontAwesomeIcons.instagram,
-                                      color: CupertinoColors.white,
-                                      size: 16,
-                                    ),
+                              ),
+                              SizedBox(width: 12),
+                              // Instagram
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: Color(0xFFE4405F),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: CupertinoButton(
+                                  padding: EdgeInsets.zero,
+                                  onPressed: () {
+                                    // TODO: Open Instagram link
+                                  },
+                                  child: FaIcon(
+                                    FontAwesomeIcons.instagram,
+                                    color: CupertinoColors.white,
+                                    size: 16,
                                   ),
                                 ),
-                                SizedBox(width: 12),
-                                // LinkedIn
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: Color(0xFF0A66C2),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: CupertinoButton(
-                                    padding: EdgeInsets.zero,
-                                    onPressed: () {
-                                      // TODO: Open LinkedIn link
-                                    },
-                                    child: FaIcon(
-                                      FontAwesomeIcons.linkedinIn,
-                                      color: CupertinoColors.white,
-                                      size: 16,
-                                    ),
+                              ),
+                              SizedBox(width: 12),
+                              // LinkedIn
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: Color(0xFF0A66C2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: CupertinoButton(
+                                  padding: EdgeInsets.zero,
+                                  onPressed: () {
+                                    // TODO: Open LinkedIn link
+                                  },
+                                  child: FaIcon(
+                                    FontAwesomeIcons.linkedinIn,
+                                    color: CupertinoColors.white,
+                                    size: 16,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        Spacer(),
-                        // Dark mode icon button on bottom right
-                        CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () {
-                            ref.read(themeModeProvider.notifier).toggleTheme();
-                          },
-                          child: Icon(
-                            isDarkMode
-                                ? CupertinoIcons.moon_fill
-                                : CupertinoIcons.sun_max_fill,
-                            color:
-                                CupertinoColors.secondaryLabel.resolveFrom(
-                              context,
-                            ),
-                            size: 28,
+                              ),
+                            ],
                           ),
+                        ],
+                      ),
+                      Spacer(),
+                      // Dark mode icon button on bottom right
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () {
+                          ref.read(themeModeProvider.notifier).toggleTheme();
+                        },
+                        child: Icon(
+                          isDarkMode
+                              ? CupertinoIcons.moon_fill
+                              : CupertinoIcons.sun_max_fill,
+                          color: CupertinoColors.secondaryLabel.resolveFrom(
+                            context,
+                          ),
+                          size: 28,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                ),
               ],
             ),
           ),
