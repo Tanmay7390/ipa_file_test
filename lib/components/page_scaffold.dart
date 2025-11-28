@@ -180,8 +180,41 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
     );
   }
 
+  Widget _buildBackButton(BuildContext context) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark ? const Color(0xFF23C061) : const Color(0xFF21AA62);
+
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: () => Navigator.of(context).pop(),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            CupertinoIcons.back,
+            size: 28,
+            color: activeColor,
+          ),
+          Text(
+            'Back',
+            style: TextStyle(
+              fontSize: 17,
+              color: activeColor,
+              fontFamily: 'SF Pro Display',
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool canPop = Navigator.of(context).canPop();
+    final Widget? effectiveLeading = widget.leading ??
+        (canPop ? _buildBackButton(context) : null);
+
     return CupertinoPageScaffold(
       resizeToAvoidBottomInset: false,
       child: widget.hideLargeTitle
@@ -235,12 +268,12 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
                           border: Border(
                             bottom: BorderSide(
                               color: CupertinoColors.systemGrey,
-                              width: 0.2,
+                              width: 0.4,
                             ),
                           ),
                         ),
                         child: CupertinoNavigationBar(
-                          leading: widget.leading,
+                          leading: effectiveLeading,
                           middle: Text(widget.heading),
                           backgroundColor: const Color(0x00000000),
                           border: null,
@@ -262,7 +295,7 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
                 slivers: <Widget>[
                   if (widget.hideSearch)
                     CupertinoSliverNavigationBar(
-                      leading: widget.leading,
+                      leading: effectiveLeading,
                       largeTitle: Text(widget.heading),
                       transitionBetweenRoutes: true,
                       backgroundColor:
@@ -283,7 +316,7 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
                     )
                   else
                     CupertinoSliverNavigationBar.search(
-                      leading: widget.leading,
+                      leading: effectiveLeading,
                       largeTitle: Text(widget.heading),
                       transitionBetweenRoutes: true,
                       searchField: CupertinoSearchTextField(

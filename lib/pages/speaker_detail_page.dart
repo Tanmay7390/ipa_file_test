@@ -4,8 +4,6 @@ import 'package:aesurg26/components/page_scaffold.dart';
 import 'package:aesurg26/pages/chat_page.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-enum ConnectionStatus { notConnected, pending, connected }
-
 class SpeakerDetailPage extends StatefulWidget {
   final Map<String, dynamic> speaker;
 
@@ -19,7 +17,6 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
   bool _isAboutExpanded = false;
   bool _isAdditionalInfoExpanded = false;
   bool _isScheduleExpanded = false;
-  ConnectionStatus _connectionStatus = ConnectionStatus.notConnected;
   Map<int, bool> _expandedDays = {}; // Track which days are expanded
 
   void _showMeetingSheet() {
@@ -64,24 +61,6 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
               padding: EdgeInsets.only(top: 12, bottom: 12),
               child: _buildAboutSection(isDark),
             ),
-
-          _buildSeparator(context),
-
-          // Connections section
-          Container(
-            color: CupertinoColors.systemBackground.resolveFrom(context),
-            padding: EdgeInsets.only(top: 12, bottom: 12),
-            child: _buildConnectionsSection(isDark),
-          ),
-
-          _buildSeparator(context),
-
-          // Social Media section
-          Container(
-            color: CupertinoColors.systemBackground.resolveFrom(context),
-            padding: EdgeInsets.only(top: 12, bottom: 12),
-            child: _buildSocialMediaSection(),
-          ),
 
           _buildSeparator(context),
 
@@ -188,6 +167,68 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
                     ),
                   ),
                 ],
+                SizedBox(height: 12),
+                // Social media buttons
+                Row(
+                  children: [
+                    // Facebook
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Color(0xFF1877F2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () {},
+                        child: FaIcon(
+                          FontAwesomeIcons.facebookF,
+                          color: CupertinoColors.white,
+                          size: 14,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    // Instagram
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Color(0xFFE4405F),
+                        shape: BoxShape.circle,
+                      ),
+                      child: CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () {},
+                        child: FaIcon(
+                          FontAwesomeIcons.instagram,
+                          color: CupertinoColors.white,
+                          size: 14,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    // LinkedIn
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Color(0xFF0A66C2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () {},
+                        child: FaIcon(
+                          FontAwesomeIcons.linkedinIn,
+                          color: CupertinoColors.white,
+                          size: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -197,16 +238,15 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
   }
 
   Widget _buildActionButtons(BuildContext context) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+
     return Row(
       children: [
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFFFFD700), Color(0xFFFF9500)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: activeColor,
               borderRadius: BorderRadius.circular(12),
             ),
             child: CupertinoButton(
@@ -250,11 +290,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFFFFD700), Color(0xFFFF9500)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: activeColor,
               borderRadius: BorderRadius.circular(12),
             ),
             child: CupertinoButton(
@@ -288,7 +324,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
         SizedBox(width: 10),
         Container(
           decoration: BoxDecoration(
-            color: Color(0xFFFFD700).withValues(alpha: 0.15),
+            color: activeColor.withValues(alpha: 0.15),
             shape: BoxShape.circle,
           ),
           child: CupertinoButton(
@@ -298,7 +334,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
             child: Icon(
               CupertinoIcons.star,
               size: 22,
-              color: Color(0xFFFFD700),
+              color: activeColor,
             ),
           ),
         ),
@@ -453,279 +489,10 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
     );
   }
 
-  Widget _buildConnectionsSection(bool isDark) {
-    // Mock data for connections - in a real app, this would come from the speaker data
-    final List<Color> connectionColors = [
-      Color(0xFF4A90E2), // Blue
-      Color(0xFFE94B3C), // Red
-      Color(0xFF50C878), // Green
-    ];
-    final int totalConnections = 247;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with connections count
-          Row(
-            children: [
-              Text(
-                'CONNECTIONS',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: CupertinoColors.systemGrey.resolveFrom(context),
-                  fontFamily: 'SF Pro Display',
-                  letterSpacing: 0.2,
-                ),
-              ),
-              Spacer(),
-              Text(
-                '$totalConnections connections',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: CupertinoColors.systemGrey.resolveFrom(context),
-                  fontFamily: 'SF Pro Display',
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 16),
-
-          // Connection photos and connect button
-          Row(
-            children: [
-              // Connection avatars
-              SizedBox(
-                width:
-                    135, // Fixed width to accommodate 3 overlapping avatars + count text
-                height: 44,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    for (int i = 0; i < connectionColors.length; i++)
-                      Positioned(
-                        left: i * 32.0,
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [
-                                connectionColors[i],
-                                connectionColors[i].withValues(alpha: 0.7),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            border: Border.all(
-                              color: CupertinoColors.systemBackground
-                                  .resolveFrom(context),
-                              width: 2,
-                            ),
-                          ),
-                          child: Icon(
-                            CupertinoIcons.person_fill,
-                            color: CupertinoColors.white,
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                    // Remaining connections count
-                    Positioned(
-                      left: 113, // Position after 3 avatars
-                      top: 10,
-                      child: Text(
-                        '+',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: CupertinoColors.systemGrey.resolveFrom(
-                            context,
-                          ),
-                          fontFamily: 'SF Pro Display',
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: 16),
-
-              Expanded(child: _buildConnectButton()),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConnectButton() {
-    String buttonText;
-    Decoration buttonDecoration;
-    Color textColor;
-    Widget? icon;
-
-    switch (_connectionStatus) {
-      case ConnectionStatus.notConnected:
-        buttonText = 'Connect Now';
-        buttonDecoration = BoxDecoration(
-          color: Color(0xFFFFD700).withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(12),
-        );
-        textColor = Color(0xFFFFD700);
-        icon = null;
-        break;
-      case ConnectionStatus.pending:
-        buttonText = 'Pending';
-        buttonDecoration = BoxDecoration(
-          color: CupertinoColors.systemGrey4.resolveFrom(context),
-          borderRadius: BorderRadius.circular(12),
-        );
-        textColor = CupertinoColors.systemGrey.resolveFrom(context);
-        icon = Icon(
-          CupertinoIcons.clock,
-          size: 16,
-          color: CupertinoColors.systemGrey.resolveFrom(context),
-        );
-        break;
-      case ConnectionStatus.connected:
-        buttonText = 'Connected';
-        buttonDecoration = BoxDecoration(
-          color: Color(0xFF34C759), // iOS green
-          borderRadius: BorderRadius.circular(12),
-        );
-        textColor = CupertinoColors.white;
-        icon = Icon(
-          CupertinoIcons.check_mark,
-          size: 16,
-          color: CupertinoColors.white,
-        );
-        break;
-    }
-
-    return Container(
-      decoration: buttonDecoration,
-      child: CupertinoButton(
-        padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-        borderRadius: BorderRadius.circular(12),
-        onPressed: _connectionStatus == ConnectionStatus.notConnected
-            ? () {
-                setState(() {
-                  _connectionStatus = ConnectionStatus.pending;
-                });
-              }
-            : null,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[icon, SizedBox(width: 6)],
-            Text(
-              buttonText,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'SF Pro Display',
-                letterSpacing: 0.2,
-                color: textColor,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSocialMediaSection() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'CONNECT VIA SOCIAL MEDIA',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: CupertinoColors.systemGrey.resolveFrom(context),
-              fontFamily: 'SF Pro Display',
-              letterSpacing: 0.2,
-            ),
-          ),
-          SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Facebook
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Color(0xFF1877F2),
-                  shape: BoxShape.circle,
-                ),
-                child: CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () {},
-                  child: FaIcon(
-                    FontAwesomeIcons.facebookF,
-                    color: CupertinoColors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-              SizedBox(width: 20),
-              // Instagram
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Color(0xFFE4405F),
-                  shape: BoxShape.circle,
-                ),
-                child: CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () {},
-                  child: FaIcon(
-                    FontAwesomeIcons.instagram,
-                    color: CupertinoColors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-              SizedBox(width: 20),
-              // LinkedIn
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Color(0xFF0A66C2),
-                  shape: BoxShape.circle,
-                ),
-                child: CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () {},
-                  child: FaIcon(
-                    FontAwesomeIcons.linkedinIn,
-                    color: CupertinoColors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildAdditionalInfoSection(bool isDark) {
+    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -756,7 +523,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
                       ? CupertinoIcons.chevron_up
                       : CupertinoIcons.chevron_down,
                   size: 18,
-                  color: Color(0xFFFFD700),
+                  color: activeColor,
                 ),
               ],
             ),
@@ -767,73 +534,46 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
             child: _isAdditionalInfoExpanded
                 ? Column(
                     children: [
-                      SizedBox(height: 5),
+                      SizedBox(height: 12),
 
-                      // Experience
-                      _buildInfoRow(
-                        icon: CupertinoIcons.briefcase_fill,
-                        label: 'Experience',
-                        value: '20 years',
-                        isDark: isDark,
-                      ),
-
-                      // Specialities
-                      _buildInfoRow(
-                        icon: CupertinoIcons.heart_fill,
-                        label: 'Specialities',
-                        value: 'Aesthetic & Reconstructive Procedures',
-                        isDark: isDark,
-                      ),
+                      // Speciality
+                      if (widget.speaker['specialty'] != null)
+                        _buildMinimalisticInfoRow(
+                          icon: CupertinoIcons.heart_fill,
+                          label: 'Specialty',
+                          value: widget.speaker['specialty'],
+                          isClickable: false,
+                        ),
 
                       // Phone
-                      _buildInfoRow(
+                      _buildMinimalisticInfoRow(
                         icon: CupertinoIcons.phone_fill,
                         label: 'Phone',
                         value: '+91 9876543210',
                         isClickable: true,
-                        isDark: isDark,
                         onTap: () {
                           // TODO: Open phone dialer
                         },
                       ),
 
                       // Email
-                      _buildInfoRow(
+                      _buildMinimalisticInfoRow(
                         icon: CupertinoIcons.mail_solid,
                         label: 'Email',
                         value: 'aditya7390@gmail.com',
                         isClickable: true,
-                        isDark: isDark,
                         onTap: () {
                           // TODO: Open email client
                         },
                       ),
 
-                      // Organization
-                      if (widget.speaker['company'] != null)
-                        _buildInfoRow(
-                          icon: CupertinoIcons.building_2_fill,
-                          label: 'Organization',
-                          value: widget.speaker['company'],
-                          isDark: isDark,
-                        ),
-
                       // Location
                       if (widget.speaker['location'] != null)
-                        _buildInfoRow(
+                        _buildMinimalisticInfoRow(
                           icon: CupertinoIcons.location_solid,
                           label: 'Location',
                           value: widget.speaker['location'],
-                          isDark: isDark,
-                        ),
-
-                      // Role
-                      if (widget.speaker['title'] != null)
-                        _buildInfoRow(
-                          icon: CupertinoIcons.person_fill,
-                          label: 'Role',
-                          value: widget.speaker['title'],
-                          isDark: isDark,
+                          isClickable: false,
                         ),
                     ],
                   )
@@ -844,55 +584,50 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
     );
   }
 
-  Widget _buildInfoRow({
+  Widget _buildMinimalisticInfoRow({
     required IconData icon,
     required String label,
     required String value,
-    required bool isDark,
     bool isClickable = false,
     VoidCallback? onTap,
   }) {
     Widget content = Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: CupertinoColors.systemGrey6.resolveFrom(context),
-        borderRadius: BorderRadius.circular(12),
-      ),
+      margin: EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 4),
       child: Row(
         children: [
           Icon(
             icon,
-            size: 24,
+            size: 18,
             color: CupertinoColors.systemGrey.resolveFrom(context),
           ),
           SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                     fontFamily: 'SF Pro Display',
                     letterSpacing: 0.2,
                     color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
-                if (value.isNotEmpty) ...[
-                  SizedBox(height: 4),
-                  Text(
+                Flexible(
+                  child: Text(
                     value,
+                    textAlign: TextAlign.right,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 15,
                       color: CupertinoColors.systemGrey.resolveFrom(context),
                       fontFamily: 'SF Pro Display',
                       letterSpacing: 0.2,
                     ),
                   ),
-                ],
+                ),
               ],
             ),
           ),
@@ -908,6 +643,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
 
   Widget _buildScheduleSection(bool isDark) {
     final sessions = widget.speaker['sessions'] as List<dynamic>;
+    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -939,7 +675,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
                       ? CupertinoIcons.chevron_up
                       : CupertinoIcons.chevron_down,
                   size: 18,
-                  color: Color(0xFFFFD700),
+                  color: activeColor,
                 ),
               ],
             ),
@@ -1003,9 +739,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? CupertinoColors.white
-                        : CupertinoColors.systemBrown,
+                    color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -1017,9 +751,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                           fontFamily: 'SF Pro Display',
-                          color: isDark
-                              ? CupertinoColors.black
-                              : CupertinoColors.white,
+                          color: CupertinoColors.white,
                         ),
                       ),
                     ],
@@ -1062,7 +794,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
                       ? CupertinoIcons.chevron_up
                       : CupertinoIcons.chevron_down,
                   size: 20,
-                  color: Color(0xFFFFD700),
+                  color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
                 ),
               ],
             ),
@@ -1118,10 +850,18 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Color(
-                                    0xFFFFD700,
-                                  ).withValues(alpha: 0.15),
+                                  color: (isDark
+                                          ? Color(0xFF23C061)
+                                          : Color(0xFF21AA62))
+                                      .withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: (isDark
+                                            ? Color(0xFF23C061)
+                                            : Color(0xFF21AA62))
+                                        .withValues(alpha: 0.3),
+                                    width: 1,
+                                  ),
                                 ),
                                 child: Text(
                                   session['role'],
@@ -1130,7 +870,9 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
                                     fontWeight: FontWeight.w600,
                                     fontFamily: 'SF Pro Display',
                                     letterSpacing: 0.2,
-                                    color: Color(0xFFFF9500),
+                                    color: isDark
+                                        ? Color(0xFF23C061)
+                                        : Color(0xFF21AA62),
                                   ),
                                 ),
                               ),
@@ -1195,6 +937,8 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
     int dayNumber,
     bool isDark,
   ) {
+    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       padding: EdgeInsets.all(16),
@@ -1207,9 +951,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFFFFD700), Color(0xFFFF9500)],
-              ),
+              color: activeColor,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -1288,6 +1030,9 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
       decoration: BoxDecoration(
@@ -1507,7 +1252,7 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: _isVideoMeeting
-                                  ? Color(0xFFFFD700)
+                                  ? activeColor
                                   : CupertinoColors.systemGrey.resolveFrom(
                                       context,
                                     ),
@@ -1515,7 +1260,7 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
                             ),
                             borderRadius: BorderRadius.circular(6),
                             color: _isVideoMeeting
-                                ? Color(0xFFFFD700)
+                                ? activeColor
                                 : Colors.transparent,
                           ),
                           child: _isVideoMeeting
@@ -1634,31 +1379,22 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
                       ),
                       SizedBox(width: 12),
                       Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFFFFD700), Color(0xFFFF9500)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: CupertinoButton(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            borderRadius: BorderRadius.circular(12),
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              // Handle send invite
-                            },
-                            child: Text(
-                              'Send Invite',
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'SF Pro Display',
-                                letterSpacing: 0.2,
-                                color: CupertinoColors.white,
-                              ),
+                        child: CupertinoButton(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          borderRadius: BorderRadius.circular(12),
+                          color: activeColor,
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            // Handle send invite
+                          },
+                          child: Text(
+                            'Send Invite',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'SF Pro Display',
+                              letterSpacing: 0.2,
+                              color: CupertinoColors.white,
                             ),
                           ),
                         ),

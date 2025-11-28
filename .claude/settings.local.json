@@ -7,7 +7,16 @@
       "Bash(dart run:*)",
       "Read(//Users/tanmaybuardkar/Desktop/ipa_file_test-main/**)",
       "Bash(keytool:*)",
-      "Bash(flutter build:*)"
+      "Bash(flutter build:*)",
+      "Read(//Users/tanmaybuardkar/Development/flutter/**)",
+      "Bash(git restore:*)",
+      "Bash(/Users/tanmaybuardkar/Development/flutter/bin/flutter doctor:*)",
+      "Bash(flutter pub:*)",
+      "Read(//Users/tanmaybuardkar/Desktop/**)",
+      "Bash(pod install)",
+      "Bash(mkdir:*)",
+      "Bash(python3:*)",
+      "Bash(open:*)"
     ],
     "deny": [],
     "ask": []

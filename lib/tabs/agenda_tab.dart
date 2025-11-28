@@ -468,6 +468,9 @@ class _ScheduleTabState extends State<ScheduleTab>
     final inactiveColor = isDark
         ? CupertinoColors.systemGrey2
         : CupertinoColors.systemGrey;
+    final activeColor = isDark
+        ? const Color(0xFF23C061)
+        : const Color(0xFF21AA62);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -492,7 +495,7 @@ class _ScheduleTabState extends State<ScheduleTab>
                             ? FontWeight.w600
                             : FontWeight.w400,
                         color: _selectedTabIndex == 0
-                            ? CupertinoColors.activeBlue
+                            ? activeColor
                             : inactiveColor,
                       ),
                     ),
@@ -516,7 +519,7 @@ class _ScheduleTabState extends State<ScheduleTab>
                             ? FontWeight.w600
                             : FontWeight.w400,
                         color: _selectedTabIndex == 1
-                            ? CupertinoColors.activeBlue
+                            ? activeColor
                             : inactiveColor,
                       ),
                     ),
@@ -543,7 +546,7 @@ class _ScheduleTabState extends State<ScheduleTab>
                         child: Container(
                           width: halfWidth,
                           height: 2,
-                          color: CupertinoColors.activeBlue,
+                          color: activeColor,
                         ),
                       );
                     },
@@ -562,6 +565,9 @@ class _ScheduleTabState extends State<ScheduleTab>
   Widget _buildWeekDatePicker() {
     final currentIdx = _currentWeekIndex;
     final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final activeColor = isDark
+        ? const Color(0xFF23C061)
+        : const Color(0xFF21AA62);
 
     return Container(
       height: 85,
@@ -578,7 +584,7 @@ class _ScheduleTabState extends State<ScheduleTab>
               child: Icon(
                 CupertinoIcons.chevron_left,
                 color: currentIdx > 0
-                    ? CupertinoColors.activeBlue
+                    ? activeColor
                     : CupertinoColors.systemGrey4.resolveFrom(context),
                 size: 24,
               ),
@@ -635,9 +641,7 @@ class _ScheduleTabState extends State<ScheduleTab>
                                   height: 40,
                                   decoration: BoxDecoration(
                                     color: isSelected
-                                        ? (isDark
-                                              ? CupertinoColors.white
-                                              : CupertinoColors.black)
+                                        ? activeColor
                                         : Colors.transparent,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -650,9 +654,7 @@ class _ScheduleTabState extends State<ScheduleTab>
                                       letterSpacing: 0.2,
                                       fontWeight: FontWeight.w700,
                                       color: isSelected
-                                          ? (isDark
-                                                ? CupertinoColors.black
-                                                : CupertinoColors.white)
+                                          ? CupertinoColors.white
                                           : isDisabled
                                           ? CupertinoColors.systemGrey
                                           : (isDark
@@ -682,7 +684,7 @@ class _ScheduleTabState extends State<ScheduleTab>
               child: Icon(
                 CupertinoIcons.chevron_right,
                 color: currentIdx < _weeks.length - 1
-                    ? CupertinoColors.activeBlue
+                    ? activeColor
                     : CupertinoColors.systemGrey4.resolveFrom(context),
                 size: 24,
               ),
@@ -768,6 +770,9 @@ class _ScheduleTabState extends State<ScheduleTab>
 
   Widget _buildDateLabel() {
     final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final activeColor = isDark
+        ? const Color(0xFF23C061)
+        : const Color(0xFF21AA62);
 
     // Calculate day number (Day 1, Day 2, etc.)
     int dayNumber = 1;
@@ -779,39 +784,58 @@ class _ScheduleTabState extends State<ScheduleTab>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
       alignment: Alignment.centerLeft,
-      child: RichText(
-        text: TextSpan(
-          style: TextStyle(
-            fontFamily: 'SF Pro Display',
-            fontSize: 18,
-            letterSpacing: 0.2,
-            color: isDark ? CupertinoColors.white : CupertinoColors.black,
+      child: Row(
+        children: [
+          RichText(
+            text: TextSpan(
+              style: TextStyle(
+                fontFamily: 'SF Pro Display',
+                fontSize: 18,
+                letterSpacing: 0.2,
+                color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              ),
+              children: [
+                TextSpan(
+                  text: '${_getMonthName(_selectedDate.month)} ',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                TextSpan(
+                  text: '${_selectedDate.day},  ',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                TextSpan(
+                  text: _getWeekdayFull(_selectedDate.weekday),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w400,
+                    color: CupertinoColors.systemGrey,
+                  ),
+                ),
+              ],
+            ),
           ),
-          children: [
-            TextSpan(
-              text: '${_getMonthName(_selectedDate.month)} ',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            TextSpan(
-              text: '${_selectedDate.day},  ',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            TextSpan(
-              text: _getWeekdayFull(_selectedDate.weekday),
-              style: const TextStyle(
-                fontWeight: FontWeight.w400,
-                color: CupertinoColors.systemGrey,
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: activeColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: activeColor.withValues(alpha: 0.3),
+                width: 1,
               ),
             ),
-            TextSpan(
-              text: '  •  Day $dayNumber',
-              style: const TextStyle(
+            child: Text(
+              'Day $dayNumber',
+              style: TextStyle(
+                fontFamily: 'SF Pro Display',
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFFFFD700),
+                letterSpacing: 0.2,
+                color: activeColor,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1190,6 +1214,9 @@ class _ScheduleTabState extends State<ScheduleTab>
     final isAdded = _myScheduleIds.contains(sessionId);
     final cardHeight = _calculateCardHeight(title);
     final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final activeColor = isDark
+        ? const Color(0xFF23C061)
+        : const Color(0xFF21AA62);
 
     // Get the full session data
     final sessionData = _allSessions.firstWhere(
@@ -1268,8 +1295,12 @@ class _ScheduleTabState extends State<ScheduleTab>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: categoryColor.withValues(alpha: 0.2),
+                      color: activeColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: activeColor.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
                     ),
                     child: Text(
                       category,
@@ -1278,7 +1309,7 @@ class _ScheduleTabState extends State<ScheduleTab>
                         fontSize: 12,
                         letterSpacing: 0.2,
                         fontWeight: FontWeight.w600,
-                        color: categoryColor,
+                        color: activeColor,
                       ),
                     ),
                   ),
@@ -1356,36 +1387,11 @@ class _ScheduleTabState extends State<ScheduleTab>
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              // Footer: Status + Add Button
+              const Spacer(),
+              // Footer: Add Button only
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? CupertinoColors.white
-                          : CupertinoColors.black,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      status,
-                      style: TextStyle(
-                        fontFamily: 'SF Pro Display',
-                        fontSize: 12,
-                        letterSpacing: 0.2,
-                        fontWeight: FontWeight.w500,
-                        color: isDark
-                            ? CupertinoColors.black
-                            : CupertinoColors.white,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
                   GestureDetector(
                     onTap: () {
                       setState(() {
@@ -1401,46 +1407,21 @@ class _ScheduleTabState extends State<ScheduleTab>
                       height: 36,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: isAdded
-                            ? LinearGradient(
-                                colors: [
-                                  const Color(
-                                    0xFFFFD700,
-                                  ).withValues(alpha: 0.3),
-                                  const Color(
-                                    0xFFFFA500,
-                                  ).withValues(alpha: 0.3),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
+                        color: isAdded
+                            ? activeColor.withValues(alpha: 0.2)
+                            : activeColor,
+                        border: isAdded
+                            ? Border.all(
+                                color: activeColor.withValues(alpha: 0.4),
+                                width: 1.5,
                               )
-                            : LinearGradient(
-                                colors: [
-                                  const Color(0xFFFFD700),
-                                  const Color(0xFFFFA500),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                        boxShadow: isAdded
-                            ? null
-                            : [
-                                BoxShadow(
-                                  color: const Color(
-                                    0xFFFFD700,
-                                  ).withValues(alpha: 0.3),
-                                  blurRadius: 8,
-                                  spreadRadius: 0,
-                                ),
-                              ],
+                            : null,
                       ),
                       child: Icon(
                         isAdded
                             ? CupertinoIcons.checkmark
                             : CupertinoIcons.plus,
-                        color: isAdded
-                            ? const Color(0xFFFFD700)
-                            : CupertinoColors.white,
+                        color: isAdded ? activeColor : CupertinoColors.white,
                         size: 18,
                         weight: 600,
                       ),
@@ -1471,6 +1452,9 @@ class _ScheduleTabState extends State<ScheduleTab>
     final isAdded = _myScheduleIds.contains(sessionId);
     final cardHeight = _calculateCardHeight(title);
     final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final activeColor = isDark
+        ? const Color(0xFF23C061)
+        : const Color(0xFF21AA62);
 
     // Get the full session data
     final sessionData = _allSessions.firstWhere(
@@ -1497,11 +1481,11 @@ class _ScheduleTabState extends State<ScheduleTab>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: CupertinoColors.systemGrey6
-                    .resolveFrom(context)
-                    .withValues(alpha: 0.8),
+                color: isDark
+                    ? CupertinoColors.white.withValues(alpha: 0.10)
+                    : CupertinoColors.systemGrey.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Color(0xFFFF9500), width: 2),
+                border: Border.all(color: activeColor, width: 3),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1555,8 +1539,12 @@ class _ScheduleTabState extends State<ScheduleTab>
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: categoryColor.withValues(alpha: 0.2),
+                              color: activeColor.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: activeColor.withValues(alpha: 0.3),
+                                width: 1,
+                              ),
                             ),
                             child: Text(
                               category,
@@ -1565,7 +1553,7 @@ class _ScheduleTabState extends State<ScheduleTab>
                                 fontSize: 12,
                                 letterSpacing: 0.2,
                                 fontWeight: FontWeight.w600,
-                                color: categoryColor,
+                                color: activeColor,
                               ),
                             ),
                           ),
@@ -1573,8 +1561,8 @@ class _ScheduleTabState extends State<ScheduleTab>
                           Container(
                             width: 10,
                             height: 10,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF4ADE80),
+                            decoration: BoxDecoration(
+                              color: activeColor,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -1656,36 +1644,11 @@ class _ScheduleTabState extends State<ScheduleTab>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  // Footer: Status + Add Button
+                  const Spacer(),
+                  // Footer: Add Button only
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? CupertinoColors.white
-                              : CupertinoColors.black,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          status,
-                          style: TextStyle(
-                            fontFamily: 'SF Pro Display',
-                            fontSize: 12,
-                            letterSpacing: 0.2,
-                            fontWeight: FontWeight.w500,
-                            color: isDark
-                                ? CupertinoColors.black
-                                : CupertinoColors.white,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
                       GestureDetector(
                         onTap: () {
                           setState(() {
@@ -1701,48 +1664,25 @@ class _ScheduleTabState extends State<ScheduleTab>
                           height: 36,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: isAdded
-                                ? LinearGradient(
-                                    colors: [
-                                      const Color(
-                                        0xFFFFD700,
-                                      ).withValues(alpha: 0.3),
-                                      const Color(
-                                        0xFFFFA500,
-                                      ).withValues(alpha: 0.3),
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
+                            color: isAdded
+                                ? activeColor.withValues(alpha: 0.2)
+                                : activeColor,
+                            border: isAdded
+                                ? Border.all(
+                                    color: activeColor.withValues(alpha: 0.4),
+                                    width: 1.5,
                                   )
-                                : LinearGradient(
-                                    colors: [
-                                      const Color(0xFFFFD700),
-                                      const Color(0xFFFFA500),
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                            boxShadow: isAdded
-                                ? null
-                                : [
-                                    BoxShadow(
-                                      color: const Color(
-                                        0xFFFFD700,
-                                      ).withValues(alpha: 0.3),
-                                      blurRadius: 8,
-                                      spreadRadius: 0,
-                                    ),
-                                  ],
+                                : null,
                           ),
                           child: Icon(
                             isAdded
                                 ? CupertinoIcons.checkmark
                                 : CupertinoIcons.plus,
                             color: isAdded
-                                ? const Color(0xFFFFD700)
+                                ? activeColor
                                 : CupertinoColors.white,
                             size: 18,
-                            weight: 700,
+                            weight: 600,
                           ),
                         ),
                       ),
@@ -1763,15 +1703,12 @@ class _ScheduleTabState extends State<ScheduleTab>
                       width: 12,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: Colors.orange,
+                        color: activeColor,
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.orange.withValues(alpha: 0.3),
-                          width: 4,
-                        ),
+                        border: Border.all(color: activeColor, width: 5),
                       ),
                     ),
-                    Container(width: 78, height: 3, color: Colors.orange),
+                    Container(width: 78, height: 4, color: activeColor),
                   ],
                 ),
               ),

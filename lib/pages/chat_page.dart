@@ -88,6 +88,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
 
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
@@ -106,7 +107,7 @@ class _ChatPageState extends State<ChatPage> {
             children: [
               Icon(
                 CupertinoIcons.back,
-                color: CupertinoColors.activeBlue,
+                color: activeColor,
                 size: 28,
               ),
               const SizedBox(width: 4),
@@ -116,7 +117,7 @@ class _ChatPageState extends State<ChatPage> {
                   fontSize: 17,
                   fontFamily: 'SF Pro Display',
                   letterSpacing: 0.2,
-                  color: CupertinoColors.activeBlue,
+                  color: activeColor,
                 ),
               ),
             ],
@@ -168,7 +169,7 @@ class _ChatPageState extends State<ChatPage> {
           onPressed: () {},
           child: Icon(
             CupertinoIcons.phone_fill,
-            color: CupertinoColors.activeBlue,
+            color: activeColor,
             size: 22,
           ),
         ),
@@ -265,11 +266,7 @@ class _ChatPageState extends State<ChatPage> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFFFFD700), Color(0xFFFF9500)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                        color: activeColor,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -294,6 +291,7 @@ class _ChatPageState extends State<ChatPage> {
     required DateTime timestamp,
     required bool isDark,
   }) {
+    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -352,15 +350,8 @@ class _ChatPageState extends State<ChatPage> {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    gradient: isSender
-                        ? LinearGradient(
-                            colors: [Color(0xFFFFD700), Color(0xFFFF9500)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                        : null,
                     color: isSender
-                        ? null
+                        ? activeColor
                         : (isDark
                             ? CupertinoColors.systemGrey5.darkColor
                             : CupertinoColors.systemGrey6),

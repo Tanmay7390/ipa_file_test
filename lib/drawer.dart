@@ -227,8 +227,8 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                                 'Home',
                               ),
                               (
-                                CupertinoIcons.calendar_circle_fill,
-                                CupertinoIcons.calendar_circle,
+                                CupertinoIcons.calendar_today,
+                                CupertinoIcons.calendar,
                                 'Schedule',
                               ),
                               (
@@ -402,17 +402,15 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
     return Consumer(
       builder: (context, ref, child) {
         bool isSelected = getCurrentPageName() == title;
+        final systemBrightness = MediaQuery.of(context).platformBrightness;
+        final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
 
         return Container(
           margin: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           child: Container(
             decoration: isSelected
                 ? BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFFFFD700), Color(0xFFFF9500)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: isDarkMode ? Color(0xFF23C061) : Color(0xFF21AA62),
                     borderRadius: BorderRadius.circular(12),
                   )
                 : null,
@@ -427,7 +425,7 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                   Icon(
                     isSelected ? filledIcon : outlinedIcon,
                     color: isSelected
-                        ? CupertinoColors.white
+                        ? Color(0xFFFFFFFF)
                         : CupertinoColors.secondaryLabel.resolveFrom(context),
                     size: 24,
                   ),
@@ -436,10 +434,8 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                     title,
                     style: TextStyle(
                       color: isSelected
-                          ? CupertinoColors.white
-                          : CupertinoTheme.of(
-                              context,
-                            ).textTheme.textStyle.color,
+                          ? Color(0xFFFFFFFF)
+                          : CupertinoColors.secondaryLabel.resolveFrom(context),
                       fontSize: 17,
                       fontWeight: isSelected
                           ? FontWeight.w600
@@ -884,8 +880,8 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar>
                               letterSpacing: 0.0,
                               color: isActive
                                   ? (isDark
-                                        ? const Color(0xFFFFD700)
-                                        : CupertinoColors.black)
+                                        ? Color(0xFF23C061)
+                                        : Color(0xFF21AA62))
                                   : CupertinoColors.systemGrey,
                             ),
                           );
@@ -931,8 +927,8 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar>
                                     ),
                                     child: Icon(
                                       currentIndex == 1
-                                          ? CupertinoIcons.calendar_circle_fill
-                                          : CupertinoIcons.calendar_circle,
+                                          ? CupertinoIcons.calendar_today
+                                          : CupertinoIcons.calendar,
                                     ),
                                   ),
                                   buildLabel('Schedule', 1),
@@ -1017,7 +1013,9 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar>
                             ),
                           ],
                           backgroundColor: Colors.transparent,
-                          activeColor: const Color(0xFFFFD700),
+                          activeColor: isDark
+                              ? Color(0xFF23C061)
+                              : Color(0xFF21AA62),
                           inactiveColor: CupertinoColors.systemGrey,
                           border: null,
                         );

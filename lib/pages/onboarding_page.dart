@@ -1257,14 +1257,18 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w400,
-                              color: CupertinoColors.systemGrey,
+                              color: isDarkMode
+                                  ? Color(0xFF23C061)
+                                  : Color(0xFF21AA62),
                             ),
                           ),
                           SizedBox(width: 6),
                           Icon(
                             CupertinoIcons.chevron_right,
                             size: 14,
-                            color: CupertinoColors.systemGrey,
+                            color: isDarkMode
+                                ? Color(0xFF23C061)
+                                : Color(0xFF21AA62),
                           ),
                         ],
                       ),
@@ -1300,36 +1304,21 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
                 ),
                 child: SafeArea(
                   top: false,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFFFFD700), Color(0xFFFF9500)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color(0xFFFF9500).withAlpha(77),
-                          blurRadius: 12,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: CupertinoButton(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      borderRadius: BorderRadius.circular(14),
-                      color: Color(0x00000000),
-                      onPressed: () {
-                        context.push('/login');
-                      },
-                      child: Text(
-                        'Get started',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: CupertinoColors.white,
-                        ),
+                  child: CupertinoButton(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    borderRadius: BorderRadius.circular(16),
+                    color: isDarkMode ? Color(0xFF23C061) : Color(0xFF21AA62),
+                    onPressed: () {
+                      context.push('/login');
+                    },
+                    child: Text(
+                      'Get started',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: isDarkMode
+                            ? Color(0xFF000000)
+                            : Color(0xFFFFFFFF),
                       ),
                     ),
                   ),

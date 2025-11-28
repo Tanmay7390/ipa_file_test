@@ -9,9 +9,6 @@ class MoreTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = brightness == Brightness.dark;
-
     return CustomPageScaffold(
       heading: 'More',
       hideSearch: true,
@@ -79,6 +76,11 @@ class MoreTab extends StatelessWidget {
   }
 
   Widget _buildFloorMapSection(BuildContext context) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark
+        ? const Color(0xFF23C061)
+        : const Color(0xFF21AA62);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -129,7 +131,7 @@ class MoreTab extends StatelessWidget {
                         child: Icon(
                           CupertinoIcons.fullscreen,
                           size: 20,
-                          color: CupertinoColors.activeBlue,
+                          color: activeColor,
                         ),
                       ),
                     ),
@@ -248,15 +250,12 @@ class _FloorMapViewerState extends State<_FloorMapViewer> {
     final isDark = brightness == Brightness.dark;
 
     // Adaptive colors
-    final buttonBg = isDark
-        ? CupertinoColors.white.withValues(alpha: 0.15)
-        : CupertinoColors.black.withValues(alpha: 0.15);
-    final buttonFg = isDark
-        ? CupertinoColors.systemGrey
-        : CupertinoColors.black;
-    final sliderBg = isDark
-        ? CupertinoColors.systemBackground.withValues(alpha: 0.15)
-        : CupertinoColors.white.withValues(alpha: 0.15);
+    final activeColor = isDark
+        ? const Color(0xFF23C061)
+        : const Color(0xFF21AA62);
+    final buttonBg = CupertinoColors.systemBackground.withValues(alpha: 0.15);
+    final buttonFg = CupertinoColors.systemGrey;
+    final sliderBg = CupertinoColors.systemBackground.withValues(alpha: 0.15);
 
     return CupertinoPageScaffold(
       backgroundColor: CupertinoColors.black,
@@ -397,9 +396,7 @@ class _FloorMapViewerState extends State<_FloorMapViewer> {
                             width: 44,
                             height: 44,
                             decoration: BoxDecoration(
-                              color: isDark
-                                  ? CupertinoColors.systemGrey5.darkColor
-                                  : CupertinoColors.systemGrey5,
+                              color: CupertinoColors.systemGrey5.darkColor,
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -419,7 +416,7 @@ class _FloorMapViewerState extends State<_FloorMapViewer> {
                               min: _minScale,
                               max: _maxScale,
                               divisions: 18,
-                              activeColor: CupertinoColors.systemBlue,
+                              activeColor: activeColor,
                               thumbColor: CupertinoColors.white,
                               onChanged: _setZoomFromSlider,
                             ),
@@ -440,9 +437,7 @@ class _FloorMapViewerState extends State<_FloorMapViewer> {
                             width: 44,
                             height: 44,
                             decoration: BoxDecoration(
-                              color: isDark
-                                  ? CupertinoColors.systemGrey5.darkColor
-                                  : CupertinoColors.systemGrey5,
+                              color: CupertinoColors.systemGrey5.darkColor,
                               shape: BoxShape.circle,
                             ),
                             child: Icon(

@@ -495,6 +495,8 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
   }
 
   Widget _buildViewToggleButton(bool isDarkMode) {
+    final activeColor = isDarkMode ? Color(0xFF23C061) : Color(0xFF21AA62);
+
     return SizedBox(
       height: 32,
       child: CupertinoSlidingSegmentedControl<bool>(
@@ -502,7 +504,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
         backgroundColor: isDarkMode
             ? CupertinoColors.systemGrey6.darkColor
             : CupertinoColors.systemGrey6,
-        thumbColor: CupertinoColors.activeBlue,
+        thumbColor: activeColor,
         padding: const EdgeInsets.all(2),
         onValueChanged: (value) {
           if (value != null) {
@@ -603,6 +605,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
 
   Widget _buildCategoryFilter(bool isDarkMode) {
     final categories = _getAllCategories();
+    final activeColor = isDarkMode ? Color(0xFF23C061) : Color(0xFF21AA62);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -616,6 +619,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
               _selectedCategory == null,
               () => _filterByCategory(null),
               isDarkMode,
+              activeColor,
             ),
             const SizedBox(width: 8),
             // Individual category chips
@@ -627,9 +631,10 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                   _selectedCategory == category,
                   () => _filterByCategory(category),
                   isDarkMode,
+                  activeColor,
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -641,6 +646,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
     bool isSelected,
     VoidCallback onTap,
     bool isDarkMode,
+    Color activeColor,
   ) {
     return GestureDetector(
       onTap: onTap,
@@ -650,7 +656,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? CupertinoColors.activeBlue
+              ? activeColor
               : (isDarkMode
                     ? CupertinoColors.systemGrey6.darkColor
                     : CupertinoColors.systemGrey6),
@@ -658,7 +664,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: CupertinoColors.activeBlue.withValues(alpha: 0.4),
+                    color: activeColor.withValues(alpha: 0.4),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
@@ -732,6 +738,8 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
     Color cardBg,
     Color textColor,
   ) {
+    final activeColor = isDarkMode ? Color(0xFF23C061) : Color(0xFF21AA62);
+
     return GestureDetector(
       onTap: () {
         Navigator.of(context, rootNavigator: true).push(
@@ -825,7 +833,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                             Container(
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
-                                color: CupertinoColors.activeBlue.withValues(
+                                color: activeColor.withValues(
                                   alpha: 0.1,
                                 ),
                                 borderRadius: BorderRadius.circular(6),
@@ -833,7 +841,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                               child: Icon(
                                 CupertinoIcons.cube_box_fill,
                                 size: 11,
-                                color: CupertinoColors.activeBlue,
+                                color: activeColor,
                               ),
                             ),
                             const SizedBox(width: 6),
@@ -859,7 +867,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: CupertinoColors.activeBlue.withValues(
+                            color: activeColor.withValues(
                               alpha: 0.12,
                             ),
                             borderRadius: BorderRadius.circular(8),
@@ -870,13 +878,13 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                               Icon(
                                 CupertinoIcons.location_solid,
                                 size: 13,
-                                color: CupertinoColors.activeBlue,
+                                color: activeColor,
                               ),
                               const SizedBox(width: 5),
                               Text(
                                 exhibitor['booth'],
                                 style: TextStyle(
-                                  color: CupertinoColors.activeBlue,
+                                  color: activeColor,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -942,6 +950,8 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
     Color cardBg,
     Color textColor,
   ) {
+    final activeColor = isDarkMode ? Color(0xFF23C061) : Color(0xFF21AA62);
+
     return GestureDetector(
       onTap: () {
         Navigator.of(context, rootNavigator: true).push(
@@ -1041,7 +1051,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                               Container(
                                 padding: const EdgeInsets.all(5),
                                 decoration: BoxDecoration(
-                                  color: CupertinoColors.activeBlue.withValues(
+                                  color: activeColor.withValues(
                                     alpha: 0.1,
                                   ),
                                   borderRadius: BorderRadius.circular(8),
@@ -1049,7 +1059,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                                 child: Icon(
                                   CupertinoIcons.cube_box_fill,
                                   size: 12,
-                                  color: CupertinoColors.activeBlue,
+                                  color: activeColor,
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -1075,7 +1085,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: CupertinoColors.activeBlue.withValues(
+                              color: activeColor.withValues(
                                 alpha: 0.12,
                               ),
                               borderRadius: BorderRadius.circular(8),
@@ -1086,13 +1096,13 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                                 Icon(
                                   CupertinoIcons.location_solid,
                                   size: 13,
-                                  color: CupertinoColors.activeBlue,
+                                  color: activeColor,
                                 ),
                                 const SizedBox(width: 5),
                                 Text(
                                   exhibitor['booth'],
                                   style: TextStyle(
-                                    color: CupertinoColors.activeBlue,
+                                    color: activeColor,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -1110,14 +1120,14 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: CupertinoColors.activeBlue.withValues(
+                        color: activeColor.withValues(
                           alpha: 0.1,
                         ),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         CupertinoIcons.chevron_right,
-                        color: CupertinoColors.activeBlue,
+                        color: activeColor,
                         size: 16,
                       ),
                     ),

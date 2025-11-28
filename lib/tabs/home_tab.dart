@@ -136,20 +136,13 @@ class HomeTab extends ConsumerWidget {
           Container(
             width: 80,
             height: 80,
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
             child: ClipOval(
-              child: Image.asset('assets/images/image2.png', fit: BoxFit.cover),
+              child: Image.asset(
+                isDarkMode
+                    ? 'assets/images/logo-dark.png'
+                    : 'assets/images/logo-light.png',
+                fit: BoxFit.cover,
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -206,8 +199,8 @@ class HomeTab extends ConsumerWidget {
               fontWeight: FontWeight.w800,
               fontFamily: 'SF Pro Display',
               color: isDarkMode
-                  ? const Color(0xFF60A5FA)
-                  : const Color(0xFF2563EB),
+                  ? const Color(0xFF23C061)
+                  : const Color(0xFF21AA62),
               height: 1.1,
               letterSpacing: 0.2,
             ),
@@ -221,13 +214,13 @@ class HomeTab extends ConsumerWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: isDarkMode
-                        ? const Color(0xFF1E3A8A).withValues(alpha: 0.3)
-                        : const Color(0xFFDEEBFF),
+                        ? const Color(0xFF065F46).withValues(alpha: 0.3)
+                        : const Color(0xFFD1FAE5),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isDarkMode
-                          ? const Color(0xFF3B82F6).withValues(alpha: 0.4)
-                          : const Color(0xFF3B82F6).withValues(alpha: 0.2),
+                          ? const Color(0xFF23C061).withValues(alpha: 0.4)
+                          : const Color(0xFF21AA62).withValues(alpha: 0.2),
                       width: 1,
                     ),
                   ),
@@ -237,7 +230,9 @@ class HomeTab extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF3B82F6),
+                          color: isDarkMode
+                              ? const Color(0xFF23C061)
+                              : const Color(0xFF21AA62),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
@@ -276,13 +271,13 @@ class HomeTab extends ConsumerWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: isDarkMode
-                        ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
-                        : const Color(0xFFFFE4E6),
+                        ? const Color(0xFF065F46).withValues(alpha: 0.3)
+                        : const Color(0xFFD1FAE5),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isDarkMode
-                          ? const Color(0xFFEF4444).withValues(alpha: 0.4)
-                          : const Color(0xFFEF4444).withValues(alpha: 0.2),
+                          ? const Color(0xFF23C061).withValues(alpha: 0.4)
+                          : const Color(0xFF21AA62).withValues(alpha: 0.2),
                       width: 1,
                     ),
                   ),
@@ -292,7 +287,9 @@ class HomeTab extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEF4444),
+                          color: isDarkMode
+                              ? const Color(0xFF23C061)
+                              : const Color(0xFF21AA62),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
@@ -368,50 +365,26 @@ class HomeTab extends ConsumerWidget {
                       horizontal: 20,
                     ),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: isDarkMode
-                            ? [
-                                const Color(0xFF059669).withValues(alpha: 0.4),
-                                const Color(0xFF047857).withValues(alpha: 0.3),
-                              ]
-                            : [
-                                const Color(0xFF6EE7B7),
-                                const Color(0xFF34D399),
-                              ],
-                      ),
+                      color: isDarkMode
+                          ? const Color(0xFF23C061).withValues(alpha: 0.15)
+                          : const Color(0xFF21AA62).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.4),
+                        color: isDarkMode
+                            ? const Color(0xFF23C061).withValues(alpha: 0.3)
+                            : const Color(0xFF21AA62).withValues(alpha: 0.3),
                         width: 1.5,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(
-                            0xFF10B981,
-                          ).withValues(alpha: 0.25),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
                     child: Column(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF10B981),
+                            color: isDarkMode
+                                ? const Color(0xFF23C061)
+                                : const Color(0xFF21AA62),
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFF10B981,
-                                ).withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
                           ),
                           child: const Icon(
                             CupertinoIcons.map_pin_ellipse,
@@ -445,50 +418,26 @@ class HomeTab extends ConsumerWidget {
                       horizontal: 20,
                     ),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: isDarkMode
-                            ? [
-                                const Color(0xFFEA580C).withValues(alpha: 0.4),
-                                const Color(0xFFC2410C).withValues(alpha: 0.3),
-                              ]
-                            : [
-                                const Color(0xFFFDBA74),
-                                const Color(0xFFFB923C),
-                              ],
-                      ),
+                      color: isDarkMode
+                          ? const Color(0xFF23C061).withValues(alpha: 0.15)
+                          : const Color(0xFF21AA62).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: const Color(0xFFF97316).withValues(alpha: 0.4),
+                        color: isDarkMode
+                            ? const Color(0xFF23C061).withValues(alpha: 0.3)
+                            : const Color(0xFF21AA62).withValues(alpha: 0.3),
                         width: 1.5,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(
-                            0xFFF97316,
-                          ).withValues(alpha: 0.25),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
                     child: Column(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF97316),
+                            color: isDarkMode
+                                ? const Color(0xFF23C061)
+                                : const Color(0xFF21AA62),
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFFF97316,
-                                ).withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
                           ),
                           child: const Icon(
                             CupertinoIcons.map,
@@ -550,8 +499,8 @@ class HomeTab extends ConsumerWidget {
                   'View All',
                   style: TextStyle(
                     color: isDarkMode
-                        ? const Color(0xFF60A5FA)
-                        : const Color(0xFF3B82F6),
+                        ? const Color(0xFF23C061)
+                        : const Color(0xFF21AA62),
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     fontFamily: 'SF Pro Display',
@@ -642,15 +591,23 @@ class HomeTab extends ConsumerWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isDarkMode
-                  ? const Color(0xFF7C3AED).withValues(alpha: 0.3)
-                  : const Color(0xFFEDE9FE),
+                  ? const Color(0xFF23C061).withValues(alpha: 0.3)
+                  : const Color(0xFFD1FAE5),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: const Color(0xFF8B5CF6).withValues(alpha: 0.3),
+                color: isDarkMode
+                    ? const Color(0xFF23C061).withValues(alpha: 0.4)
+                    : const Color(0xFF21AA62).withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
-            child: Icon(icon, color: const Color(0xFF7C3AED), size: 22),
+            child: Icon(
+              icon,
+              color: isDarkMode
+                  ? const Color(0xFF23C061)
+                  : const Color(0xFF21AA62),
+              size: 22,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -709,13 +666,7 @@ class HomeTab extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDarkMode
-              ? [const Color(0xFF1E3A8A), const Color(0xFF7C3AED)]
-              : [const Color(0xFF3B82F6), const Color(0xFF8B5CF6)],
-        ),
+        color: isDarkMode ? Color(0xFF23C061) : Color(0xFF21AA62),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -837,10 +788,8 @@ class HomeTab extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
-              ),
-              borderRadius: BorderRadius.circular(14),
+              color: isDarkMode ? Color(0xFF23C061) : Color(0xFF21AA62),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: const Center(
               child: Text(

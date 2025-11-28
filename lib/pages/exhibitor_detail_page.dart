@@ -50,8 +50,8 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
         allowMuting: true,
         showControls: true,
         materialProgressColors: ChewieProgressColors(
-          playedColor: Color(0xFFFFD700),
-          handleColor: Color(0xFFFFD700),
+          playedColor: Color(0xFF21AA62),
+          handleColor: Color(0xFF21AA62),
           backgroundColor: Colors.grey,
           bufferedColor: Colors.grey.withValues(alpha: 0.5),
         ),
@@ -141,15 +141,6 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
 
           _buildSeparator(context),
 
-          // Social Media section
-          Container(
-            color: CupertinoColors.systemBackground.resolveFrom(context),
-            padding: EdgeInsets.only(top: 12, bottom: 12),
-            child: _buildSocialMediaSection(),
-          ),
-
-          _buildSeparator(context),
-
           // Documents section
           Container(
             color: CupertinoColors.systemBackground.resolveFrom(context),
@@ -174,6 +165,8 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
   }
 
   Widget _buildHeader(bool isDark) {
+    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
@@ -230,14 +223,14 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
                     Icon(
                       CupertinoIcons.location_solid,
                       size: 16,
-                      color: Color(0xFFFFD700),
+                      color: activeColor,
                     ),
                     SizedBox(width: 4),
                     Text(
                       widget.exhibitor['location'] ?? 'Conference Room 1',
                       style: TextStyle(
                         fontSize: 15,
-                        color: Color(0xFFFFD700),
+                        color: activeColor,
                         fontWeight: FontWeight.w600,
                         fontFamily: 'SF Pro Display',
                         letterSpacing: 0.2,
@@ -278,17 +271,83 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Color(0xFFFFD700).withValues(alpha: 0.15),
+                        color: activeColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: activeColor.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
                       ),
                       child: Text(
                         'Exhibitor',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFFFF9500),
+                          color: activeColor,
                           fontWeight: FontWeight.w600,
                           fontFamily: 'SF Pro Display',
                           letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12),
+                // Social media buttons
+                Row(
+                  children: [
+                    // Facebook
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Color(0xFF1877F2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () {},
+                        child: FaIcon(
+                          FontAwesomeIcons.facebookF,
+                          color: CupertinoColors.white,
+                          size: 14,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    // Instagram
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Color(0xFFE4405F),
+                        shape: BoxShape.circle,
+                      ),
+                      child: CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () {},
+                        child: FaIcon(
+                          FontAwesomeIcons.instagram,
+                          color: CupertinoColors.white,
+                          size: 14,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    // LinkedIn
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Color(0xFF0A66C2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () {},
+                        child: FaIcon(
+                          FontAwesomeIcons.linkedinIn,
+                          color: CupertinoColors.white,
+                          size: 14,
                         ),
                       ),
                     ),
@@ -303,16 +362,15 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
   }
 
   Widget _buildActionButtons(BuildContext context) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+
     return Row(
       children: [
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFFFFD700), Color(0xFFFF9500)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: activeColor,
               borderRadius: BorderRadius.circular(12),
             ),
             child: CupertinoButton(
@@ -347,11 +405,7 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFFFFD700), Color(0xFFFF9500)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: activeColor,
               borderRadius: BorderRadius.circular(12),
             ),
             child: CupertinoButton(
@@ -394,7 +448,7 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
         SizedBox(width: 10),
         Container(
           decoration: BoxDecoration(
-            color: Color(0xFFFFD700).withValues(alpha: 0.15),
+            color: activeColor.withValues(alpha: 0.15),
             shape: BoxShape.circle,
           ),
           child: CupertinoButton(
@@ -404,7 +458,7 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
             child: Icon(
               CupertinoIcons.star,
               size: 22,
-              color: Color(0xFFFFD700),
+              color: activeColor,
             ),
           ),
         ),
@@ -559,90 +613,10 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
     );
   }
 
-  Widget _buildSocialMediaSection() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'CONNECT VIA SOCIAL MEDIA',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: CupertinoColors.systemGrey.resolveFrom(context),
-              fontFamily: 'SF Pro Display',
-              letterSpacing: 0.2,
-            ),
-          ),
-          SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Facebook
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Color(0xFF1877F2),
-                  shape: BoxShape.circle,
-                ),
-                child: CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () {},
-                  child: FaIcon(
-                    FontAwesomeIcons.facebookF,
-                    color: CupertinoColors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-              SizedBox(width: 20),
-              // Instagram
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Color(0xFFE4405F),
-                  shape: BoxShape.circle,
-                ),
-                child: CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () {},
-                  child: FaIcon(
-                    FontAwesomeIcons.instagram,
-                    color: CupertinoColors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-              SizedBox(width: 20),
-              // LinkedIn
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Color(0xFF0A66C2),
-                  shape: BoxShape.circle,
-                ),
-                child: CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () {},
-                  child: FaIcon(
-                    FontAwesomeIcons.linkedinIn,
-                    color: CupertinoColors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildVideoSection(bool isDark) {
+    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -673,7 +647,7 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
                       ? CupertinoIcons.chevron_up
                       : CupertinoIcons.chevron_down,
                   size: 18,
-                  color: Color(0xFFFFD700),
+                  color: activeColor,
                 ),
               ],
             ),
@@ -745,7 +719,7 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
                           ),
                           child: Center(
                             child: CupertinoActivityIndicator(
-                              color: Color(0xFFFFD700),
+                              color: activeColor,
                             ),
                           ),
                         ),
@@ -759,6 +733,8 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
   }
 
   Widget _buildCompanyRepSection(bool isDark) {
+    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+
     // Mock company representatives data
     final List<Map<String, dynamic>> representatives = [
       {
@@ -818,7 +794,7 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
                       ? CupertinoIcons.chevron_up
                       : CupertinoIcons.chevron_down,
                   size: 18,
-                  color: Color(0xFFFFD700),
+                  color: activeColor,
                 ),
               ],
             ),
@@ -922,6 +898,8 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
   }
 
   Widget _buildDocumentsSection(bool isDark) {
+    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+
     // Mock documents data - in a real app, this would come from the exhibitor data
     final List<Map<String, String>> documents = [
       {
@@ -980,7 +958,7 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
                       ? CupertinoIcons.chevron_up
                       : CupertinoIcons.chevron_down,
                   size: 18,
-                  color: Color(0xFFFFD700),
+                  color: activeColor,
                 ),
               ],
             ),
@@ -1005,6 +983,8 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
   }
 
   Widget _buildDocumentCard(Map<String, String> document, bool isDark) {
+    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       padding: EdgeInsets.all(16),
@@ -1065,7 +1045,7 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
             },
             child: Icon(
               CupertinoIcons.arrow_down_circle_fill,
-              color: Color(0xFFFFD700),
+              color: activeColor,
               size: 28,
             ),
           ),
@@ -1115,6 +1095,9 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
       decoration: BoxDecoration(
@@ -1334,7 +1317,7 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: _isVideoMeeting
-                                  ? Color(0xFFFFD700)
+                                  ? activeColor
                                   : CupertinoColors.systemGrey.resolveFrom(
                                       context,
                                     ),
@@ -1342,7 +1325,7 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
                             ),
                             borderRadius: BorderRadius.circular(6),
                             color: _isVideoMeeting
-                                ? Color(0xFFFFD700)
+                                ? activeColor
                                 : Colors.transparent,
                           ),
                           child: _isVideoMeeting
@@ -1461,31 +1444,22 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
                       ),
                       SizedBox(width: 12),
                       Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFFFFD700), Color(0xFFFF9500)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: CupertinoButton(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            borderRadius: BorderRadius.circular(12),
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              // Handle send invite
-                            },
-                            child: Text(
-                              'Send Invite',
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'SF Pro Display',
-                                letterSpacing: 0.2,
-                                color: CupertinoColors.white,
-                              ),
+                        child: CupertinoButton(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          borderRadius: BorderRadius.circular(12),
+                          color: activeColor,
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            // Handle send invite
+                          },
+                          child: Text(
+                            'Send Invite',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'SF Pro Display',
+                              letterSpacing: 0.2,
+                              color: CupertinoColors.white,
                             ),
                           ),
                         ),

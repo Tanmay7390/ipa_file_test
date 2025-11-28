@@ -907,6 +907,7 @@ class _SpeakersTabState extends State<SpeakersTab> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
     return Stack(
       children: [
         CustomPageScaffold(
@@ -1096,7 +1097,9 @@ class _SpeakersTabState extends State<SpeakersTab> {
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
                             color: hasSection
-                                ? CupertinoColors.activeBlue
+                                ? isDark
+                                      ? Color(0xFF23C061)
+                                      : Color(0xFF21AA62)
                                 : CupertinoColors.systemGrey3,
                           ),
                         ),
