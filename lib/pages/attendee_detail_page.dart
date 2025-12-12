@@ -1,88 +1,210 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:aesurg26/components/page_scaffold.dart';
-import 'package:aesurg26/pages/chat_page.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rajapsicon/components/page_scaffold.dart';
+// import 'package:rajapsicon/pages/direct_chat_page.dart';
+import 'package:rajapsicon/apis/providers/attendees_provider.dart';
+import 'package:rajapsicon/apis/providers/meeting_request_provider.dart';
+// import 'package:rajapsicon/apis/providers/direct_chat_provider.dart';
+import 'package:rajapsicon/providers/user_data_provider.dart';
+import 'package:rajapsicon/providers/home_data_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class AttendeeDetailPage extends StatefulWidget {
-  final Map<String, dynamic> attendee;
+class AttendeeDetailPage extends ConsumerStatefulWidget {
+  final String attendeeId;
 
-  const AttendeeDetailPage({super.key, required this.attendee});
+  const AttendeeDetailPage({super.key, required this.attendeeId});
 
   @override
-  State<AttendeeDetailPage> createState() => _AttendeeDetailPageState();
+  ConsumerState<AttendeeDetailPage> createState() => _AttendeeDetailPageState();
 }
 
-class _AttendeeDetailPageState extends State<AttendeeDetailPage> {
+class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
   bool _isAboutExpanded = false;
-  bool _isAdditionalInfoExpanded = false;
-  bool _isScheduleExpanded = false;
-  Map<int, bool> _expandedDays = {}; // Track which days are expanded
 
-  void _showMeetingSheet() {
+  void _showMeetingSheet(String attendeeId, String attendeeName) {
     showCupertinoModalPopup(
       context: context,
       builder: (BuildContext context) =>
-          _MeetingFormSheet(attendeeName: widget.attendee['name'] ?? ''),
+          _MeetingFormSheet(attendeeId: attendeeId, attendeeName: attendeeName),
     );
+  }
+
+  Future<void> _launchUrl(String urlString) async {
+    final uri = Uri.parse(urlString);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text('Error'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: Text('OK'),
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Get initials from name
+  String _getInitials(String? name) {
+    if (name == null || name.isEmpty) return '?';
+
+    // Remove titles with or without period (Dr, Dr., Prof, Prof., Mr, Mr., etc.)
+    final cleaned = name.replaceAll(
+      RegExp(r'^(Dr\.?|Prof\.?|Mr\.?|Mrs\.?|Ms\.?)\s+', caseSensitive: false),
+      '',
+    );
+
+    final parts = cleaned.trim().split(' ');
+    if (parts.isEmpty) return '?';
+
+    if (parts.length == 1) {
+      return parts[0].substring(0, 1).toUpperCase();
+    }
+
+    // First letter of first name + first letter of last name
+    return (parts[0].substring(0, 1) + parts[parts.length - 1].substring(0, 1))
+        .toUpperCase();
+  }
+
+  // Build initials avatar widget
+  Widget _buildInitialsAvatar(String? name, bool isDark) {
+    final initials = _getInitials(name);
+
+    return Container(
+      width: 120,
+      height: 120,
+      decoration: BoxDecoration(
+        color: isDark
+            ? CupertinoColors.systemGrey.resolveFrom(context)
+            : CupertinoColors.systemGrey5.resolveFrom(context),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: TextStyle(
+            fontSize: 48,
+            fontWeight: FontWeight.w600,
+            color: isDark
+                ? CupertinoColors.white
+                : CupertinoColors.darkBackgroundGray,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Check if attendee has any additional info to display
+  bool _hasAdditionalInfo(Attendee attendee) {
+    return (attendee.phone != null && attendee.phone!.isNotEmpty) ||
+        (attendee.email != null && attendee.email!.isNotEmpty) ||
+        (attendee.location != null && attendee.location!.isNotEmpty) ||
+        (attendee.organization != null && attendee.organization!.isNotEmpty);
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final attendeeAsync = ref.watch(attendeeDetailProvider(widget.attendeeId));
 
     return CustomPageScaffold(
       heading: 'Attendee Details',
       hideSearch: true,
-      isLoading: false,
+      isLoading: attendeeAsync.isLoading,
       hideLargeTitle: true,
       sliverList: SliverList(
         delegate: SliverChildListDelegate([
-          // Header with photo and basic info
-          Container(
-            color: CupertinoColors.systemBackground.resolveFrom(context),
-            child: _buildHeader(isDark),
-          ),
+          attendeeAsync.when(
+            data: (attendee) => Column(
+              children: [
+                // Header with photo and basic info
+                Container(
+                  color: CupertinoColors.systemBackground.resolveFrom(context),
+                  child: _buildHeader(attendee, isDark),
+                ),
 
-          // Action buttons
-          Container(
-            color: CupertinoColors.systemBackground.resolveFrom(context),
-            padding: EdgeInsets.only(top: 12, bottom: 12, left: 20, right: 20),
-            child: _buildActionButtons(context),
-          ),
+                // Action buttons
+                Container(
+                  color: CupertinoColors.systemBackground.resolveFrom(context),
+                  padding: EdgeInsets.only(
+                    top: 12,
+                    bottom: 12,
+                    left: 20,
+                    right: 20,
+                  ),
+                  child: _buildActionButtons(context, attendee),
+                ),
+                _buildSeparator(context),
 
-          _buildSeparator(context),
+                // About section
+                if (attendee.about != null && attendee.about!.isNotEmpty)
+                  Container(
+                    color: CupertinoColors.systemBackground.resolveFrom(
+                      context,
+                    ),
+                    padding: EdgeInsets.only(top: 12, bottom: 12),
+                    child: _buildAboutSection(attendee, isDark),
+                  ),
 
-          // About section
-          if (widget.attendee['about'] != null &&
-              widget.attendee['about'].toString().isNotEmpty)
-            Container(
-              color: CupertinoColors.systemBackground.resolveFrom(context),
-              padding: EdgeInsets.only(top: 12, bottom: 12),
-              child: _buildAboutSection(isDark),
+                if (attendee.about != null && attendee.about!.isNotEmpty)
+                  _buildSeparator(context),
+
+                // Additional Information section
+                if (_hasAdditionalInfo(attendee))
+                  Container(
+                    color: CupertinoColors.systemBackground.resolveFrom(
+                      context,
+                    ),
+                    padding: EdgeInsets.zero,
+                    child: _buildAdditionalInfoSection(attendee, isDark),
+                  ),
+
+                SizedBox(height: 20),
+              ],
             ),
-
-          _buildSeparator(context),
-
-          // Additional Information section
-          Container(
-            color: CupertinoColors.systemBackground.resolveFrom(context),
-            padding: EdgeInsets.zero,
-            child: _buildAdditionalInfoSection(isDark),
-          ),
-
-          _buildSeparator(context),
-
-          // Schedule section
-          if (widget.attendee['sessions'] != null &&
-              widget.attendee['sessions'].isNotEmpty)
-            Container(
-              color: CupertinoColors.systemBackground.resolveFrom(context),
-              padding: EdgeInsets.zero,
-              child: _buildScheduleSection(isDark),
+            loading: () => SizedBox(height: 400),
+            error: (error, stack) => Container(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Icon(
+                    CupertinoIcons.exclamationmark_triangle,
+                    size: 64,
+                    color: CupertinoColors.systemRed.resolveFrom(context),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Error loading attendee details',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: CupertinoTheme.of(
+                        context,
+                      ).textTheme.textStyle.color,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    error.toString(),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: CupertinoColors.systemGrey.resolveFrom(context),
+                    ),
+                  ),
+                ],
+              ),
             ),
-
-          SizedBox(height: 20),
+          ),
         ]),
       ),
     );
@@ -98,34 +220,38 @@ class _AttendeeDetailPageState extends State<AttendeeDetailPage> {
     );
   }
 
-  Widget _buildHeader(bool isDark) {
+  Widget _buildHeader(Attendee attendee, bool isDark) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Profile photo
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Image.network(
-              widget.attendee['photo'] ?? '',
-              width: 120,
-              height: 120,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: CupertinoColors.systemGrey5.resolveFrom(context),
+          // Profile photo with initials fallback
+          Stack(
+            children: [
+              // Always show initials first (instant load)
+              _buildInitialsAvatar(attendee.name, isDark),
+              // Overlay photo on top if available
+              if (attendee.photo != null && attendee.photo!.isNotEmpty)
+                ClipRRect(
                   borderRadius: BorderRadius.circular(20),
+                  child: Image.network(
+                    attendee.photo!,
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      // While loading, show nothing (initials visible underneath)
+                      return const SizedBox.shrink();
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      // On error, show nothing (initials remain visible)
+                      return const SizedBox.shrink();
+                    },
+                  ),
                 ),
-                child: Icon(
-                  CupertinoIcons.person_fill,
-                  size: 60,
-                  color: CupertinoColors.systemGrey.resolveFrom(context),
-                ),
-              ),
-            ),
+            ],
           ),
           SizedBox(width: 20),
 
@@ -135,7 +261,7 @@ class _AttendeeDetailPageState extends State<AttendeeDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.attendee['name'] ?? '',
+                  attendee.name ?? '',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
@@ -146,9 +272,7 @@ class _AttendeeDetailPageState extends State<AttendeeDetailPage> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  widget.attendee['title'] ??
-                      widget.attendee['specialty'] ??
-                      '',
+                  attendee.designation ?? attendee.title ?? '',
                   style: TextStyle(
                     fontSize: 16,
                     color: CupertinoColors.secondaryLabel.resolveFrom(context),
@@ -157,10 +281,10 @@ class _AttendeeDetailPageState extends State<AttendeeDetailPage> {
                     letterSpacing: 0.2,
                   ),
                 ),
-                if (widget.attendee['company'] != null) ...[
+                if (attendee.organization != null) ...[
                   SizedBox(height: 4),
                   Text(
-                    widget.attendee['company'],
+                    attendee.organization!,
                     style: TextStyle(
                       fontSize: 15,
                       color: CupertinoColors.systemGrey.resolveFrom(context),
@@ -169,68 +293,6 @@ class _AttendeeDetailPageState extends State<AttendeeDetailPage> {
                     ),
                   ),
                 ],
-                SizedBox(height: 12),
-                // Social media buttons
-                Row(
-                  children: [
-                    // Facebook
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Color(0xFF1877F2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () {},
-                        child: FaIcon(
-                          FontAwesomeIcons.facebookF,
-                          color: CupertinoColors.white,
-                          size: 14,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    // Instagram
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Color(0xFFE4405F),
-                        shape: BoxShape.circle,
-                      ),
-                      child: CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () {},
-                        child: FaIcon(
-                          FontAwesomeIcons.instagram,
-                          color: CupertinoColors.white,
-                          size: 14,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    // LinkedIn
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Color(0xFF0A66C2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () {},
-                        child: FaIcon(
-                          FontAwesomeIcons.linkedinIn,
-                          color: CupertinoColors.white,
-                          size: 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -239,38 +301,33 @@ class _AttendeeDetailPageState extends State<AttendeeDetailPage> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
+  Widget _buildActionButtons(BuildContext context, Attendee attendee) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
     final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final canMessage =
+        attendee.canMessage == true && attendee.messengerId != null;
 
     return Row(
       children: [
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              color: activeColor,
+              color: canMessage ? activeColor : CupertinoColors.systemGrey4,
               borderRadius: BorderRadius.circular(12),
             ),
             child: CupertinoButton(
               padding: EdgeInsets.symmetric(vertical: 12),
               borderRadius: BorderRadius.circular(12),
-              onPressed: () {
-                Navigator.of(context).push(
-                  CupertinoPageRoute(
-                    builder: (context) => ChatPage(
-                      userName: widget.attendee['name'] ?? '',
-                      userPhoto: widget.attendee['photo'],
-                    ),
-                  ),
-                );
-              },
+              onPressed: () => {},
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     CupertinoIcons.chat_bubble_fill,
                     size: 18,
-                    color: CupertinoColors.white,
+                    color: canMessage
+                        ? CupertinoColors.white
+                        : CupertinoColors.systemGrey,
                   ),
                   SizedBox(width: 6),
                   Text(
@@ -280,7 +337,9 @@ class _AttendeeDetailPageState extends State<AttendeeDetailPage> {
                       fontWeight: FontWeight.w600,
                       fontFamily: 'SF Pro Display',
                       letterSpacing: 0.2,
-                      color: CupertinoColors.white,
+                      color: canMessage
+                          ? CupertinoColors.white
+                          : CupertinoColors.systemGrey,
                     ),
                   ),
                 ],
@@ -298,7 +357,8 @@ class _AttendeeDetailPageState extends State<AttendeeDetailPage> {
             child: CupertinoButton(
               padding: EdgeInsets.symmetric(vertical: 12),
               borderRadius: BorderRadius.circular(12),
-              onPressed: _showMeetingSheet,
+              onPressed: () =>
+                  _showMeetingSheet(attendee.id, attendee.name ?? ''),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -333,19 +393,15 @@ class _AttendeeDetailPageState extends State<AttendeeDetailPage> {
             padding: EdgeInsets.all(12),
             borderRadius: BorderRadius.circular(50),
             onPressed: () {},
-            child: Icon(
-              CupertinoIcons.star,
-              size: 22,
-              color: activeColor,
-            ),
+            child: Icon(CupertinoIcons.star, size: 22, color: activeColor),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildAboutSection(bool isDark) {
-    final aboutText = widget.attendee['about'] ?? '';
+  Widget _buildAboutSection(Attendee attendee, bool isDark) {
+    final aboutText = attendee.about ?? '';
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -491,96 +547,62 @@ class _AttendeeDetailPageState extends State<AttendeeDetailPage> {
     );
   }
 
-
-  Widget _buildAdditionalInfoSection(bool isDark) {
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
-
+  Widget _buildAdditionalInfoSection(Attendee attendee, bool isDark) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: () {
-              setState(() {
-                _isAdditionalInfoExpanded = !_isAdditionalInfoExpanded;
-              });
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'ADDITIONAL INFORMATION',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: CupertinoColors.systemGrey.resolveFrom(context),
-                    fontFamily: 'SF Pro Display',
-                    letterSpacing: 0.2,
-                  ),
-                ),
-                Icon(
-                  _isAdditionalInfoExpanded
-                      ? CupertinoIcons.chevron_up
-                      : CupertinoIcons.chevron_down,
-                  size: 18,
-                  color: activeColor,
-                ),
-              ],
+          Text(
+            'ADDITIONAL INFORMATION',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: CupertinoColors.systemGrey.resolveFrom(context),
+              fontFamily: 'SF Pro Display',
+              letterSpacing: 0.2,
             ),
           ),
-          AnimatedSize(
-            duration: Duration(milliseconds: 350),
-            curve: Curves.fastOutSlowIn,
-            child: _isAdditionalInfoExpanded
-                ? Column(
-                    children: [
-                      SizedBox(height: 12),
+          SizedBox(height: 12),
 
-                      // Speciality
-                      if (widget.attendee['specialty'] != null)
-                        _buildMinimalisticInfoRow(
-                          icon: CupertinoIcons.heart_fill,
-                          label: 'Specialty',
-                          value: widget.attendee['specialty'],
-                          isClickable: false,
-                        ),
+          // Phone
+          if (attendee.phone != null && attendee.phone!.isNotEmpty)
+            _buildMinimalisticInfoRow(
+              icon: CupertinoIcons.phone_fill,
+              label: 'Phone',
+              value: attendee.phone!,
+              isClickable: true,
+              onTap: () => _launchUrl('tel:${attendee.phone}'),
+            ),
 
-                      // Phone
-                      _buildMinimalisticInfoRow(
-                        icon: CupertinoIcons.phone_fill,
-                        label: 'Phone',
-                        value: '+91 9876543210',
-                        isClickable: true,
-                        onTap: () {
-                          // TODO: Open phone dialer
-                        },
-                      ),
+          // Email
+          if (attendee.email != null && attendee.email!.isNotEmpty)
+            _buildMinimalisticInfoRow(
+              icon: CupertinoIcons.mail_solid,
+              label: 'Email',
+              value: attendee.email!,
+              isClickable: true,
+              onTap: () => _launchUrl('mailto:${attendee.email}'),
+            ),
 
-                      // Email
-                      _buildMinimalisticInfoRow(
-                        icon: CupertinoIcons.mail_solid,
-                        label: 'Email',
-                        value: 'aditya7390@gmail.com',
-                        isClickable: true,
-                        onTap: () {
-                          // TODO: Open email client
-                        },
-                      ),
+          // Location
+          if (attendee.location != null && attendee.location!.isNotEmpty)
+            _buildMinimalisticInfoRow(
+              icon: CupertinoIcons.location_solid,
+              label: 'Location',
+              value: attendee.location!,
+              isClickable: false,
+            ),
 
-                      // Location
-                      if (widget.attendee['location'] != null)
-                        _buildMinimalisticInfoRow(
-                          icon: CupertinoIcons.location_solid,
-                          label: 'Location',
-                          value: widget.attendee['location'],
-                          isClickable: false,
-                        ),
-                    ],
-                  )
-                : SizedBox.shrink(),
-          ),
+          // Organization
+          if (attendee.organization != null &&
+              attendee.organization!.isNotEmpty)
+            _buildMinimalisticInfoRow(
+              icon: CupertinoIcons.building_2_fill,
+              label: 'Organization',
+              value: attendee.organization!,
+              isClickable: false,
+            ),
         ],
       ),
     );
@@ -642,366 +664,22 @@ class _AttendeeDetailPageState extends State<AttendeeDetailPage> {
     }
     return content;
   }
-
-  Widget _buildScheduleSection(bool isDark) {
-    final sessions = widget.attendee['sessions'] as List<dynamic>;
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: () {
-              setState(() {
-                _isScheduleExpanded = !_isScheduleExpanded;
-              });
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'SCHEDULE',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: CupertinoColors.systemGrey.resolveFrom(context),
-                    fontFamily: 'SF Pro Display',
-                    letterSpacing: 0.2,
-                  ),
-                ),
-                Icon(
-                  _isScheduleExpanded
-                      ? CupertinoIcons.chevron_up
-                      : CupertinoIcons.chevron_down,
-                  size: 18,
-                  color: activeColor,
-                ),
-              ],
-            ),
-          ),
-          AnimatedSize(
-            duration: Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            child: _isScheduleExpanded
-                ? Column(
-                    children: [
-                      SizedBox(height: 16),
-                      ...sessions.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final session = entry.value;
-                        if (session is Map<String, dynamic>) {
-                          return _buildSessionCard(session, index + 1, isDark);
-                        } else if (session is String) {
-                          return _buildLegacySessionCard(
-                            session,
-                            index + 1,
-                            isDark,
-                          );
-                        }
-                        return SizedBox.shrink();
-                      }),
-                    ],
-                  )
-                : SizedBox.shrink(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSessionCard(
-    Map<String, dynamic> session,
-    int dayNumber,
-    bool isDark,
-  ) {
-    // Initialize day expansion state if not set
-    _expandedDays.putIfAbsent(dayNumber, () => true);
-    final isExpanded = _expandedDays[dayNumber] ?? true;
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Date header with expand/collapse
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: () {
-              setState(() {
-                _expandedDays[dayNumber] = !isExpanded;
-              });
-            },
-            child: Row(
-              children: [
-                // Calendar icon with day number
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '$dayNumber',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'SF Pro Display',
-                          color: CupertinoColors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 12),
-                // Date and session count
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        session['date'] ?? '',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'SF Pro Display',
-                          letterSpacing: 0.2,
-                          color: CupertinoTheme.of(
-                            context,
-                          ).textTheme.textStyle.color,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        '1 Session',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'SF Pro Display',
-                          color: CupertinoColors.systemGrey.resolveFrom(
-                            context,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  isExpanded
-                      ? CupertinoIcons.chevron_up
-                      : CupertinoIcons.chevron_down,
-                  size: 20,
-                  color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
-                ),
-              ],
-            ),
-          ),
-
-          // Animated session card
-          AnimatedSize(
-            duration: Duration(milliseconds: 350),
-            curve: Curves.fastOutSlowIn,
-            child: isExpanded
-                ? Column(
-                    children: [
-                      SizedBox(height: 12),
-                      Container(
-                        padding: EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? CupertinoColors.systemGrey6.darkColor
-                              : CupertinoColors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isDark
-                                ? CupertinoColors.systemGrey5.darkColor
-                                : CupertinoColors.systemGrey5.color,
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Session title
-                            Text(
-                              session['title'] ?? '',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'SF Pro Display',
-                                letterSpacing: 0.2,
-                                height: 1.3,
-                                color: CupertinoTheme.of(
-                                  context,
-                                ).textTheme.textStyle.color,
-                              ),
-                            ),
-
-                            SizedBox(height: 12),
-
-                            // Role badge (Attendee)
-                            if (session['role'] != null)
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: (isDark
-                                          ? Color(0xFF23C061)
-                                          : Color(0xFF21AA62))
-                                      .withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: (isDark
-                                            ? Color(0xFF23C061)
-                                            : Color(0xFF21AA62))
-                                        .withValues(alpha: 0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  session['role'],
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: 'SF Pro Display',
-                                    letterSpacing: 0.2,
-                                    color: isDark
-                                        ? Color(0xFF23C061)
-                                        : Color(0xFF21AA62),
-                                  ),
-                                ),
-                              ),
-
-                            SizedBox(height: 16),
-
-                            // Time
-                            Text(
-                              session['time'] ?? '',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontFamily: 'SF Pro Display',
-                                letterSpacing: 0.2,
-                                color: CupertinoColors.systemGrey.resolveFrom(
-                                  context,
-                                ),
-                              ),
-                            ),
-
-                            if (session['location'] != null) ...[
-                              SizedBox(height: 12),
-                              // Location badge
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? Color(0xFF4A2B3A)
-                                      : Color(0xFFFFE4E8),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  session['location'],
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: 'SF Pro Display',
-                                    letterSpacing: 0.2,
-                                    color: isDark
-                                        ? Color(0xFFFF8CB4)
-                                        : Color(0xFFD53F8C),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  )
-                : SizedBox.shrink(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegacySessionCard(
-    String sessionTitle,
-    int dayNumber,
-    bool isDark,
-  ) {
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: CupertinoColors.systemGrey6.resolveFrom(context),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: activeColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              'Day $dayNumber',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'SF Pro Display',
-                letterSpacing: 0.2,
-                color: CupertinoColors.white,
-              ),
-            ),
-          ),
-          SizedBox(width: 12),
-          Icon(
-            CupertinoIcons.calendar,
-            size: 20,
-            color: CupertinoColors.systemGrey.resolveFrom(context),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              sessionTitle,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'SF Pro Display',
-                letterSpacing: 0.2,
-                color: CupertinoTheme.of(context).textTheme.textStyle.color,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-class _MeetingFormSheet extends StatefulWidget {
+class _MeetingFormSheet extends ConsumerStatefulWidget {
+  final String attendeeId;
   final String attendeeName;
 
-  const _MeetingFormSheet({required this.attendeeName});
+  const _MeetingFormSheet({
+    required this.attendeeId,
+    required this.attendeeName,
+  });
 
   @override
-  State<_MeetingFormSheet> createState() => _MeetingFormSheetState();
+  ConsumerState<_MeetingFormSheet> createState() => _MeetingFormSheetState();
 }
 
-class _MeetingFormSheetState extends State<_MeetingFormSheet> {
+class _MeetingFormSheetState extends ConsumerState<_MeetingFormSheet> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _startTimeController = TextEditingController();
@@ -1009,14 +687,126 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _noteController = TextEditingController();
   bool _isVideoMeeting = false;
+  bool _isLoading = false;
+
+  DateTime _selectedDate = DateTime.now();
+  DateTime _selectedStartTime = DateTime.now();
+  DateTime _selectedEndTime = DateTime.now().add(Duration(minutes: 30));
 
   @override
   void initState() {
     super.initState();
     _titleController.text = 'Meeting - ${widget.attendeeName}';
-    _dateController.text = '23/01/2026';
-    _startTimeController.text = '10:00 AM';
-    _endTimeController.text = '10:30 AM';
+    _updateDateTimeDisplay();
+  }
+
+  void _updateDateTimeDisplay() {
+    // Format date as DD/MM/YYYY
+    _dateController.text =
+        '${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year}';
+
+    // Format time as HH:MM AM/PM
+    _startTimeController.text = _formatTime(_selectedStartTime);
+    _endTimeController.text = _formatTime(_selectedEndTime);
+  }
+
+  String _formatTime(DateTime time) {
+    final hour = time.hour > 12
+        ? time.hour - 12
+        : (time.hour == 0 ? 12 : time.hour);
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  }
+
+  void _showDatePicker() {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => Container(
+        height: 250,
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CupertinoButton(
+                  child: Text('Cancel'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                CupertinoButton(
+                  child: Text('Done'),
+                  onPressed: () {
+                    setState(() {
+                      _updateDateTimeDisplay();
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            ),
+            Expanded(
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.date,
+                initialDateTime: _selectedDate,
+                minimumDate: DateTime.now().subtract(Duration(days: 1)),
+                onDateTimeChanged: (DateTime newDate) {
+                  _selectedDate = newDate;
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showTimePicker(bool isStartTime) {
+    final initialTime = isStartTime ? _selectedStartTime : _selectedEndTime;
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => Container(
+        height: 250,
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CupertinoButton(
+                  child: Text('Cancel'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                CupertinoButton(
+                  child: Text('Done'),
+                  onPressed: () {
+                    setState(() {
+                      _updateDateTimeDisplay();
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            ),
+            Expanded(
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.time,
+                initialDateTime: initialTime,
+                use24hFormat: false,
+                onDateTimeChanged: (DateTime newTime) {
+                  if (isStartTime) {
+                    _selectedStartTime = newTime;
+                  } else {
+                    _selectedEndTime = newTime;
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -1028,6 +818,147 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
     _locationController.dispose();
     _noteController.dispose();
     super.dispose();
+  }
+
+  String _convertDateFormat(String date) {
+    // Convert from DD/MM/YYYY to YYYY-MM-DD
+    try {
+      final parts = date.split('/');
+      if (parts.length == 3) {
+        final day = parts[0].padLeft(2, '0');
+        final month = parts[1].padLeft(2, '0');
+        final year = parts[2];
+        return '$year-$month-$day';
+      }
+    } catch (e) {
+      // Return original if conversion fails
+    }
+    return date;
+  }
+
+  Future<void> _handleSendInvite() async {
+    // Validate required fields
+    if (_titleController.text.trim().isEmpty) {
+      _showError('Please enter a title');
+      return;
+    }
+
+    if (_dateController.text.trim().isEmpty) {
+      _showError('Please select a date');
+      return;
+    }
+
+    if (_startTimeController.text.trim().isEmpty) {
+      _showError('Please select a start time');
+      return;
+    }
+
+    if (_endTimeController.text.trim().isEmpty) {
+      _showError('Please select an end time');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Get current user data
+      final userData = ref.read(userDataProvider).valueOrNull;
+      if (userData == null) {
+        _showError('User not found. Please login again.');
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Get event ID
+      final homeData = ref.read(homePageDataProvider).valueOrNull;
+      if (homeData?.event?.id == null) {
+        _showError('Event not found. Please try again.');
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Convert date format from DD/MM/YYYY to YYYY-MM-DD
+      final formattedDate = _convertDateFormat(_dateController.text.trim());
+
+      // Call API
+      final meetingRequestActions = ref.read(meetingRequestActionsProvider);
+      final result = await meetingRequestActions.createMeetingRequest(
+        eventId: homeData!.event!.id,
+        requesterId: userData.id,
+        requesterName: userData.name,
+        recipientId: widget.attendeeId,
+        recipientName: widget.attendeeName,
+        title: _titleController.text.trim(),
+        meetingDate: formattedDate,
+        startTime: _startTimeController.text.trim(),
+        endTime: _endTimeController.text.trim(),
+        note: _noteController.text.trim(),
+        location: _locationController.text.trim(),
+        isVideoMeeting: _isVideoMeeting,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (result.success) {
+        Navigator.of(context).pop();
+        _showSuccessMessage(
+          result.message ?? 'Meeting invite sent successfully',
+        );
+      } else {
+        _showError(result.error ?? 'Failed to send invite');
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+      _showError('An unexpected error occurred');
+    }
+  }
+
+  void _showError(String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text('Error'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSuccessMessage(String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text('Success'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -1056,18 +987,34 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
 
           // Header
           Padding(
-            padding: EdgeInsets.all(20),
-            child: Text(
-              'Suggest a Meeting',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'SF Pro Display',
-                letterSpacing: 0.2,
-                color: CupertinoTheme.of(context).textTheme.textStyle.color,
-              ),
+            padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Suggest a Meeting',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'SF Pro Display',
+                    ),
+                  ),
+                ),
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Icon(
+                    CupertinoIcons.xmark_circle_fill,
+                    color: CupertinoColors.systemGrey.resolveFrom(context),
+                    size: 28,
+                  ),
+                ),
+              ],
             ),
           ),
+
+          Divider(height: 1),
+          SizedBox(height: 16),
 
           Expanded(
             child: SingleChildScrollView(
@@ -1119,24 +1066,33 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
                     ),
                   ),
                   SizedBox(height: 8),
-                  CupertinoTextField(
-                    controller: _dateController,
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: CupertinoColors.systemGrey6.resolveFrom(context),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    suffix: Padding(
-                      padding: EdgeInsets.only(right: 12),
-                      child: Icon(
-                        CupertinoIcons.calendar,
-                        color: CupertinoColors.systemGrey.resolveFrom(context),
+                  GestureDetector(
+                    onTap: _showDatePicker,
+                    child: AbsorbPointer(
+                      child: CupertinoTextField(
+                        controller: _dateController,
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: CupertinoColors.systemGrey6.resolveFrom(
+                            context,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        suffix: Padding(
+                          padding: EdgeInsets.only(right: 12),
+                          child: Icon(
+                            CupertinoIcons.calendar,
+                            color: CupertinoColors.systemGrey.resolveFrom(
+                              context,
+                            ),
+                          ),
+                        ),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'SF Pro Display',
+                          letterSpacing: 0.2,
+                        ),
                       ),
-                    ),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'SF Pro Display',
-                      letterSpacing: 0.2,
                     ),
                   ),
 
@@ -1162,28 +1118,31 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
                               ),
                             ),
                             SizedBox(height: 8),
-                            CupertinoTextField(
-                              controller: _startTimeController,
-                              padding: EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: CupertinoColors.systemGrey6.resolveFrom(
-                                  context,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              suffix: Padding(
-                                padding: EdgeInsets.only(right: 12),
-                                child: Icon(
-                                  CupertinoIcons.clock,
-                                  color: CupertinoColors.systemGrey.resolveFrom(
-                                    context,
+                            GestureDetector(
+                              onTap: () => _showTimePicker(true),
+                              child: AbsorbPointer(
+                                child: CupertinoTextField(
+                                  controller: _startTimeController,
+                                  padding: EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: CupertinoColors.systemGrey6
+                                        .resolveFrom(context),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  suffix: Padding(
+                                    padding: EdgeInsets.only(right: 12),
+                                    child: Icon(
+                                      CupertinoIcons.clock,
+                                      color: CupertinoColors.systemGrey
+                                          .resolveFrom(context),
+                                    ),
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontFamily: 'SF Pro Display',
+                                    letterSpacing: 0.2,
                                   ),
                                 ),
-                              ),
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontFamily: 'SF Pro Display',
-                                letterSpacing: 0.2,
                               ),
                             ),
                           ],
@@ -1207,28 +1166,31 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
                               ),
                             ),
                             SizedBox(height: 8),
-                            CupertinoTextField(
-                              controller: _endTimeController,
-                              padding: EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: CupertinoColors.systemGrey6.resolveFrom(
-                                  context,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              suffix: Padding(
-                                padding: EdgeInsets.only(right: 12),
-                                child: Icon(
-                                  CupertinoIcons.clock,
-                                  color: CupertinoColors.systemGrey.resolveFrom(
-                                    context,
+                            GestureDetector(
+                              onTap: () => _showTimePicker(false),
+                              child: AbsorbPointer(
+                                child: CupertinoTextField(
+                                  controller: _endTimeController,
+                                  padding: EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: CupertinoColors.systemGrey6
+                                        .resolveFrom(context),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  suffix: Padding(
+                                    padding: EdgeInsets.only(right: 12),
+                                    child: Icon(
+                                      CupertinoIcons.clock,
+                                      color: CupertinoColors.systemGrey
+                                          .resolveFrom(context),
+                                    ),
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontFamily: 'SF Pro Display',
+                                    letterSpacing: 0.2,
                                   ),
                                 ),
-                              ),
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontFamily: 'SF Pro Display',
-                                letterSpacing: 0.2,
                               ),
                             ),
                           ],
@@ -1385,20 +1347,21 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
                           padding: EdgeInsets.symmetric(vertical: 16),
                           borderRadius: BorderRadius.circular(12),
                           color: activeColor,
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            // Handle send invite
-                          },
-                          child: Text(
-                            'Send Invite',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'SF Pro Display',
-                              letterSpacing: 0.2,
-                              color: CupertinoColors.white,
-                            ),
-                          ),
+                          onPressed: _isLoading ? null : _handleSendInvite,
+                          child: _isLoading
+                              ? CupertinoActivityIndicator(
+                                  color: CupertinoColors.white,
+                                )
+                              : Text(
+                                  'Send Invite',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'SF Pro Display',
+                                    letterSpacing: 0.2,
+                                    color: CupertinoColors.white,
+                                  ),
+                                ),
                         ),
                       ),
                     ],

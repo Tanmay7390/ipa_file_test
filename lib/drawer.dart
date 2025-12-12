@@ -3,10 +3,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // Add this import for kIsWeb
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aesurg26/theme_provider.dart'; // Add this import
+import 'package:rajapsicon/theme_provider.dart'; // Add this import
 import 'package:go_router/go_router.dart';
-import 'package:aesurg26/services/auth_service.dart';
+import 'package:rajapsicon/services/auth_service.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:rajapsicon/providers/user_data_provider.dart';
+import 'package:rajapsicon/providers/home_data_provider.dart';
 
 // Helper function to check if device is tablet
 bool isTablet(BuildContext context) {
@@ -43,11 +45,10 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
     toggleDrawer(false);
     final routes = {
       'Home': '/home',
-      'Schedule': '/agenda',
-      'Speakers': '/speakers',
-      'Attendees': '/attendees',
-      'Exhibitors': '/exhibitors',
-      'More': '/more',
+      'Company': '/company',
+      'Funds': '/funds',
+      'People': '/people',
+      'Trials': '/trials',
       'Settings': '/settings',
       'Notifications': '/notifications',
       'Profile': '/profile',
@@ -68,11 +69,10 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
     if (checkMainRoute &&
         ![
           '/home',
-          '/agenda',
-          '/speakers',
-          '/attendees',
-          '/exhibitors',
-          '/more',
+          '/company',
+          '/funds',
+          '/people',
+          '/trials',
         ].contains(GoRouterState.of(context).matchedLocation)) {
       return;
     }
@@ -96,11 +96,10 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
   String getCurrentPageName() {
     final location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/home')) return 'Home';
-    if (location.startsWith('/agenda')) return 'Schedule';
-    if (location.startsWith('/speakers')) return 'Speakers';
-    if (location.startsWith('/attendees')) return 'Attendees';
-    if (location.startsWith('/exhibitors')) return 'Exhibitors';
-    if (location.startsWith('/more')) return 'More';
+    if (location.startsWith('/company')) return 'Company';
+    if (location.startsWith('/funds')) return 'Funds';
+    if (location.startsWith('/people')) return 'People';
+    if (location.startsWith('/trials')) return 'Trials';
     if (location.startsWith('/settings')) return 'Settings';
     if (location.startsWith('/notifications')) return 'Notifications';
     if (location.startsWith('/profile')) return 'Profile';
@@ -138,29 +137,144 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CircleAvatar(
-                              radius: 30,
-                              backgroundImage: NetworkImage(
-                                'https://i.imgur.com/QCNbOAo.png',
+                        child: Consumer(
+                          builder: (context, ref, child) {
+                            final userDataAsync = ref.watch(userDataProvider);
+
+                            return userDataAsync.when(
+                              data: (userData) {
+                                // Default values if userData is null
+                                final name = userData?.name ?? 'Guest User';
+                                final photo =
+                                    userData?.photo ??
+                                    'https://i.pinimg.com/736x/8b/16/7a/8b167af653c2399dd93b952a48740620.jpg';
+                                final email = userData?.email ?? '';
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 30,
+                                      backgroundColor:
+                                          CupertinoColors.systemGrey5,
+                                      child: ClipOval(
+                                        child: Image.network(
+                                          photo,
+                                          width: 60,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                                // Fallback to icon if image fails to load
+                                                return Icon(
+                                                  CupertinoIcons
+                                                      .person_circle_fill,
+                                                  size: 60,
+                                                  color: CupertinoColors
+                                                      .systemGrey,
+                                                );
+                                              },
+                                          loadingBuilder:
+                                              (
+                                                context,
+                                                child,
+                                                loadingProgress,
+                                              ) {
+                                                if (loadingProgress == null)
+                                                  return child;
+                                                return Center(
+                                                  child:
+                                                      CupertinoActivityIndicator(),
+                                                );
+                                              },
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 12),
+                                    Text(
+                                      'Hi, ${name.split(' ').first.toUpperCase()}',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w600,
+                                        fontFamily: 'SF Pro Display',
+                                        letterSpacing: 0.2,
+                                        color: CupertinoTheme.of(
+                                          context,
+                                        ).textTheme.textStyle.color,
+                                      ),
+                                    ),
+                                    if (email.isNotEmpty) ...[
+                                      SizedBox(height: 4),
+                                      Text(
+                                        email,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                          fontFamily: 'SF Pro Display',
+                                          color: CupertinoColors.secondaryLabel
+                                              .resolveFrom(context),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ],
+                                );
+                              },
+                              loading: () => Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 30,
+                                    backgroundColor:
+                                        CupertinoColors.systemGrey5,
+                                    child: CupertinoActivityIndicator(),
+                                  ),
+                                  SizedBox(height: 12),
+                                  Text(
+                                    'Loading...',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
+                                      fontFamily: 'SF Pro Display',
+                                      letterSpacing: 0.2,
+                                      color: CupertinoTheme.of(
+                                        context,
+                                      ).textTheme.textStyle.color,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            SizedBox(height: 12),
-                            Text(
-                              'Hi, iJustine',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'SF Pro Display',
-                                letterSpacing: 0.2,
-                                color: CupertinoTheme.of(
-                                  context,
-                                ).textTheme.textStyle.color,
+                              error: (error, stack) => Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 30,
+                                    backgroundColor:
+                                        CupertinoColors.systemGrey5,
+                                    child: Icon(
+                                      CupertinoIcons.person_circle_fill,
+                                      size: 60,
+                                      color: CupertinoColors.systemGrey,
+                                    ),
+                                  ),
+                                  SizedBox(height: 12),
+                                  Text(
+                                    'Hi, Guest',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
+                                      fontFamily: 'SF Pro Display',
+                                      letterSpacing: 0.2,
+                                      color: CupertinoTheme.of(
+                                        context,
+                                      ).textTheme.textStyle.color,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
+                            );
+                          },
                         ),
                       ),
                       // Logout button
@@ -200,6 +314,10 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                                 );
 
                             if (shouldLogout == true) {
+                              // Clear caches
+                              HomePageDataNotifier.clearCache();
+                              UserDataNotifier.clearCache();
+
                               await AuthService.logout();
                               if (context.mounted) {
                                 context.go('/onboarding');
@@ -225,31 +343,6 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                                 CupertinoIcons.house_fill,
                                 CupertinoIcons.house,
                                 'Home',
-                              ),
-                              (
-                                CupertinoIcons.calendar_today,
-                                CupertinoIcons.calendar,
-                                'Schedule',
-                              ),
-                              (
-                                CupertinoIcons.mic_fill,
-                                CupertinoIcons.mic,
-                                'Speakers',
-                              ),
-                              (
-                                CupertinoIcons.person_2_fill,
-                                CupertinoIcons.person_2,
-                                'Attendees',
-                              ),
-                              (
-                                CupertinoIcons.briefcase_fill,
-                                CupertinoIcons.briefcase,
-                                'Exhibitors',
-                              ),
-                              (
-                                CupertinoIcons.ellipsis_circle_fill,
-                                CupertinoIcons.ellipsis_circle,
-                                'More',
                               ),
                               (
                                 CupertinoIcons.gear_alt_fill,
@@ -295,98 +388,98 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                           // Logo
                           Image.asset(
                             isDarkMode
-                                ? 'assets/images/logo-dark-no-bg.png'
-                                : 'assets/images/logo-light-no-bg.png',
+                                ? 'assets/images/banner-logo.png'
+                                : 'assets/images/banner-logo.png',
                             height: 110,
                           ),
-                          SizedBox(height: 12),
+                          // SizedBox(height: 12),
                           // Social media icons row
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Facebook
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: Color(0xFF1877F2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: CupertinoButton(
-                                  padding: EdgeInsets.zero,
-                                  onPressed: () {
-                                    // TODO: Open Facebook link
-                                  },
-                                  child: FaIcon(
-                                    FontAwesomeIcons.facebookF,
-                                    color: CupertinoColors.white,
-                                    size: 16,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: 12),
-                              // Instagram
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: Color(0xFFE4405F),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: CupertinoButton(
-                                  padding: EdgeInsets.zero,
-                                  onPressed: () {
-                                    // TODO: Open Instagram link
-                                  },
-                                  child: FaIcon(
-                                    FontAwesomeIcons.instagram,
-                                    color: CupertinoColors.white,
-                                    size: 16,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: 12),
-                              // LinkedIn
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: Color(0xFF0A66C2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: CupertinoButton(
-                                  padding: EdgeInsets.zero,
-                                  onPressed: () {
-                                    // TODO: Open LinkedIn link
-                                  },
-                                  child: FaIcon(
-                                    FontAwesomeIcons.linkedinIn,
-                                    color: CupertinoColors.white,
-                                    size: 16,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                          // Row(
+                          //   mainAxisSize: MainAxisSize.min,
+                          //   children: [
+                          //     // Facebook
+                          //     Container(
+                          //       width: 36,
+                          //       height: 36,
+                          //       decoration: BoxDecoration(
+                          //         color: Color(0xFF1877F2),
+                          //         shape: BoxShape.circle,
+                          //       ),
+                          //       child: CupertinoButton(
+                          //         padding: EdgeInsets.zero,
+                          //         onPressed: () {
+                          //           // TODO: Open Facebook link
+                          //         },
+                          //         child: FaIcon(
+                          //           FontAwesomeIcons.facebookF,
+                          //           color: CupertinoColors.white,
+                          //           size: 16,
+                          //         ),
+                          //       ),
+                          //     ),
+                          //     SizedBox(width: 12),
+                          //     // Instagram
+                          //     Container(
+                          //       width: 36,
+                          //       height: 36,
+                          //       decoration: BoxDecoration(
+                          //         color: Color(0xFFE4405F),
+                          //         shape: BoxShape.circle,
+                          //       ),
+                          //       child: CupertinoButton(
+                          //         padding: EdgeInsets.zero,
+                          //         onPressed: () {
+                          //           // TODO: Open Instagram link
+                          //         },
+                          //         child: FaIcon(
+                          //           FontAwesomeIcons.instagram,
+                          //           color: CupertinoColors.white,
+                          //           size: 16,
+                          //         ),
+                          //       ),
+                          //     ),
+                          //     SizedBox(width: 12),
+                          //     // LinkedIn
+                          //     Container(
+                          //       width: 36,
+                          //       height: 36,
+                          //       decoration: BoxDecoration(
+                          //         color: Color(0xFF0A66C2),
+                          //         shape: BoxShape.circle,
+                          //       ),
+                          //       child: CupertinoButton(
+                          //         padding: EdgeInsets.zero,
+                          //         onPressed: () {
+                          //           // TODO: Open LinkedIn link
+                          //         },
+                          //         child: FaIcon(
+                          //           FontAwesomeIcons.linkedinIn,
+                          //           color: CupertinoColors.white,
+                          //           size: 16,
+                          //         ),
+                          //       ),
+                          //     ),
+                          //   ],
+                          // ),
                         ],
                       ),
                       Spacer(),
                       // Dark mode icon button on bottom right
-                      CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () {
-                          ref.read(themeModeProvider.notifier).toggleTheme();
-                        },
-                        child: Icon(
-                          isDarkMode
-                              ? CupertinoIcons.moon_fill
-                              : CupertinoIcons.sun_max_fill,
-                          color: CupertinoColors.secondaryLabel.resolveFrom(
-                            context,
-                          ),
-                          size: 28,
-                        ),
-                      ),
+                      // CupertinoButton(
+                      //   padding: EdgeInsets.zero,
+                      //   onPressed: () {
+                      //     ref.read(themeModeProvider.notifier).toggleTheme();
+                      //   },
+                      //   child: Icon(
+                      //     isDarkMode
+                      //         ? CupertinoIcons.moon_fill
+                      //         : CupertinoIcons.sun_max_fill,
+                      //     color: CupertinoColors.secondaryLabel.resolveFrom(
+                      //       context,
+                      //     ),
+                      //     size: 28,
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),
@@ -613,29 +706,24 @@ class FloatingTabBar extends StatelessWidget {
                     onTap: () => onTap(0),
                   ),
                   _TabBarButton(
-                    label: 'Schedule',
+                    label: 'Company',
                     isSelected: currentIndex == 1,
                     onTap: () => onTap(1),
                   ),
                   _TabBarButton(
-                    label: 'Speakers',
+                    label: 'Funds',
                     isSelected: currentIndex == 2,
                     onTap: () => onTap(2),
                   ),
                   _TabBarButton(
-                    label: 'Attendees',
+                    label: 'People',
                     isSelected: currentIndex == 3,
                     onTap: () => onTap(3),
                   ),
                   _TabBarButton(
-                    label: 'Exhibitors',
+                    label: 'Trials',
                     isSelected: currentIndex == 4,
                     onTap: () => onTap(4),
-                  ),
-                  _TabBarButton(
-                    label: 'More',
-                    isSelected: currentIndex == 5,
-                    onTap: () => onTap(5),
                   ),
                 ],
               ),
@@ -931,7 +1019,7 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar>
                                           : CupertinoIcons.calendar,
                                     ),
                                   ),
-                                  buildLabel('Schedule', 1),
+                                  buildLabel('Company', 1),
                                 ],
                               ),
                             ),
@@ -950,7 +1038,7 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar>
                                           : CupertinoIcons.mic,
                                     ),
                                   ),
-                                  buildLabel('Speakers', 2),
+                                  buildLabel('Funds', 2),
                                 ],
                               ),
                             ),
@@ -969,7 +1057,7 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar>
                                           : CupertinoIcons.person_2,
                                     ),
                                   ),
-                                  buildLabel('Attendees', 3),
+                                  buildLabel('People', 3),
                                 ],
                               ),
                             ),
@@ -988,26 +1076,7 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar>
                                           : CupertinoIcons.briefcase,
                                     ),
                                   ),
-                                  buildLabel('Exhibitors', 4),
-                                ],
-                              ),
-                            ),
-                            BottomNavigationBarItem(
-                              icon: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      top: 4.0,
-                                      bottom: 4.0,
-                                    ),
-                                    child: Icon(
-                                      currentIndex == 5
-                                          ? CupertinoIcons.ellipsis_circle_fill
-                                          : CupertinoIcons.ellipsis_circle,
-                                    ),
-                                  ),
-                                  buildLabel('More', 5),
+                                  buildLabel('Trials', 4),
                                 ],
                               ),
                             ),
@@ -1051,11 +1120,10 @@ class _StandaloneDrawerWrapperState extends State<StandaloneDrawerWrapper>
   bool shouldShowBottomNavigation() {
     final location = GoRouterState.of(context).matchedLocation;
     return location.startsWith('/home') ||
-        location.startsWith('/agenda') ||
-        location.startsWith('/speakers') ||
-        location.startsWith('/attendees') ||
-        location.startsWith('/exhibitors') ||
-        location.startsWith('/more');
+        location.startsWith('/company') ||
+        location.startsWith('/funds') ||
+        location.startsWith('/people') ||
+        location.startsWith('/trials');
   }
 
   @override
@@ -1107,19 +1175,16 @@ class _StandaloneDrawerWrapperState extends State<StandaloneDrawerWrapper>
                         context.go('/home');
                         break;
                       case 1:
-                        context.go('/agenda');
+                        context.go('/company');
                         break;
                       case 2:
-                        context.go('/speakers');
+                        context.go('/funds');
                         break;
                       case 3:
-                        context.go('/attendees');
+                        context.go('/people');
                         break;
                       case 4:
-                        context.go('/exhibitors');
-                        break;
-                      case 5:
-                        context.go('/more');
+                        context.go('/trials');
                         break;
                     }
                   },

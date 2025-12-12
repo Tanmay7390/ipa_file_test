@@ -1,88 +1,355 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:aesurg26/components/page_scaffold.dart';
-import 'package:aesurg26/pages/chat_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rajapsicon/components/page_scaffold.dart';
+// import 'package:rajapsicon/pages/session_detail_page.dart';
+// import 'package:rajapsicon/pages/direct_chat_page.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:rajapsicon/apis/providers/speakers_provider.dart';
+// import 'package:rajapsicon/apis/providers/direct_chat_provider.dart';
+import 'package:rajapsicon/apis/providers/meeting_request_provider.dart';
+import 'package:rajapsicon/providers/home_data_provider.dart';
+import 'package:rajapsicon/providers/user_data_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 
-class SpeakerDetailPage extends StatefulWidget {
-  final Map<String, dynamic> speaker;
+class SpeakerDetailPage extends ConsumerStatefulWidget {
+  final String speakerId;
 
-  const SpeakerDetailPage({super.key, required this.speaker});
+  const SpeakerDetailPage({super.key, required this.speakerId});
 
   @override
-  State<SpeakerDetailPage> createState() => _SpeakerDetailPageState();
+  ConsumerState<SpeakerDetailPage> createState() => _SpeakerDetailPageState();
 }
 
-class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
+class _SpeakerDetailPageState extends ConsumerState<SpeakerDetailPage> {
   bool _isAboutExpanded = false;
-  bool _isAdditionalInfoExpanded = false;
   bool _isScheduleExpanded = false;
   Map<int, bool> _expandedDays = {}; // Track which days are expanded
 
-  void _showMeetingSheet() {
+  void _showMeetingSheet(String speakerId, String speakerName) {
     showCupertinoModalPopup(
       context: context,
       builder: (BuildContext context) =>
-          _MeetingFormSheet(speakerName: widget.speaker['name'] ?? ''),
+          _MeetingFormSheet(speakerId: speakerId, speakerName: speakerName),
     );
+  }
+
+  Uri _normalizeUrl(String raw) {
+    final s = raw.trim();
+    if (s.isEmpty) return Uri.parse('about:blank');
+
+    // Preserve known schemes
+    if (s.startsWith('mailto:') || s.startsWith('tel:')) {
+      return Uri.parse(s);
+    }
+
+    // Ensure http/https scheme
+    if (s.startsWith('http://') || s.startsWith('https://')) {
+      return Uri.parse(s);
+    }
+
+    // Social handles or bare domains
+    if (s.contains('instagram.com')) {
+      return Uri.parse('https://' + s.replaceFirst(RegExp(r'^https?://'), ''));
+    }
+    if (s.contains('facebook.com')) {
+      return Uri.parse('https://' + s.replaceFirst(RegExp(r'^https?://'), ''));
+    }
+    if (s.contains('linkedin.com')) {
+      return Uri.parse('https://' + s.replaceFirst(RegExp(r'^https?://'), ''));
+    }
+
+    // Handle @username patterns for Instagram/Twitter if provided
+    if (s.startsWith('@')) {
+      final handle = s.substring(1);
+      return Uri.parse('https://instagram.com/$handle');
+    }
+
+    // Default: treat as web domain or path
+    return Uri.parse('https://$s');
+  }
+
+  Future<void> _launchUrl(String urlString) async {
+    try {
+      final uri = _normalizeUrl(urlString);
+      if (uri.scheme == 'about') return;
+
+      if (uri.scheme == 'http' || uri.scheme == 'https') {
+        final extOk = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+        if (!extOk) {
+          final webOk = await launchUrl(
+            uri,
+            mode: LaunchMode.inAppWebView,
+            webViewConfiguration: const WebViewConfiguration(
+              enableJavaScript: true,
+            ),
+          );
+          if (!webOk) {
+            await _showLaunchFailure(uri.toString());
+          }
+        }
+      } else {
+        final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (!ok) {
+          await _showLaunchFailure(uri.toString());
+        }
+      }
+    } catch (_) {
+      // As a last resort, show failure dialog
+      await _showLaunchFailure(urlString);
+    }
+  }
+
+  Future<void> _showLaunchFailure(String url) async {
+    await showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Unable to open link'),
+        content: Text(url),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('Copy'),
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: url));
+              Navigator.of(context).pop();
+            },
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text('OK'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Get initials from name
+  String _getInitials(String? name) {
+    if (name == null || name.isEmpty) return '?';
+
+    // Remove titles with or without period (Dr, Dr., Prof, Prof., Mr, Mr., etc.)
+    final cleaned = name.replaceAll(
+      RegExp(r'^(Dr\.?|Prof\.?|Mr\.?|Mrs\.?|Ms\.?)\s+', caseSensitive: false),
+      '',
+    );
+
+    final parts = cleaned.trim().split(' ');
+    if (parts.isEmpty) return '?';
+
+    if (parts.length == 1) {
+      return parts[0].substring(0, 1).toUpperCase();
+    }
+
+    // First letter of first name + first letter of last name
+    return (parts[0].substring(0, 1) + parts[parts.length - 1].substring(0, 1))
+        .toUpperCase();
+  }
+
+  // Show error dialog
+  void _showErrorDialog(String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text('Error'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: Text('OK'),
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Build initials avatar widget
+  Widget _buildInitialsAvatar(String? name, bool isDark) {
+    final initials = _getInitials(name);
+
+    return Container(
+      width: 120,
+      height: 120,
+      decoration: BoxDecoration(
+        color: isDark
+            ? CupertinoColors.systemGrey.resolveFrom(context)
+            : CupertinoColors.systemGrey5.resolveFrom(context),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: TextStyle(
+            fontSize: 48,
+            fontWeight: FontWeight.w600,
+            color: isDark
+                ? CupertinoColors.white
+                : CupertinoColors.darkBackgroundGray,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Check if speaker has any additional info to display
+  bool _hasAdditionalInfo(Speaker speaker) {
+    return (speaker.specialty != null && speaker.specialty!.isNotEmpty) ||
+        (speaker.phone != null && speaker.phone!.isNotEmpty) ||
+        (speaker.email != null && speaker.email!.isNotEmpty) ||
+        (speaker.location != null && speaker.location!.isNotEmpty) ||
+        (speaker.organization != null && speaker.organization!.isNotEmpty);
+  }
+
+  // Format time from ISO string
+  String _formatTime(String? dateTimeString) {
+    if (dateTimeString == null) return '';
+    try {
+      final dateTime = DateTime.parse(dateTimeString).toLocal();
+      final hour = dateTime.hour;
+      final minute = dateTime.minute.toString().padLeft(2, '0');
+      final period = hour >= 12 ? 'PM' : 'AM';
+      final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+      return '$displayHour:$minute $period';
+    } catch (e) {
+      return dateTimeString;
+    }
+  }
+
+  // Format date from ISO string
+  String _formatDate(String? dateTimeString) {
+    if (dateTimeString == null) return '';
+    try {
+      final dateTime = DateTime.parse(dateTimeString).toLocal();
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      return '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
+    } catch (e) {
+      return dateTimeString;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final speakerAsync = ref.watch(speakerDetailProvider(widget.speakerId));
 
     return CustomPageScaffold(
       heading: 'Speaker Details',
       hideSearch: true,
-      isLoading: false,
+      isLoading: speakerAsync.isLoading,
       hideLargeTitle: true,
       sliverList: SliverList(
         delegate: SliverChildListDelegate([
-          // Header with photo and basic info
-          Container(
-            color: CupertinoColors.systemBackground.resolveFrom(context),
-            child: _buildHeader(isDark),
-          ),
+          speakerAsync.when(
+            data: (speaker) => Column(
+              children: [
+                // Header with photo and basic info
+                Container(
+                  color: CupertinoColors.systemBackground.resolveFrom(context),
+                  child: _buildHeader(speaker, isDark),
+                ),
 
-          // Action buttons
-          Container(
-            color: CupertinoColors.systemBackground.resolveFrom(context),
-            padding: EdgeInsets.only(top: 12, bottom: 12, left: 20, right: 20),
-            child: _buildActionButtons(context),
-          ),
+                // Action buttons
+                Container(
+                  color: CupertinoColors.systemBackground.resolveFrom(context),
+                  padding: EdgeInsets.only(
+                    top: 12,
+                    bottom: 12,
+                    left: 20,
+                    right: 20,
+                  ),
+                  child: _buildActionButtons(context, speaker),
+                ),
+                _buildSeparator(context),
 
-          _buildSeparator(context),
+                // About section
+                if (speaker.about != null && speaker.about!.isNotEmpty)
+                  Container(
+                    color: CupertinoColors.systemBackground.resolveFrom(
+                      context,
+                    ),
+                    padding: EdgeInsets.only(top: 12, bottom: 12),
+                    child: _buildAboutSection(speaker, isDark),
+                  ),
 
-          // About section
-          if (widget.speaker['about'] != null &&
-              widget.speaker['about'].toString().isNotEmpty)
-            Container(
-              color: CupertinoColors.systemBackground.resolveFrom(context),
-              padding: EdgeInsets.only(top: 12, bottom: 12),
-              child: _buildAboutSection(isDark),
+                if (speaker.about != null && speaker.about!.isNotEmpty)
+                  _buildSeparator(context),
+
+                // Additional Information section
+                if (_hasAdditionalInfo(speaker)) ...[
+                  Container(
+                    color: CupertinoColors.systemBackground.resolveFrom(
+                      context,
+                    ),
+                    padding: EdgeInsets.zero,
+                    child: _buildAdditionalInfoSection(speaker, isDark),
+                  ),
+                  _buildSeparator(context),
+                ],
+
+                // Schedule section
+                if (speaker.sessions != null && speaker.sessions!.isNotEmpty)
+                  Container(
+                    color: CupertinoColors.systemBackground.resolveFrom(
+                      context,
+                    ),
+                    padding: EdgeInsets.zero,
+                    child: _buildScheduleSection(speaker, isDark),
+                  ),
+
+                SizedBox(height: 20),
+              ],
             ),
-
-          _buildSeparator(context),
-
-          // Additional Information section
-          Container(
-            color: CupertinoColors.systemBackground.resolveFrom(context),
-            padding: EdgeInsets.zero,
-            child: _buildAdditionalInfoSection(isDark),
-          ),
-
-          _buildSeparator(context),
-
-          // Schedule section
-          if (widget.speaker['sessions'] != null &&
-              widget.speaker['sessions'].isNotEmpty)
-            Container(
-              color: CupertinoColors.systemBackground.resolveFrom(context),
-              padding: EdgeInsets.zero,
-              child: _buildScheduleSection(isDark),
+            loading: () => SizedBox(height: 400),
+            error: (error, stack) => Container(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Icon(
+                    CupertinoIcons.exclamationmark_triangle,
+                    size: 64,
+                    color: CupertinoColors.systemRed.resolveFrom(context),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Error loading speaker details',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: CupertinoTheme.of(
+                        context,
+                      ).textTheme.textStyle.color,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    error.toString(),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: CupertinoColors.systemGrey.resolveFrom(context),
+                    ),
+                  ),
+                ],
+              ),
             ),
-
-          SizedBox(height: 20),
+          ),
         ]),
       ),
     );
@@ -98,34 +365,38 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
     );
   }
 
-  Widget _buildHeader(bool isDark) {
+  Widget _buildHeader(Speaker speaker, bool isDark) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Profile photo
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Image.network(
-              widget.speaker['photo'] ?? '',
-              width: 120,
-              height: 120,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: CupertinoColors.systemGrey5.resolveFrom(context),
+          // Profile photo with initials fallback
+          Stack(
+            children: [
+              // Always show initials first (instant load)
+              _buildInitialsAvatar(speaker.name, isDark),
+              // Overlay photo on top if available
+              if (speaker.photo != null && speaker.photo!.isNotEmpty)
+                ClipRRect(
                   borderRadius: BorderRadius.circular(20),
+                  child: Image.network(
+                    speaker.photo!,
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      // While loading, show nothing (initials visible underneath)
+                      return const SizedBox.shrink();
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      // On error, show nothing (initials remain visible)
+                      return const SizedBox.shrink();
+                    },
+                  ),
                 ),
-                child: Icon(
-                  CupertinoIcons.person_fill,
-                  size: 60,
-                  color: CupertinoColors.systemGrey.resolveFrom(context),
-                ),
-              ),
-            ),
+            ],
           ),
           SizedBox(width: 20),
 
@@ -135,7 +406,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.speaker['name'] ?? '',
+                  speaker.name ?? '',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
@@ -146,7 +417,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  widget.speaker['title'] ?? widget.speaker['specialty'] ?? '',
+                  speaker.designation ?? speaker.title ?? '',
                   style: TextStyle(
                     fontSize: 16,
                     color: CupertinoColors.secondaryLabel.resolveFrom(context),
@@ -155,10 +426,10 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
                     letterSpacing: 0.2,
                   ),
                 ),
-                if (widget.speaker['company'] != null) ...[
+                if (speaker.organization != null) ...[
                   SizedBox(height: 4),
                   Text(
-                    widget.speaker['company'],
+                    speaker.organization!,
                     style: TextStyle(
                       fontSize: 15,
                       color: CupertinoColors.systemGrey.resolveFrom(context),
@@ -169,66 +440,7 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
                 ],
                 SizedBox(height: 12),
                 // Social media buttons
-                Row(
-                  children: [
-                    // Facebook
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Color(0xFF1877F2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () {},
-                        child: FaIcon(
-                          FontAwesomeIcons.facebookF,
-                          color: CupertinoColors.white,
-                          size: 14,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    // Instagram
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Color(0xFFE4405F),
-                        shape: BoxShape.circle,
-                      ),
-                      child: CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () {},
-                        child: FaIcon(
-                          FontAwesomeIcons.instagram,
-                          color: CupertinoColors.white,
-                          size: 14,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    // LinkedIn
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Color(0xFF0A66C2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () {},
-                        child: FaIcon(
-                          FontAwesomeIcons.linkedinIn,
-                          color: CupertinoColors.white,
-                          size: 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                _buildSocialMediaButtons(speaker),
               ],
             ),
           ),
@@ -237,38 +449,125 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
+  Widget _buildSocialMediaButtons(Speaker speaker) {
+    final socialMedia = speaker.socialMedia;
+    if (socialMedia == null) return SizedBox.shrink();
+
+    return Row(
+      children: [
+        // Facebook
+        if (socialMedia.facebook != null && socialMedia.facebook!.isNotEmpty)
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Color(0xFF1877F2),
+              shape: BoxShape.circle,
+            ),
+            child: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => _launchUrl(socialMedia.facebook!),
+              child: FaIcon(
+                FontAwesomeIcons.facebookF,
+                color: CupertinoColors.white,
+                size: 14,
+              ),
+            ),
+          ),
+        if (socialMedia.facebook != null && socialMedia.facebook!.isNotEmpty)
+          SizedBox(width: 8),
+        // Instagram
+        if (socialMedia.instagram != null && socialMedia.instagram!.isNotEmpty)
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Color(0xFFE4405F),
+              shape: BoxShape.circle,
+            ),
+            child: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => _launchUrl(socialMedia.instagram!),
+              child: FaIcon(
+                FontAwesomeIcons.instagram,
+                color: CupertinoColors.white,
+                size: 14,
+              ),
+            ),
+          ),
+        if (socialMedia.instagram != null && socialMedia.instagram!.isNotEmpty)
+          SizedBox(width: 8),
+        // LinkedIn
+        if (socialMedia.linkedin != null && socialMedia.linkedin!.isNotEmpty)
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Color(0xFF0A66C2),
+              shape: BoxShape.circle,
+            ),
+            child: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => _launchUrl(socialMedia.linkedin!),
+              child: FaIcon(
+                FontAwesomeIcons.linkedinIn,
+                color: CupertinoColors.white,
+                size: 14,
+              ),
+            ),
+          ),
+        if (socialMedia.linkedin != null && socialMedia.linkedin!.isNotEmpty)
+          SizedBox(width: 8),
+        // Website
+        if (socialMedia.website != null && socialMedia.website!.isNotEmpty)
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemGrey,
+              shape: BoxShape.circle,
+            ),
+            child: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => _launchUrl(socialMedia.website!),
+              child: Icon(
+                CupertinoIcons.globe,
+                color: CupertinoColors.white,
+                size: 16,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context, Speaker speaker) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
     final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final canMessage =
+        speaker.canMessage == true && speaker.messengerId != null;
 
     return Row(
       children: [
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              color: activeColor,
+              color: canMessage ? activeColor : CupertinoColors.systemGrey4,
               borderRadius: BorderRadius.circular(12),
             ),
             child: CupertinoButton(
               padding: EdgeInsets.symmetric(vertical: 12),
               borderRadius: BorderRadius.circular(12),
-              onPressed: () {
-                Navigator.of(context).push(
-                  CupertinoPageRoute(
-                    builder: (context) => ChatPage(
-                      userName: widget.speaker['name'] ?? '',
-                      userPhoto: widget.speaker['photo'],
-                    ),
-                  ),
-                );
-              },
+              onPressed: () => {},
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     CupertinoIcons.chat_bubble_fill,
                     size: 18,
-                    color: CupertinoColors.white,
+                    color: canMessage
+                        ? CupertinoColors.white
+                        : CupertinoColors.systemGrey,
                   ),
                   SizedBox(width: 6),
                   Text(
@@ -278,7 +577,9 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
                       fontWeight: FontWeight.w600,
                       fontFamily: 'SF Pro Display',
                       letterSpacing: 0.2,
-                      color: CupertinoColors.white,
+                      color: canMessage
+                          ? CupertinoColors.white
+                          : CupertinoColors.systemGrey,
                     ),
                   ),
                 ],
@@ -296,7 +597,8 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
             child: CupertinoButton(
               padding: EdgeInsets.symmetric(vertical: 12),
               borderRadius: BorderRadius.circular(12),
-              onPressed: _showMeetingSheet,
+              onPressed: () =>
+                  _showMeetingSheet(speaker.id, speaker.name ?? ''),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -331,19 +633,15 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
             padding: EdgeInsets.all(12),
             borderRadius: BorderRadius.circular(50),
             onPressed: () {},
-            child: Icon(
-              CupertinoIcons.star,
-              size: 22,
-              color: activeColor,
-            ),
+            child: Icon(CupertinoIcons.star, size: 22, color: activeColor),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildAboutSection(bool isDark) {
-    final aboutText = widget.speaker['about'] ?? '';
+  Widget _buildAboutSection(Speaker speaker, bool isDark) {
+    final aboutText = speaker.about ?? '';
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -489,96 +787,70 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
     );
   }
 
-
-  Widget _buildAdditionalInfoSection(bool isDark) {
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
-
+  Widget _buildAdditionalInfoSection(Speaker speaker, bool isDark) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: () {
-              setState(() {
-                _isAdditionalInfoExpanded = !_isAdditionalInfoExpanded;
-              });
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'ADDITIONAL INFORMATION',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: CupertinoColors.systemGrey.resolveFrom(context),
-                    fontFamily: 'SF Pro Display',
-                    letterSpacing: 0.2,
-                  ),
-                ),
-                Icon(
-                  _isAdditionalInfoExpanded
-                      ? CupertinoIcons.chevron_up
-                      : CupertinoIcons.chevron_down,
-                  size: 18,
-                  color: activeColor,
-                ),
-              ],
+          Text(
+            'ADDITIONAL INFORMATION',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: CupertinoColors.systemGrey.resolveFrom(context),
+              fontFamily: 'SF Pro Display',
+              letterSpacing: 0.2,
             ),
           ),
-          AnimatedSize(
-            duration: Duration(milliseconds: 350),
-            curve: Curves.fastOutSlowIn,
-            child: _isAdditionalInfoExpanded
-                ? Column(
-                    children: [
-                      SizedBox(height: 12),
+          SizedBox(height: 12),
 
-                      // Speciality
-                      if (widget.speaker['specialty'] != null)
-                        _buildMinimalisticInfoRow(
-                          icon: CupertinoIcons.heart_fill,
-                          label: 'Specialty',
-                          value: widget.speaker['specialty'],
-                          isClickable: false,
-                        ),
+          // Specialty
+          if (speaker.specialty != null && speaker.specialty!.isNotEmpty)
+            _buildMinimalisticInfoRow(
+              icon: CupertinoIcons.heart_fill,
+              label: 'Specialty',
+              value: speaker.specialty!,
+              isClickable: false,
+            ),
 
-                      // Phone
-                      _buildMinimalisticInfoRow(
-                        icon: CupertinoIcons.phone_fill,
-                        label: 'Phone',
-                        value: '+91 9876543210',
-                        isClickable: true,
-                        onTap: () {
-                          // TODO: Open phone dialer
-                        },
-                      ),
+          // Phone
+          if (speaker.phone != null && speaker.phone!.isNotEmpty)
+            _buildMinimalisticInfoRow(
+              icon: CupertinoIcons.phone_fill,
+              label: 'Phone',
+              value: speaker.phone!,
+              isClickable: true,
+              onTap: () => _launchUrl('tel:${speaker.phone}'),
+            ),
 
-                      // Email
-                      _buildMinimalisticInfoRow(
-                        icon: CupertinoIcons.mail_solid,
-                        label: 'Email',
-                        value: 'aditya7390@gmail.com',
-                        isClickable: true,
-                        onTap: () {
-                          // TODO: Open email client
-                        },
-                      ),
+          // Email
+          if (speaker.email != null && speaker.email!.isNotEmpty)
+            _buildMinimalisticInfoRow(
+              icon: CupertinoIcons.mail_solid,
+              label: 'Email',
+              value: speaker.email!,
+              isClickable: true,
+              onTap: () => _launchUrl('mailto:${speaker.email}'),
+            ),
 
-                      // Location
-                      if (widget.speaker['location'] != null)
-                        _buildMinimalisticInfoRow(
-                          icon: CupertinoIcons.location_solid,
-                          label: 'Location',
-                          value: widget.speaker['location'],
-                          isClickable: false,
-                        ),
-                    ],
-                  )
-                : SizedBox.shrink(),
-          ),
+          // Location
+          if (speaker.location != null && speaker.location!.isNotEmpty)
+            _buildMinimalisticInfoRow(
+              icon: CupertinoIcons.location_solid,
+              label: 'Location',
+              value: speaker.location!,
+              isClickable: false,
+            ),
+
+          // Organization
+          if (speaker.organization != null && speaker.organization!.isNotEmpty)
+            _buildMinimalisticInfoRow(
+              icon: CupertinoIcons.building_2_fill,
+              label: 'Organization',
+              value: speaker.organization!,
+              isClickable: false,
+            ),
         ],
       ),
     );
@@ -641,8 +913,8 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
     return content;
   }
 
-  Widget _buildScheduleSection(bool isDark) {
-    final sessions = widget.speaker['sessions'] as List<dynamic>;
+  Widget _buildScheduleSection(Speaker speaker, bool isDark) {
+    final sessions = speaker.sessions ?? [];
     final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
 
     return Padding(
@@ -683,23 +955,73 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
           AnimatedSize(
             duration: Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            child: _isScheduleExpanded
+            child: _isScheduleExpanded && sessions.isNotEmpty
                 ? Column(
                     children: [
                       SizedBox(height: 16),
-                      ...sessions.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final session = entry.value;
-                        if (session is Map<String, dynamic>) {
-                          return _buildSessionCard(session, index + 1, isDark);
-                        } else if (session is String) {
-                          return _buildLegacySessionCard(
-                            session,
-                            index + 1,
-                            isDark,
-                          );
-                        }
-                        return SizedBox.shrink();
+                      // Day header with date - shown once for all sessions
+                      Row(
+                        children: [
+                          // Calendar icon with day number
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: activeColor,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'D1',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    fontFamily: 'SF Pro Display',
+                                    color: CupertinoColors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          // Session count
+                          Expanded(
+                            child: Text(
+                              '${sessions.length} Session${sessions.length > 1 ? 's' : ''}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'SF Pro Display',
+                                color: CupertinoColors.systemGrey.resolveFrom(
+                                  context,
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Date on the right - extracted from startTime
+                          if (sessions.isNotEmpty &&
+                              (sessions.first.date != null ||
+                                  sessions.first.startTime != null))
+                            Text(
+                              sessions.first.date ??
+                                  _formatDate(sessions.first.startTime),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'SF Pro Display',
+                                color: CupertinoColors.systemGrey.resolveFrom(
+                                  context,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      SizedBox(height: 16),
+                      // All sessions without individual day headers
+                      ...sessions.map((session) {
+                        return _buildSessionCard(session, isDark);
                       }),
                     ],
                   )
@@ -710,296 +1032,207 @@ class _SpeakerDetailPageState extends State<SpeakerDetailPage> {
     );
   }
 
-  Widget _buildSessionCard(
-    Map<String, dynamic> session,
-    int dayNumber,
-    bool isDark,
-  ) {
-    // Initialize day expansion state if not set
-    _expandedDays.putIfAbsent(dayNumber, () => true);
-    final isExpanded = _expandedDays[dayNumber] ?? true;
-
+  Widget _buildSessionCard(Session session, bool isDark) {
     return Container(
       margin: EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Date header with expand/collapse
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: () {
-              setState(() {
-                _expandedDays[dayNumber] = !isExpanded;
-              });
-            },
-            child: Row(
-              children: [
-                // Calendar icon with day number
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '$dayNumber',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'SF Pro Display',
-                          color: CupertinoColors.white,
-                        ),
-                      ),
-                    ],
+      child: GestureDetector(
+        onTap: () {
+          // if (session.id != null && session.id!.isNotEmpty) {
+          //   Navigator.of(context, rootNavigator: true).push(
+          //     CupertinoPageRoute(
+          //       builder: (context) => SessionDetailPage(sessionId: session.id!),
+          //     ),
+          //   );
+          // }
+        },
+        child: Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: isDark
+                ? CupertinoColors.systemGrey6.darkColor
+                : CupertinoColors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark
+                  ? CupertinoColors.systemGrey5.darkColor
+                  : CupertinoColors.systemGrey5.color,
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Session title
+              if (session.title != null && session.title!.isNotEmpty)
+                Text(
+                  session.title!,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.2,
+                    height: 1.3,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
-                SizedBox(width: 12),
-                // Date and session count
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        session['date'] ?? '',
+
+              if (session.title != null && session.title!.isNotEmpty)
+                SizedBox(height: 16),
+
+              // Time with clock icon
+              if (session.time != null ||
+                  (session.startTime != null && session.endTime != null))
+                Row(
+                  children: [
+                    Icon(
+                      CupertinoIcons.clock,
+                      size: 16,
+                      color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      session.time ??
+                          '${_formatTime(session.startTime)} - ${_formatTime(session.endTime)}',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'SF Pro Display',
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+
+              if (session.time != null ||
+                  (session.startTime != null && session.endTime != null))
+                SizedBox(height: 12),
+
+              // Venue with location icon
+              if (session.location != null || session.venue != null)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      CupertinoIcons.location_solid,
+                      size: 16,
+                      color: CupertinoColors.systemGrey.resolveFrom(context),
+                    ),
+                    SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        session.location ?? session.venue ?? '',
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'SF Pro Display',
-                          letterSpacing: 0.2,
+                          fontSize: 15,
                           color: CupertinoTheme.of(
                             context,
                           ).textTheme.textStyle.color,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        '1 Session',
-                        style: TextStyle(
-                          fontSize: 14,
                           fontFamily: 'SF Pro Display',
-                          color: CupertinoColors.systemGrey.resolveFrom(
-                            context,
-                          ),
+                          letterSpacing: 0.2,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                Icon(
-                  isExpanded
-                      ? CupertinoIcons.chevron_up
-                      : CupertinoIcons.chevron_down,
-                  size: 20,
-                  color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
-                ),
-              ],
-            ),
-          ),
 
-          // Animated session card
-          AnimatedSize(
-            duration: Duration(milliseconds: 350),
-            curve: Curves.fastOutSlowIn,
-            child: isExpanded
-                ? Column(
-                    children: [
-                      SizedBox(height: 12),
-                      Container(
-                        padding: EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? CupertinoColors.systemGrey6.darkColor
-                              : CupertinoColors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isDark
-                                ? CupertinoColors.systemGrey5.darkColor
-                                : CupertinoColors.systemGrey5.color,
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Session title
-                            Text(
-                              session['title'] ?? '',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'SF Pro Display',
-                                letterSpacing: 0.2,
-                                height: 1.3,
-                                color: CupertinoTheme.of(
-                                  context,
-                                ).textTheme.textStyle.color,
-                              ),
-                            ),
+              if (session.location != null || session.venue != null)
+                SizedBox(height: 16),
 
-                            SizedBox(height: 12),
-
-                            // Role badge (Speaker)
-                            if (session['role'] != null)
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: (isDark
-                                          ? Color(0xFF23C061)
-                                          : Color(0xFF21AA62))
-                                      .withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: (isDark
-                                            ? Color(0xFF23C061)
-                                            : Color(0xFF21AA62))
-                                        .withValues(alpha: 0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  session['role'],
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: 'SF Pro Display',
-                                    letterSpacing: 0.2,
-                                    color: isDark
-                                        ? Color(0xFF23C061)
-                                        : Color(0xFF21AA62),
-                                  ),
-                                ),
-                              ),
-
-                            SizedBox(height: 16),
-
-                            // Time
-                            Text(
-                              session['time'] ?? '',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontFamily: 'SF Pro Display',
-                                letterSpacing: 0.2,
-                                color: CupertinoColors.systemGrey.resolveFrom(
-                                  context,
-                                ),
-                              ),
-                            ),
-
-                            if (session['location'] != null) ...[
-                              SizedBox(height: 12),
-                              // Location badge
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? Color(0xFF4A2B3A)
-                                      : Color(0xFFFFE4E8),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  session['location'],
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: 'SF Pro Display',
-                                    letterSpacing: 0.2,
-                                    color: isDark
-                                        ? Color(0xFFFF8CB4)
-                                        : Color(0xFFD53F8C),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
+              // Badges (Role, Session Type, Status)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  // Role badge (Speaker)
+                  if (session.role != null && session.role!.isNotEmpty)
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (isDark ? Color(0xFF23C061) : Color(0xFF21AA62))
+                            .withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        session.role!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'SF Pro Display',
+                          letterSpacing: 0.2,
                         ),
                       ),
-                    ],
-                  )
-                : SizedBox.shrink(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegacySessionCard(
-    String sessionTitle,
-    int dayNumber,
-    bool isDark,
-  ) {
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: CupertinoColors.systemGrey6.resolveFrom(context),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: activeColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              'Day $dayNumber',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'SF Pro Display',
-                letterSpacing: 0.2,
-                color: CupertinoColors.white,
+                    ),
+                  // Session Type badge
+                  if (session.sessionType != null &&
+                      session.sessionType!.isNotEmpty)
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (isDark ? Color(0xFF23C061) : Color(0xFF21AA62))
+                            .withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        session.sessionType!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'SF Pro Display',
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  // Status badge
+                  if (session.status != null && session.status!.isNotEmpty)
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Color(0xFF16A34A).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        session.status!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF16A34A),
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'SF Pro Display',
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ),
+            ],
           ),
-          SizedBox(width: 12),
-          Icon(
-            CupertinoIcons.calendar,
-            size: 20,
-            color: CupertinoColors.systemGrey.resolveFrom(context),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              sessionTitle,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'SF Pro Display',
-                letterSpacing: 0.2,
-                color: CupertinoTheme.of(context).textTheme.textStyle.color,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _MeetingFormSheet extends StatefulWidget {
+class _MeetingFormSheet extends ConsumerStatefulWidget {
+  final String speakerId;
   final String speakerName;
 
-  const _MeetingFormSheet({required this.speakerName});
+  const _MeetingFormSheet({required this.speakerId, required this.speakerName});
 
   @override
-  State<_MeetingFormSheet> createState() => _MeetingFormSheetState();
+  ConsumerState<_MeetingFormSheet> createState() => _MeetingFormSheetState();
 }
 
-class _MeetingFormSheetState extends State<_MeetingFormSheet> {
+class _MeetingFormSheetState extends ConsumerState<_MeetingFormSheet> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _startTimeController = TextEditingController();
@@ -1007,14 +1240,218 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _noteController = TextEditingController();
   bool _isVideoMeeting = false;
+  bool _isLoading = false;
+  DateTime _selectedDate = DateTime.now();
+  TimeOfDay _selectedStartTime = TimeOfDay(hour: 10, minute: 0);
+  TimeOfDay _selectedEndTime = TimeOfDay(hour: 10, minute: 30);
 
   @override
   void initState() {
     super.initState();
     _titleController.text = 'Meeting - ${widget.speakerName}';
-    _dateController.text = '23/01/2026';
+    final now = DateTime.now();
+    _selectedDate = now.add(Duration(days: 1));
+    _dateController.text = _formatDate(_selectedDate);
     _startTimeController.text = '10:00 AM';
     _endTimeController.text = '10:30 AM';
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  String _convertDateFormat(String dateStr) {
+    // Convert from DD/MM/YYYY to YYYY-MM-DD
+    final parts = dateStr.split('/');
+    if (parts.length == 3) {
+      return '${parts[2]}-${parts[1]}-${parts[0]}';
+    }
+    return dateStr;
+  }
+
+  void _showDatePicker() {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => Container(
+        height: 250,
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        child: Column(
+          children: [
+            SizedBox(
+              height: 180,
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.date,
+                initialDateTime: _selectedDate,
+                minimumDate: DateTime.now(),
+                maximumDate: DateTime.now().add(Duration(days: 365)),
+                onDateTimeChanged: (DateTime picked) {
+                  setState(() {
+                    _selectedDate = picked;
+                    _dateController.text = _formatDate(picked);
+                  });
+                },
+              ),
+            ),
+            CupertinoButton(
+              child: Text('Done'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showTimePicker(bool isStartTime) {
+    TimeOfDay currentTime = isStartTime ? _selectedStartTime : _selectedEndTime;
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => Container(
+        height: 250,
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        child: Column(
+          children: [
+            SizedBox(
+              height: 180,
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.time,
+                use24hFormat: false,
+                initialDateTime: DateTime(
+                  2024,
+                  1,
+                  1,
+                  currentTime.hour,
+                  currentTime.minute,
+                ),
+                onDateTimeChanged: (DateTime picked) {
+                  setState(() {
+                    final time = TimeOfDay(
+                      hour: picked.hour,
+                      minute: picked.minute,
+                    );
+                    if (isStartTime) {
+                      _selectedStartTime = time;
+                      _startTimeController.text = time.format(context);
+                    } else {
+                      _selectedEndTime = time;
+                      _endTimeController.text = time.format(context);
+                    }
+                  });
+                },
+              ),
+            ),
+            CupertinoButton(
+              child: Text('Done'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessMessage(String message) {
+    // Show success message at the bottom
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: CupertinoColors.systemGreen,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  void _showError(String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text('Error'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitMeetingRequest() async {
+    // Validation
+    if (_titleController.text.trim().isEmpty) {
+      _showError('Please enter a title');
+      return;
+    }
+
+    if (_dateController.text.trim().isEmpty) {
+      _showError('Please select a date');
+      return;
+    }
+
+    if (_startTimeController.text.trim().isEmpty ||
+        _endTimeController.text.trim().isEmpty) {
+      _showError('Please select start and end time');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final userData = ref.read(userDataProvider).valueOrNull;
+      final homeData = ref.read(homePageDataProvider).valueOrNull;
+
+      if (userData == null || homeData?.event == null) {
+        throw Exception('User data not available');
+      }
+
+      // Convert date format from DD/MM/YYYY to YYYY-MM-DD
+      final formattedDate = _convertDateFormat(_dateController.text.trim());
+
+      // Call API
+      final meetingRequestActions = ref.read(meetingRequestActionsProvider);
+      final result = await meetingRequestActions.createMeetingRequest(
+        eventId: homeData!.event!.id,
+        requesterId: userData.id,
+        requesterName: userData.name,
+        recipientId: widget.speakerId,
+        recipientName: widget.speakerName,
+        title: _titleController.text.trim(),
+        meetingDate: formattedDate,
+        startTime: _startTimeController.text.trim(),
+        endTime: _endTimeController.text.trim(),
+        note: _noteController.text.trim(),
+        location: _locationController.text.trim(),
+        isVideoMeeting: _isVideoMeeting,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (result.success) {
+        Navigator.of(context).pop();
+        _showSuccessMessage(
+          result.message ?? 'Meeting invite sent successfully',
+        );
+      } else {
+        _showError(result.error ?? 'Failed to send invite');
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+      _showError('An unexpected error occurred');
+    }
   }
 
   @override
@@ -1117,24 +1554,33 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
                     ),
                   ),
                   SizedBox(height: 8),
-                  CupertinoTextField(
-                    controller: _dateController,
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: CupertinoColors.systemGrey6.resolveFrom(context),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    suffix: Padding(
-                      padding: EdgeInsets.only(right: 12),
-                      child: Icon(
-                        CupertinoIcons.calendar,
-                        color: CupertinoColors.systemGrey.resolveFrom(context),
+                  GestureDetector(
+                    onTap: _showDatePicker,
+                    child: AbsorbPointer(
+                      child: CupertinoTextField(
+                        controller: _dateController,
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: CupertinoColors.systemGrey6.resolveFrom(
+                            context,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        suffix: Padding(
+                          padding: EdgeInsets.only(right: 12),
+                          child: Icon(
+                            CupertinoIcons.calendar,
+                            color: CupertinoColors.systemGrey.resolveFrom(
+                              context,
+                            ),
+                          ),
+                        ),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'SF Pro Display',
+                          letterSpacing: 0.2,
+                        ),
                       ),
-                    ),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'SF Pro Display',
-                      letterSpacing: 0.2,
                     ),
                   ),
 
@@ -1160,28 +1606,31 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
                               ),
                             ),
                             SizedBox(height: 8),
-                            CupertinoTextField(
-                              controller: _startTimeController,
-                              padding: EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: CupertinoColors.systemGrey6.resolveFrom(
-                                  context,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              suffix: Padding(
-                                padding: EdgeInsets.only(right: 12),
-                                child: Icon(
-                                  CupertinoIcons.clock,
-                                  color: CupertinoColors.systemGrey.resolveFrom(
-                                    context,
+                            GestureDetector(
+                              onTap: () => _showTimePicker(true),
+                              child: AbsorbPointer(
+                                child: CupertinoTextField(
+                                  controller: _startTimeController,
+                                  padding: EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: CupertinoColors.systemGrey6
+                                        .resolveFrom(context),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  suffix: Padding(
+                                    padding: EdgeInsets.only(right: 12),
+                                    child: Icon(
+                                      CupertinoIcons.clock,
+                                      color: CupertinoColors.systemGrey
+                                          .resolveFrom(context),
+                                    ),
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontFamily: 'SF Pro Display',
+                                    letterSpacing: 0.2,
                                   ),
                                 ),
-                              ),
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontFamily: 'SF Pro Display',
-                                letterSpacing: 0.2,
                               ),
                             ),
                           ],
@@ -1205,28 +1654,31 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
                               ),
                             ),
                             SizedBox(height: 8),
-                            CupertinoTextField(
-                              controller: _endTimeController,
-                              padding: EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: CupertinoColors.systemGrey6.resolveFrom(
-                                  context,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              suffix: Padding(
-                                padding: EdgeInsets.only(right: 12),
-                                child: Icon(
-                                  CupertinoIcons.clock,
-                                  color: CupertinoColors.systemGrey.resolveFrom(
-                                    context,
+                            GestureDetector(
+                              onTap: () => _showTimePicker(false),
+                              child: AbsorbPointer(
+                                child: CupertinoTextField(
+                                  controller: _endTimeController,
+                                  padding: EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: CupertinoColors.systemGrey6
+                                        .resolveFrom(context),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  suffix: Padding(
+                                    padding: EdgeInsets.only(right: 12),
+                                    child: Icon(
+                                      CupertinoIcons.clock,
+                                      color: CupertinoColors.systemGrey
+                                          .resolveFrom(context),
+                                    ),
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontFamily: 'SF Pro Display',
+                                    letterSpacing: 0.2,
                                   ),
                                 ),
-                              ),
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontFamily: 'SF Pro Display',
-                                letterSpacing: 0.2,
                               ),
                             ),
                           ],
@@ -1383,20 +1835,21 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
                           padding: EdgeInsets.symmetric(vertical: 16),
                           borderRadius: BorderRadius.circular(12),
                           color: activeColor,
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            // Handle send invite
-                          },
-                          child: Text(
-                            'Send Invite',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'SF Pro Display',
-                              letterSpacing: 0.2,
-                              color: CupertinoColors.white,
-                            ),
-                          ),
+                          onPressed: _isLoading ? null : _submitMeetingRequest,
+                          child: _isLoading
+                              ? CupertinoActivityIndicator(
+                                  color: CupertinoColors.white,
+                                )
+                              : Text(
+                                  'Send Invite',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'SF Pro Display',
+                                    letterSpacing: 0.2,
+                                    color: CupertinoColors.white,
+                                  ),
+                                ),
                         ),
                       ),
                     ],

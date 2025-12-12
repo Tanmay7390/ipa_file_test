@@ -1,317 +1,288 @@
+import 'dart:developer';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../components/page_scaffold.dart';
-import '../pages/session_detail_page.dart';
+// import '../pages/session_detail_page.dart';
+import '../apis/providers/sessions_provider.dart';
+import '../providers/home_data_provider.dart';
+import 'package:rajapsicon/providers/user_data_provider.dart';
+import 'package:flash/flash.dart';
 
-class ScheduleTab extends StatefulWidget {
+class ScheduleTab extends ConsumerStatefulWidget {
   const ScheduleTab({super.key});
 
   @override
-  State<ScheduleTab> createState() => _ScheduleTabState();
+  ConsumerState<ScheduleTab> createState() => _ScheduleTabState();
 }
 
-class _ScheduleTabState extends State<ScheduleTab>
+class _ScheduleTabState extends ConsumerState<ScheduleTab>
     with SingleTickerProviderStateMixin {
   int _selectedTabIndex = 0; // 0 = All Schedules, 1 = My Schedules
-  DateTime _selectedDate = DateTime(2026, 1, 22); // Thursday, Jan 22
-  final Set<int> _myScheduleIds = {}; // Track added sessions
-  late PageController _pageController;
+  DateTime _selectedDate = DateTime(2025, 12, 7); // Start with first event date
+  final Set<String> _myScheduleIds = {}; // Track added sessions
+  String? _eventId;
   late ScrollController _scrollController;
+  late ScrollController _dateScrollController;
   late AnimationController _tabAnimationController;
   late Animation<double> _tabAnimation;
+  bool _showScrollToTopButton = false;
+  DateTime? _currentVisibleDate;
+  List<Map<String, dynamic>> _allSessions = []; // Sessions converted from API
+  bool _isRefreshing = false;
 
-  final double _eventCardTopPadding = 15.0; // Top padding for event cards
-  final double _eventCardBottomPadding = 5.0; // Bottom padding for event cards
-  final double _eventCardSpacing = 10.0; // Spacing between stacked cards
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _dateScrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+    _tabAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _tabAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _tabAnimationController, curve: Curves.easeInOut),
+    );
 
-  // 5-day event schedule (Jan 22-26, 2026)
-  final List<Map<String, dynamic>> _allSessions = [
-    {
-      'id': 3,
-      'date': DateTime(2026, 1, 22),
-      'topOffset': 20.0, // 10:00 AM = (10 * 2) + 0
-      'height': 4.0,
-      'time': '10:00 AM - 12:00 PM IST',
-      'duration': '2 hours',
-      'title': 'Panel Discussion: Future Trends',
-      'location': 'Main Hall',
-      'organizer': 'Industry Experts Panel',
-      'status': 'Open seating',
-      'category': 'Panel',
-      'categoryColor': Color(0xFFCA8A04),
-      'bgColor': Color(0xFFFFF4E6),
-      'isActive': true,
-      'currentTime': '10:30',
-    },
-    // 2 sessions at same time slot - 10:00 AM on Jan 22
-    {
-      'id': 16,
-      'date': DateTime(2026, 1, 22),
-      'topOffset': 20.0, // 10:00 AM = (10 * 2) + 0
-      'height': 4.0,
-      'time': '10:00 AM - 12:00 PM IST',
-      'duration': '2 hours',
-      'title': 'Advanced Cosmetic Procedures',
-      'location': 'Conference Room C',
-      'organizer': 'Dr. Sarah Williams',
-      'status': 'Limited seats',
-      'category': 'Workshop',
-      'categoryColor': Color(0xFF2563EB),
-      'bgColor': Color(0xFFDCEFFF),
-    },
-    {
-      'id': 11,
-      'date': DateTime(2026, 1, 22),
-      'topOffset': 28.0, // 2:00 PM = (14 * 2) + 0
-      'height': 3.0,
-      'time': '2:00 PM - 3:30 PM IST',
-      'duration': '1.5 hours',
-      'title': 'Breast Augmentation Techniques',
-      'location': 'Conference Room A',
-      'organizer': 'Dr. Robert Miller',
-      'status': 'Limited seats',
-      'category': 'Technical',
-      'categoryColor': Color(0xFF7C3AED),
-      'bgColor': Color(0xFFE9D5FF),
-    },
-    {
-      'id': 4,
-      'date': DateTime(2026, 1, 23),
-      'topOffset': 24.0, // 12:00 PM = (12 * 2) + 0
-      'height': 2.0,
-      'time': '12:00 PM - 1:00 PM IST',
-      'duration': '1 hour',
-      'title': 'Networking Lunch',
-      'location': 'Garden Terrace',
-      'organizer': 'All Attendees',
-      'status': 'Open to all',
-      'category': 'Social',
-      'categoryColor': Color(0xFF16A34A),
-      'bgColor': Color(0xFFD4F4DD),
-    },
-    {
-      'id': 13,
-      'date': DateTime(2026, 1, 23),
-      'topOffset': 19.0, // 9:30 AM = (9 * 2) + 1
-      'height': 3.0,
-      'time': '9:30 AM - 11:00 AM IST',
-      'duration': '1.5 hours',
-      'title': 'Introduction to Aesthetic Medicine',
-      'location': 'Conference Room B',
-      'organizer': 'Dr. John Smith',
-      'status': 'Open seating',
-      'category': 'Workshop',
-      'categoryColor': Color(0xFF2563EB),
-      'bgColor': Color(0xFFDCEFFF),
-    },
-    {
-      'id': 5,
-      'date': DateTime(2026, 1, 24),
-      'topOffset': 26.0, // 1:00 PM = (13 * 2) + 0
-      'height': 3.0,
-      'time': '1:00 PM - 2:30 PM IST',
-      'duration': '1.5 hours',
-      'title': 'Technical Session: AI & ML',
-      'location': 'Tech Lab',
-      'organizer': 'Prof. Michael Chen',
-      'status': 'Open seating',
-      'category': 'Technical',
-      'categoryColor': Color(0xFF7C3AED),
-      'bgColor': Color(0xFFE9D5FF),
-    },
-    {
-      'id': 6,
-      'date': DateTime(2026, 1, 25),
-      'topOffset': 32.0, // 4:00 PM = (16 * 2) + 0
-      'height': 3.0,
-      'time': '4:00 PM - 5:30 PM IST',
-      'duration': '1.5 hours',
-      'title': 'Inaugural Ceremony & Presidential Address',
-      'location': 'Grand Ballroom, The Westin',
-      'organizer': 'Dr. Medha Bhave, President IAAPS',
-      'status': 'Open seating',
-      'category': 'Keynote',
-      'categoryColor': Color(0xFFDC2626),
-      'bgColor': Color(0xFFFFE6E6),
-    },
-    {
-      'id': 7,
-      'date': DateTime(2026, 1, 25),
-      'topOffset': 36.0, // 6:00 PM = (18 * 2) + 0
-      'height': 4.0,
-      'time': '6:00 PM - 8:00 PM IST',
-      'duration': '2 hours',
-      'title': 'Welcome Reception & Networking Dinner',
-      'location': 'Poolside Terrace, The Westin',
-      'organizer': 'All Attendees',
-      'status': 'Open to all',
-      'category': 'Social',
-      'categoryColor': Color(0xFFCA8A04),
-      'bgColor': Color(0xFFFFF4E6),
-      'showAvatar': true,
-    },
-    // Multiple sessions at same time slot - 3 sessions at 4:00 PM
-    {
-      'id': 12,
-      'date': DateTime(2026, 1, 25),
-      'topOffset': 32.0, // 4:00 PM = (16 * 2) + 0
-      'height': 1.5,
-      'time': '4:00 PM - 4:45 PM IST',
-      'duration': '45 minutes',
-      'title': 'Workshop A: Data Analytics',
-      'location': 'Room 101',
-      'organizer': 'Prof. Kumar',
-      'status': 'Limited seats',
-      'category': 'Workshop',
-      'categoryColor': Color(0xFF2563EB),
-      'bgColor': Color(0xFFDCEFFF),
-    },
-    {
-      'id': 14,
-      'date': DateTime(2026, 1, 25),
-      'topOffset': 32.0, // 4:00 PM = (16 * 2) + 0
-      'height': 1.5,
-      'time': '4:00 PM - 4:45 PM IST',
-      'duration': '45 minutes',
-      'title': 'Workshop B: Cloud Computing',
-      'location': 'Room 102',
-      'organizer': 'Dr. Sharma',
-      'status': 'Limited seats',
-      'category': 'Technical',
-      'categoryColor': Color(0xFF7C3AED),
-      'bgColor': Color(0xFFE9D5FF),
-    },
-    {
-      'id': 8,
-      'date': DateTime(2026, 1, 26),
-      'topOffset': 21.0, // 10:30 AM = (10 * 2) + 1
-      'height': 3.0,
-      'time': '10:30 AM - 12:00 PM IST',
-      'duration': '1.5 hours',
-      'title': 'Hands-on Training: New Technologies',
-      'location': 'Lab 1 & 2',
-      'organizer': 'Tech Team',
-      'status': 'Registration required',
-      'category': 'Training',
-      'categoryColor': Color(0xFF2563EB),
-      'bgColor': Color(0xFFDCEFFF),
-    },
-    {
-      'id': 15,
-      'date': DateTime(2026, 1, 26),
-      'topOffset': 30.0, // 3:00 PM = (15 * 2) + 0
-      'height': 3.0,
-      'time': '3:00 PM - 4:30 PM IST',
-      'duration': '1.5 hours',
-      'title': 'Hair Restoration Techniques',
-      'location': 'Conference Room A',
-      'organizer': 'Dr. Richard Brown',
-      'status': 'Open seating',
-      'category': 'Technical',
-      'categoryColor': Color(0xFF7C3AED),
-      'bgColor': Color(0xFFE9D5FF),
-    },
-  ];
+    // Load sessions after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSessions();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    _dateScrollController.dispose();
+    _tabAnimationController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.offset > 300 && !_showScrollToTopButton) {
+      setState(() => _showScrollToTopButton = true);
+    } else if (_scrollController.offset <= 300 && _showScrollToTopButton) {
+      setState(() => _showScrollToTopButton = false);
+    }
+  }
+
+  void _loadSessions() {
+    // Get eventId from home data provider
+    final homeData = ref.read(homePageDataProvider).valueOrNull;
+    _eventId = homeData?.event?.id;
+
+    if (_eventId != null) {
+      // Load sessions for this event
+      ref.read(sessionsProvider.notifier).loadSessions(_eventId!);
+
+      // Load user schedule
+      final userData = ref.read(userDataProvider).valueOrNull;
+      final userId = userData?.id;
+
+      if (userId != null) {
+        ref
+            .read(userScheduleProvider.notifier)
+            .loadUserSchedule(userId: userId, eventId: _eventId!);
+      }
+    }
+  }
+
+  // Convert API Session to UI format
+  Future<void> _onRefresh() async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    log('🔄 [$timestamp] _onRefresh() ENTRY - _isRefreshing=$_isRefreshing');
+
+    // Prevent multiple refresh calls during pull gesture
+    if (_isRefreshing) {
+      log('⚠️ [$timestamp] Already refreshing, BLOCKED duplicate call');
+      return;
+    }
+
+    _isRefreshing = true;
+    log('🔄 [$timestamp] _isRefreshing set to TRUE, proceeding with refresh');
+
+    try {
+      if (_eventId != null) {
+        // Refresh sessions
+        await ref.read(sessionsProvider.notifier).refresh();
+
+        // Refresh user schedule if user is logged in
+        final userData = ref.read(userDataProvider).valueOrNull;
+        if (userData != null) {
+          await ref.read(userScheduleProvider.notifier).refresh();
+        }
+
+        log('🔄 [$timestamp] _onRefresh() COMPLETED successfully');
+
+        // Keep the flag true for 500ms to prevent rapid successive calls
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+    } catch (e) {
+      log('❌ [$timestamp] _onRefresh() ERROR: $e');
+    } finally {
+      _isRefreshing = false;
+      log('🔄 [$timestamp] _isRefreshing set to FALSE');
+    }
+  }
+
+  Map<String, dynamic> _convertSessionToMap(Session session) {
+    // Parse ISO date string to DateTime
+    DateTime? sessionDate;
+    String timeRange = '';
+    String durationStr = '';
+
+    if (session.startTime != null) {
+      try {
+        // Parse UTC time and convert to local time
+        final startTimeUtc = DateTime.parse(session.startTime!);
+        sessionDate = startTimeUtc.toLocal();
+
+        final endTimeUtc = session.endTime != null
+            ? DateTime.parse(session.endTime!)
+            : null;
+        final endTimeLocal = endTimeUtc?.toLocal();
+
+        // Format time range (e.g., "9:00 AM - 9:20 AM")
+        final startFormatted = DateFormat('h:mm a').format(sessionDate);
+        if (endTimeLocal != null) {
+          final endFormatted = DateFormat('h:mm a').format(endTimeLocal);
+          timeRange = '$startFormatted - $endFormatted';
+        } else {
+          timeRange = startFormatted;
+        }
+      } catch (e) {
+        sessionDate = DateTime.now();
+      }
+    }
+
+    // Format duration (e.g., "1h 5m", "2h", "45m")
+    if (session.duration != null) {
+      final hours = session.duration! ~/ 60; // Integer division
+      final minutes = session.duration! % 60; // Remainder
+
+      if (hours > 0 && minutes > 0) {
+        durationStr = '${hours}h ${minutes}m';
+      } else if (hours > 0) {
+        durationStr = '${hours}h';
+      } else {
+        durationStr = '${minutes}m';
+      }
+    }
+
+    // Determine category and color based on sessionType
+    String category = session.sessionType ?? 'Other';
+    Color categoryColor;
+
+    switch (session.sessionType?.toUpperCase()) {
+      case 'PRESENTATION':
+        category = 'Presentation';
+        categoryColor = const Color(0xFF2563EB);
+        break;
+      case 'NETWORKING':
+        category = 'Networking';
+        categoryColor = const Color(0xFF16A34A);
+        break;
+      case 'KEYNOTE':
+        category = 'Keynote';
+        categoryColor = const Color(0xFFDC2626);
+        break;
+      case 'DEMO':
+        category = 'Demo';
+        categoryColor = const Color(0xFF7C3AED);
+        break;
+      case 'OTHER':
+        category = 'Break';
+        categoryColor = const Color(0xFF16A34A);
+        break;
+      default:
+        category = session.sessionType ?? 'Other';
+        categoryColor = const Color(0xFF21AA62);
+    }
+
+    // Build speakers list from API
+    final speakers = <Map<String, dynamic>>[];
+    if (session.speakers != null && session.speakers!.isNotEmpty) {
+      for (var speaker in session.speakers!) {
+        if (speaker.name != null) {
+          speakers.add({
+            'name': speaker.name!,
+            'initials': _getInitials(speaker.name),
+            'photo': speaker.photo,
+            'id': speaker.id,
+          });
+        }
+      }
+    }
+
+    return {
+      'id': session.id,
+      'date': sessionDate ?? DateTime.now(),
+      'time': timeRange,
+      'duration': durationStr,
+      'title': session.title ?? 'Untitled Session',
+      'location': session.venue ?? '',
+      'organizer': session.organizer,
+      'category': category,
+      'categoryColor': categoryColor,
+      'isActive': session.status == 'ONGOING', // status == 'ONGOING'
+      'isAllDay': false,
+      'speakers': speakers,
+      'hasContent': session.organizer != null || speakers.isNotEmpty,
+    };
+  }
+
+  // Helper to get initials from name
+  String _getInitials(String? name) {
+    if (name == null || name.isEmpty) return '?';
+
+    final cleaned = name.replaceAll(
+      RegExp(r'^(Dr\.?|Prof\.?|Mr\.?|Mrs\.?|Ms\.?)\s+', caseSensitive: false),
+      '',
+    );
+
+    final parts = cleaned.trim().split(' ');
+    if (parts.isEmpty) return '?';
+
+    if (parts.length == 1) {
+      return parts[0].substring(0, 1).toUpperCase();
+    }
+
+    return (parts[0].substring(0, 1) + parts[parts.length - 1].substring(0, 1))
+        .toUpperCase();
+  }
 
   // Get list of dates that have sessions
   List<DateTime> get _datesWithSessions {
     final dates = _allSessions
-        .map((s) => s['date'] as DateTime)
+        .map((s) {
+          final d = s['date'] as DateTime;
+          return DateTime(d.year, d.month, d.day);
+        })
         .toSet()
         .toList();
     dates.sort();
     return dates;
   }
 
-  // Get date range for the entire event
-  DateTime? get _eventStartDate {
-    if (_datesWithSessions.isEmpty) return null;
-    return _datesWithSessions.first;
-  }
-
-  DateTime? get _eventEndDate {
-    if (_datesWithSessions.isEmpty) return null;
-    return _datesWithSessions.last;
-  }
-
-  // Generate list of all dates in the event range
-  List<DateTime> get _allEventDates {
-    if (_eventStartDate == null || _eventEndDate == null) return [];
-
-    final dates = <DateTime>[];
-    var current = _eventStartDate!;
-
-    while (current.isBefore(_eventEndDate!) ||
-        current.isAtSameMomentAs(_eventEndDate!)) {
-      dates.add(current);
-      current = current.add(const Duration(days: 1));
-    }
-
-    return dates;
-  }
-
-  // Generate full weeks (always 7 days per week, pad with future dates if needed)
-  List<List<DateTime>> get _weeks {
-    if (_allEventDates.isEmpty) return [];
-
-    final weeks = <List<DateTime>>[];
-    final List<DateTime> currentWeek = [];
-
-    for (var date in _allEventDates) {
-      currentWeek.add(date);
-
-      // When we have 7 days, complete the week
-      if (currentWeek.length == 7) {
-        weeks.add(List.from(currentWeek));
-        currentWeek.clear();
-      }
-    }
-
-    // Pad remaining days to make a full week of 7 days
-    if (currentWeek.isNotEmpty) {
-      final lastDate = currentWeek.last;
-      int daysToAdd = 1;
-      while (currentWeek.length < 7) {
-        currentWeek.add(lastDate.add(Duration(days: daysToAdd)));
-        daysToAdd++;
-      }
-      weeks.add(List.from(currentWeek));
-    }
-
-    return weeks;
-  }
-
-  // Get current week index based on selected date
-  int get _currentWeekIndex {
-    for (int i = 0; i < _weeks.length; i++) {
-      if (_weeks[i].any(
-        (d) =>
-            d.year == _selectedDate.year &&
-            d.month == _selectedDate.month &&
-            d.day == _selectedDate.day,
-      )) {
-        return i;
-      }
-    }
-    return 0;
-  }
-
-  // Check if a date has sessions
-  bool _hasSession(DateTime date) {
+  // Get only dates that have events (not full weeks)
+  List<DateTime> get _eventDates {
     if (_selectedTabIndex == 1) {
-      // For "My Schedules" tab, check if there are sessions added to my schedule for this date
-      final sessionsForDate = _getSessionsForDate(date);
-      return sessionsForDate.any((s) => _myScheduleIds.contains(s['id']));
-    } else {
-      // For "All Schedules" tab, check if there are any sessions for this date
-      return _datesWithSessions.any(
-        (d) =>
-            d.year == date.year && d.month == date.month && d.day == date.day,
-      );
+      // For "My Schedule" tab, only show dates with sessions in user's schedule
+      final dates = _datesWithSessions.where((date) {
+        final sessionsForDate = _getSessionsForDate(date);
+        return sessionsForDate.any((s) => _myScheduleIds.contains(s['id']));
+      }).toList();
+      dates.sort();
+      return dates;
     }
+    // For "All" tab, show all dates with sessions
+    return _datesWithSessions;
   }
 
-  // Get sessions for selected date
+  // Get sessions for a specific date
   List<Map<String, dynamic>> _getSessionsForDate(DateTime date) {
     return _allSessions.where((s) {
       final sessionDate = s['date'] as DateTime;
@@ -321,85 +292,123 @@ class _ScheduleTabState extends State<ScheduleTab>
     }).toList();
   }
 
-  // Get filtered sessions based on tab
-  List<Map<String, dynamic>> get _filteredSessions {
-    final sessionsForDate = _getSessionsForDate(_selectedDate);
+  // Helper function to parse time string to minutes since midnight
+  int _parseTimeToMinutes(String timeString) {
+    if (timeString.isEmpty) return 0;
 
-    if (_selectedTabIndex == 1) {
-      return sessionsForDate
-          .where((s) => _myScheduleIds.contains(s['id']))
-          .toList();
+    // Extract start time from "9:20 AM - 10:10 AM" format
+    final startTime = timeString.split(' - ')[0].trim();
+
+    // Parse hour and minute
+    final parts = startTime.split(' ');
+    if (parts.length < 2) return 0;
+
+    final timeParts = parts[0].split(':');
+    if (timeParts.length < 2) return 0;
+
+    var hour = int.tryParse(timeParts[0]) ?? 0;
+    final minute = int.tryParse(timeParts[1]) ?? 0;
+    final isPM = parts[1].toUpperCase() == 'PM';
+
+    // Convert to 24-hour format
+    if (isPM && hour != 12) {
+      hour += 12;
+    } else if (!isPM && hour == 12) {
+      hour = 0;
     }
-    return sessionsForDate;
+
+    return hour * 60 + minute;
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(initialPage: _currentWeekIndex);
-    _scrollController = ScrollController();
-    _tabAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _tabAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _tabAnimationController, curve: Curves.easeInOut),
-    );
-  }
+  // Group sessions by date
+  Map<DateTime, List<Map<String, dynamic>>> get _sessionsByDate {
+    final map = <DateTime, List<Map<String, dynamic>>>{};
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    _scrollController.dispose();
-    _tabAnimationController.dispose();
-    super.dispose();
-  }
+    for (var session in _allSessions) {
+      final date = session['date'] as DateTime;
+      final dateKey = DateTime(date.year, date.month, date.day);
 
-  void _scrollToFirstSession() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_filteredSessions.isNotEmpty && _scrollController.hasClients) {
-        // The first session is always at the top of the timeline now
-        // since we only show slots with events
-        // Just scroll to the top
-        _scrollController.animateTo(
-          0.0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
+      if (!map.containsKey(dateKey)) {
+        map[dateKey] = [];
       }
-    });
-  }
+      map[dateKey]!.add(session);
+    }
 
-  void _onPageChanged(int index) {
-    if (index < _weeks.length) {
-      final newWeek = _weeks[index];
-      setState(() {
-        // Select first date with session in the new week, or first date if none
-        _selectedDate = newWeek.firstWhere(
-          (d) => _hasSession(d),
-          orElse: () => newWeek.first,
-        );
+    // Sort sessions within each date by time
+    for (var key in map.keys) {
+      map[key]!.sort((a, b) {
+        final aAllDay = a['isAllDay'] as bool;
+        final bAllDay = b['isAllDay'] as bool;
+
+        if (aAllDay && !bAllDay) return -1;
+        if (!aAllDay && bAllDay) return 1;
+
+        // Sort by parsed time (minutes since midnight)
+        final aTime = _parseTimeToMinutes(a['time'] as String);
+        final bTime = _parseTimeToMinutes(b['time'] as String);
+
+        return aTime.compareTo(bTime);
       });
-      _scrollToFirstSession();
     }
+
+    return map;
   }
 
-  void _previousWeek() {
-    if (_pageController.page! > 0) {
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+  // Group sessions by time slot within a date
+  List<List<Map<String, dynamic>>> _groupSessionsByTimeSlot(
+    List<Map<String, dynamic>> sessions,
+  ) {
+    final grouped = <String, List<Map<String, dynamic>>>{};
+
+    for (var session in sessions) {
+      final time = session['time'] as String;
+      if (!grouped.containsKey(time)) {
+        grouped[time] = [];
+      }
+      grouped[time]!.add(session);
     }
+
+    // Convert to list of lists, maintaining time order
+    final result = <List<Map<String, dynamic>>>[];
+    String? lastTime;
+
+    for (var session in sessions) {
+      final time = session['time'] as String;
+      if (time != lastTime) {
+        result.add(grouped[time]!);
+        lastTime = time;
+      }
+    }
+
+    return result;
   }
 
-  void _nextWeek() {
-    if (_pageController.page! < _weeks.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+  // Get filtered sessions based on tab
+  Map<DateTime, List<Map<String, dynamic>>> get _filteredSessionsByDate {
+    if (_selectedTabIndex == 1) {
+      final map = <DateTime, List<Map<String, dynamic>>>{};
+
+      for (var entry in _sessionsByDate.entries) {
+        final filtered = entry.value
+            .where((s) => _myScheduleIds.contains(s['id']))
+            .toList();
+
+        if (filtered.isNotEmpty) {
+          map[entry.key] = filtered;
+        }
+      }
+
+      return map;
     }
+    return _sessionsByDate;
+  }
+
+  void _scrollToTop() {
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _switchTab(int index) {
@@ -415,52 +424,341 @@ class _ScheduleTabState extends State<ScheduleTab>
     }
   }
 
+  String _formatDateHeader(DateTime date) {
+    return '${_getWeekdayFull(date.weekday)}, ${_getMonthName(date.month)} ${date.day}';
+  }
+
+  String _formatDuration(String duration) {
+    if (duration.isEmpty) return '';
+
+    // Convert "2 hours" to "2h", "1.5 hours" to "1.5h", "45 minutes" to "45m", "1 hour" to "1h"
+    if (duration.contains('hour')) {
+      final hours = duration.replaceAll(' hours', '').replaceAll(' hour', '');
+      return '${hours}h';
+    } else if (duration.contains('minute')) {
+      final minutes = duration
+          .replaceAll(' minutes', '')
+          .replaceAll(' minute', '');
+      return '${minutes}m';
+    }
+    return duration;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return CustomPageScaffold(
-      heading: 'Schedule',
-      isLoading: false,
-      hideLargeTitle: false,
-      hideSearch: true,
-      scrollController: _scrollController,
-      sliverList: SliverMainAxisGroup(
-        slivers: [
-          // Blurred header section containing tabs, dates, and date label
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _StickyHeaderDelegate(
-              minHeight: 190.0,
-              maxHeight: 190.0,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: CupertinoColors.systemBackground.resolveFrom(context),
-                  border: const Border(
-                    bottom: BorderSide(
-                      color: CupertinoColors.systemGrey,
-                      width: 0.2,
+    final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final sessionsAsync = ref.watch(sessionsProvider);
+    final userScheduleAsync = ref.watch(userScheduleProvider);
+
+    // Listen to provider changes and update local state
+    ref.listen<AsyncValue<SessionsData>>(sessionsProvider, (previous, next) {
+      next.whenData((data) {
+        setState(() {
+          _allSessions = data.sessions
+              .map((s) => _convertSessionToMap(s))
+              .toList();
+          // Set first event date as selected if no date is selected
+          if (_eventDates.isNotEmpty && !_eventDates.contains(_selectedDate)) {
+            _selectedDate = _eventDates.first;
+          }
+        });
+      });
+    });
+
+    // Listen to user schedule changes
+    ref.listen<AsyncValue<List<Session>>>(userScheduleProvider, (
+      previous,
+      next,
+    ) {
+      next.whenData((sessions) {
+        setState(() {
+          _myScheduleIds.clear();
+          _myScheduleIds.addAll(sessions.map((s) => s.id));
+        });
+      });
+    });
+
+    // Listen to home data to load sessions when event ID is available
+    ref.listen(homePageDataProvider, (previous, next) {
+      if (next.value?.event?.id != null && _eventId == null) {
+        _loadSessions();
+      }
+    });
+
+    // Listen to user data to load schedule when user ID is available
+    ref.listen(userDataProvider, (previous, next) {
+      if (next.value?.id != null) {
+        // Only load if we haven't loaded user schedule yet or if we need to refresh
+        _loadSessions();
+      }
+    });
+
+    final filteredSessions = _filteredSessionsByDate;
+    // Only show events for the selected date
+    final selectedDateKey = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+    );
+    final dates = filteredSessions.containsKey(selectedDateKey)
+        ? [selectedDateKey]
+        : <DateTime>[];
+
+    return Stack(
+      children: [
+        CustomPageScaffold(
+          heading: 'Schedule',
+          isLoading:
+              (sessionsAsync.isLoading && _allSessions.isEmpty) ||
+              (userScheduleAsync.isLoading && _myScheduleIds.isEmpty),
+          hideLargeTitle: false,
+          hideSearch: true,
+          scrollController: _scrollController,
+          onRefresh: _onRefresh,
+          sliverList: SliverMainAxisGroup(
+            slivers: [
+              // Tabs header
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _StickyHeaderDelegate(
+                  minHeight: 50.0,
+                  maxHeight: 50.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.systemBackground.resolveFrom(
+                        context,
+                      ),
+                    ),
+                    child: _buildTabs(),
+                  ),
+                ),
+              ),
+
+              // Event date picker
+              if (_eventDates.length > 1)
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _StickyHeaderDelegate(
+                    minHeight: 80.0,
+                    maxHeight: 80.0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: CupertinoColors.systemBackground.resolveFrom(
+                          context,
+                        ),
+                        border: const Border(
+                          bottom: BorderSide(
+                            color: CupertinoColors.systemGrey,
+                            width: 0.2,
+                          ),
+                        ),
+                      ),
+                      child: _buildWeekDatePicker(),
                     ),
                   ),
                 ),
-                child: Column(
-                  children: [
-                    _buildTabs(),
-                    _buildWeekDatePicker(),
-                    _buildDateLabel(),
+
+              // Scrollable list of days and events
+              if (dates.isEmpty)
+                SliverToBoxAdapter(
+                  child: Container(
+                    height: 400,
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          CupertinoIcons.calendar,
+                          size: 64,
+                          color: CupertinoColors.systemGrey3,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _selectedTabIndex == 1
+                              ? 'No sessions in your schedule'
+                              : 'No sessions scheduled',
+                          style: const TextStyle(
+                            fontFamily: 'SF Pro Display',
+                            fontSize: 16,
+                            letterSpacing: 0.2,
+                            color: CupertinoColors.systemGrey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ...dates.asMap().entries.map((entry) {
+                  final date = entry.value;
+                  final sessions = filteredSessions[date]!;
+                  final timeSlotGroups = _groupSessionsByTimeSlot(sessions);
+
+                  return SliverMainAxisGroup(
+                    slivers: [
+                      // Sticky day header with visibility tracking
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: _DateHeaderDelegate(
+                          minHeight: 35.0,
+                          maxHeight: 35.0,
+                          date: date,
+                          selectedDate: _selectedDate,
+                          onDateVisible: (visibleDate) {
+                            // Only update if coming from scroll, not from date bar tap
+                            if (_currentVisibleDate != visibleDate &&
+                                _selectedDate != visibleDate) {
+                              setState(() {
+                                _currentVisibleDate = visibleDate;
+                                _selectedDate = visibleDate;
+                              });
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: CupertinoColors.systemBackground
+                                  .resolveFrom(context),
+                              border: const Border(
+                                bottom: BorderSide(
+                                  color: CupertinoColors.systemGrey,
+                                  width: 0.2,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  _formatDateHeader(date).toUpperCase(),
+                                  style: TextStyle(
+                                    fontFamily: 'SF Pro Display',
+                                    fontSize: 13,
+                                    letterSpacing: 0.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: CupertinoColors.systemGrey
+                                        .resolveFrom(context),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Events for this day (grouped by time slot)
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final timeSlotGroup = timeSlotGroups[index];
+                          if (timeSlotGroup.length == 1) {
+                            // Single event in this time slot
+                            return _buildEventItem(timeSlotGroup[0]);
+                          } else {
+                            // Multiple events in same time slot - show stacked
+                            return _buildTimeSlotGroup(timeSlotGroup);
+                          }
+                        }, childCount: timeSlotGroups.length),
+                      ),
+                    ],
+                  );
+                }),
+            ],
+          ),
+        ),
+        // Floating scroll to top button
+        if (_showScrollToTopButton)
+          Positioned(
+            bottom: MediaQuery.of(context).padding.bottom + 16,
+            right: 16,
+            child: CupertinoButton(
+              onPressed: _scrollToTop,
+              padding: EdgeInsets.zero,
+              child: Container(
+                width: 45,
+                height: 45,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? CupertinoColors.darkBackgroundGray
+                      : CupertinoColors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
                   ],
+                ),
+                child: Icon(
+                  CupertinoIcons.chevron_up,
+                  color: isDark
+                      ? CupertinoColors.white
+                      : CupertinoColors.darkBackgroundGray,
+                  size: 24,
                 ),
               ),
             ),
           ),
-          // Timeline (scrollable)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: _buildTimelineGrid(),
-            ),
-          ),
-        ],
-      ),
+      ],
     );
+  }
+
+  void _showFlashMessage(String message, {Color? backgroundColor}) {
+    showFlash(
+      context: context,
+      duration: const Duration(seconds: 2),
+      builder: (context, controller) {
+        return FlashBar(
+          controller: controller,
+          backgroundColor: backgroundColor ?? CupertinoColors.black,
+          position: FlashPosition.bottom,
+          content: Text(
+            message,
+            style: const TextStyle(color: CupertinoColors.white),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handleToggleSession(String sessionId) async {
+    final userData = ref.read(userDataProvider).valueOrNull;
+    final userId = userData?.id;
+
+    if (userId == null || _eventId == null) {
+      _showFlashMessage(
+        'User or Event ID not found',
+        backgroundColor: CupertinoColors.systemRed,
+      );
+      return;
+    }
+
+    // Call API
+    final result = await ref
+        .read(userScheduleProvider.notifier)
+        .toggleSession(
+          userId: userId,
+          eventId: _eventId!,
+          sessionId: sessionId,
+        );
+
+    if (mounted) {
+      if (result.success) {
+        // Show success message
+        _showFlashMessage(
+          result.message ?? 'Session updated successfully',
+          backgroundColor: const Color(0xFF21AA62),
+        );
+      } else {
+        // Show error message
+        _showFlashMessage(
+          result.error ?? 'Failed to update session',
+          backgroundColor: CupertinoColors.systemRed,
+        );
+      }
+    }
   }
 
   Widget _buildTabs() {
@@ -473,7 +771,7 @@ class _ScheduleTabState extends State<ScheduleTab>
         : const Color(0xFF21AA62);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.only(top: 5),
       child: Column(
         children: [
           Row(
@@ -483,9 +781,9 @@ class _ScheduleTabState extends State<ScheduleTab>
                   behavior: HitTestBehavior.opaque,
                   onTap: () => _switchTab(0),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      'All Schedules',
+                      'All',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'SF Pro Display',
@@ -507,9 +805,9 @@ class _ScheduleTabState extends State<ScheduleTab>
                   behavior: HitTestBehavior.opaque,
                   onTap: () => _switchTab(1),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      'My Schedules',
+                      'My Schedule',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'SF Pro Display',
@@ -531,8 +829,6 @@ class _ScheduleTabState extends State<ScheduleTab>
           // Animated sliding bottom bar
           Stack(
             children: [
-              // Background bar
-              // Animated blue bar
               AnimatedBuilder(
                 animation: _tabAnimation,
                 builder: (context, child) {
@@ -553,8 +849,7 @@ class _ScheduleTabState extends State<ScheduleTab>
                   );
                 },
               ),
-
-              Container(height: 0.2, color: CupertinoColors.systemGrey5),
+              Container(height: 0.5, color: CupertinoColors.systemGrey5),
             ],
           ),
         ],
@@ -563,136 +858,730 @@ class _ScheduleTabState extends State<ScheduleTab>
   }
 
   Widget _buildWeekDatePicker() {
-    final currentIdx = _currentWeekIndex;
     final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
     final activeColor = isDark
         ? const Color(0xFF23C061)
         : const Color(0xFF21AA62);
+    final eventDates = _eventDates;
 
     return Container(
-      height: 85,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          // Left arrow
-          GestureDetector(
-            onTap: currentIdx > 0 ? _previousWeek : null,
-            child: Container(
-              width: 40,
-              height: 80,
-              alignment: Alignment.center,
-              child: Icon(
-                CupertinoIcons.chevron_left,
-                color: currentIdx > 0
-                    ? activeColor
-                    : CupertinoColors.systemGrey4.resolveFrom(context),
-                size: 24,
+      padding: const EdgeInsets.only(top: 0, bottom: 10),
+      height: 80,
+      child: eventDates.length < 8
+          ? Center(
+              // Center dates when less than 8
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: eventDates
+                    .map((date) => _buildDateItem(date, activeColor, isDark))
+                    .toList(),
+              ),
+            )
+          : SingleChildScrollView(
+              // Horizontal scroll when 8 or more dates
+              controller: _dateScrollController,
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Row(
+                children: eventDates
+                    .map((date) => _buildDateItem(date, activeColor, isDark))
+                    .toList(),
               ),
             ),
-          ),
-          // Week dates with PageView
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: _onPageChanged,
-              itemCount: _weeks.length,
-              itemBuilder: (context, weekIndex) {
-                final week = _weeks[weekIndex];
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: week.map((date) {
-                    final isSelected =
-                        date.year == _selectedDate.year &&
-                        date.month == _selectedDate.month &&
-                        date.day == _selectedDate.day;
-                    final hasSession = _hasSession(date);
-                    final isDisabled = !hasSession;
+    );
+  }
 
-                    return Expanded(
-                      child: GestureDetector(
-                        onTap: isDisabled
-                            ? null
-                            : () {
-                                setState(() => _selectedDate = date);
-                                _scrollToFirstSession();
-                              },
-                        child: Opacity(
-                          opacity: isDisabled ? 0.5 : 1.0,
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 2),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildDateItem(DateTime date, Color activeColor, bool isDark) {
+    final isSelected =
+        date.year == _selectedDate.year &&
+        date.month == _selectedDate.month &&
+        date.day == _selectedDate.day;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() => _selectedDate = date);
+      },
+      child: Container(
+        width: 50,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              _getWeekdayShort(date.weekday),
+              style: TextStyle(
+                fontFamily: 'SF Pro Display',
+                fontSize: 14,
+                letterSpacing: 0.2,
+                color: isDark
+                    ? CupertinoColors.systemGrey2
+                    : CupertinoColors.systemGrey,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isSelected ? activeColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '${date.day}',
+                style: TextStyle(
+                  fontFamily: 'SF Pro Display',
+                  fontSize: 18,
+                  letterSpacing: 0.2,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected
+                      ? CupertinoColors.white
+                      : (isDark
+                            ? CupertinoColors.white
+                            : CupertinoColors.black),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeSlotGroup(List<Map<String, dynamic>> sessions) {
+    final firstSession = sessions[0];
+    final isAllDay = firstSession['isAllDay'] as bool;
+
+    return Column(
+      children: sessions.asMap().entries.map((entry) {
+        final index = entry.key;
+        final session = entry.value;
+        final isFirst = index == 0;
+        final isLast = index == sessions.length - 1;
+
+        return _buildStackedEventContent(
+          session,
+          showTime: isFirst,
+          isAllDay: isAllDay,
+          isLastInGroup: isLast,
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildStackedEventContent(
+    Map<String, dynamic> session, {
+    bool showTime = true,
+    bool isAllDay = false,
+    bool isLastInGroup = true,
+  }) {
+    final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final activeColor = isDark
+        ? const Color(0xFF23C061)
+        : const Color(0xFF21AA62);
+    final isAdded = _myScheduleIds.contains(session['id']);
+    final isActive = session['isActive'] as bool;
+    final speakers = session['speakers'] as List<dynamic>;
+    final organizer = session['organizer'] as SessionOrganizer?;
+    final hasContent = session['hasContent'] as bool? ?? false;
+    final canAddToSchedule =
+        hasContent; // Show plus button if organizer/speakers available
+
+    return GestureDetector(
+      onTap: () {
+        // if (hasContent) {
+        //   Navigator.of(context, rootNavigator: true).push(
+        //     CupertinoPageRoute(
+        //       builder: (context) => SessionDetailPage(
+        //         sessionId: session["_id"] ?? session["id"] ?? "",
+        //       ),
+        //     ),
+        //   );
+        // }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: isActive
+              ? (isDark
+                    ? activeColor.withValues(alpha: 0.15)
+                    : activeColor.withValues(alpha: 0.08))
+              : CupertinoColors.systemBackground.resolveFrom(context),
+        ),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Left side - Time or All Day indicator (border only on last item in group)
+              Container(
+                width: 85,
+                padding: const EdgeInsets.only(left: 20, top: 14, bottom: 12),
+                decoration: BoxDecoration(
+                  border: isLastInGroup
+                      ? const Border(
+                          bottom: BorderSide(
+                            color: CupertinoColors.systemGrey,
+                            width: 0.2,
+                          ),
+                        )
+                      : null,
+                ),
+                child: showTime
+                    ? (isAllDay
+                          ? Text(
+                              'ALL DAY',
+                              style: TextStyle(
+                                fontFamily: 'SF Pro Display',
+                                fontSize: 14,
+                                letterSpacing: 0.3,
+                                fontWeight: FontWeight.w600,
+                                color: CupertinoColors.systemGrey.resolveFrom(
+                                  context,
+                                ),
+                              ),
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  _getWeekdayShort(date.weekday),
+                                  _extractStartTime(session['time'] as String),
                                   style: TextStyle(
                                     fontFamily: 'SF Pro Display',
                                     fontSize: 14,
                                     letterSpacing: 0.2,
+                                    fontWeight: FontWeight.w600,
                                     color: isDark
-                                        ? CupertinoColors.systemGrey2
-                                        : CupertinoColors.systemGrey,
-                                    fontWeight: FontWeight.w500,
+                                        ? CupertinoColors.white
+                                        : CupertinoColors.black,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? activeColor
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(12),
+                                SizedBox(height: 2),
+                                Text(
+                                  _formatDuration(
+                                    session['duration'] as String,
                                   ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    '${date.day}',
-                                    style: TextStyle(
-                                      fontFamily: 'SF Pro Display',
-                                      fontSize: 18,
-                                      letterSpacing: 0.2,
-                                      fontWeight: FontWeight.w700,
-                                      color: isSelected
-                                          ? CupertinoColors.white
-                                          : isDisabled
-                                          ? CupertinoColors.systemGrey
-                                          : (isDark
-                                                ? CupertinoColors.white
-                                                : CupertinoColors.black),
-                                    ),
+                                  style: TextStyle(
+                                    fontFamily: 'SF Pro Display',
+                                    fontSize: 13,
+                                    letterSpacing: 0.2,
+                                    color: CupertinoColors.systemGrey
+                                        .resolveFrom(context),
                                   ),
                                 ),
                               ],
+                            ))
+                    : const SizedBox.shrink(),
+              ),
+
+              // Rounded vertical bar indicator (full height) with conditional border
+              Container(
+                padding: const EdgeInsets.only(top: 16, bottom: 16, right: 10),
+                decoration: BoxDecoration(
+                  border: isLastInGroup
+                      ? const Border(
+                          bottom: BorderSide(
+                            color: CupertinoColors.systemGrey,
+                            width: 0.2,
+                          ),
+                        )
+                      : null,
+                ),
+                child: Container(
+                  width: 4,
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? activeColor
+                        : (isDark
+                              ? CupertinoColors.systemGrey
+                              : CupertinoColors.systemGrey4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+
+              // Event details
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.only(
+                    top: 12,
+                    bottom: 12,
+                    right: 20,
+                  ),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: CupertinoColors.systemGrey,
+                        width: 0.2,
+                      ),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        session['title'] as String,
+                        style: TextStyle(
+                          fontFamily: 'SF Pro Display',
+                          fontSize: 15,
+                          letterSpacing: 0.2,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? CupertinoColors.white
+                              : CupertinoColors.black,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (speakers.isNotEmpty || organizer != null) ...[
+                        const SizedBox(height: 6),
+                        _buildSpeakerAvatars(speakers, organizer),
+                      ],
+                      if (session['location'] != null &&
+                          (session['location'] as String).isNotEmpty) ...[
+                        // const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(
+                              CupertinoIcons.location,
+                              size: 16,
+                              color: CupertinoColors.systemGrey.resolveFrom(
+                                context,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Expanded(
+                              child: Text(
+                                session['location'] as String,
+                                style: TextStyle(
+                                  fontFamily: 'SF Pro Display',
+                                  fontSize: 14,
+                                  letterSpacing: 0.2,
+                                  color: CupertinoColors.systemGrey.resolveFrom(
+                                    context,
+                                  ),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            // Add button next to location (only for actual sessions)
+                            if (canAddToSchedule) ...[
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () =>
+                                    _handleToggleSession(session['id']),
+                                child: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isAdded
+                                        ? activeColor.withValues(alpha: 0.2)
+                                        : activeColor,
+                                    border: isAdded
+                                        ? Border.all(
+                                            color: activeColor.withValues(
+                                              alpha: 0.4,
+                                            ),
+                                            width: 1.5,
+                                          )
+                                        : null,
+                                  ),
+                                  child: Icon(
+                                    isAdded
+                                        ? CupertinoIcons.checkmark
+                                        : CupertinoIcons.plus,
+                                    color: isAdded
+                                        ? activeColor
+                                        : CupertinoColors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEventItem(Map<String, dynamic> session) {
+    final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final activeColor = isDark
+        ? const Color(0xFF23C061)
+        : const Color(0xFF21AA62);
+    final isAdded = _myScheduleIds.contains(session['id']);
+    final isActive = session['isActive'] as bool;
+    final isAllDay = session['isAllDay'] as bool;
+    final speakers = session['speakers'] as List<dynamic>;
+    final organizer = session['organizer'] as SessionOrganizer?;
+    final hasContent = session['hasContent'] as bool? ?? false;
+
+    // Show plus button if organizer/speakers available
+    final canAddToSchedule = hasContent;
+
+    return GestureDetector(
+      onTap: () {
+        // if (hasContent) {
+        //   Navigator.of(context, rootNavigator: true).push(
+        //     CupertinoPageRoute(
+        //       builder: (context) => SessionDetailPage(
+        //         sessionId: session["_id"] ?? session["id"] ?? "",
+        //       ),
+        //     ),
+        //   );
+        // }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: isActive
+              ? (isDark
+                    ? activeColor.withValues(alpha: 0.15)
+                    : activeColor.withValues(alpha: 0.08))
+              : CupertinoColors.systemBackground.resolveFrom(context),
+          border: const Border(
+            bottom: BorderSide(color: CupertinoColors.systemGrey, width: 0.2),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left side - Time or All Day indicator
+            Container(
+              width: 80,
+              padding: const EdgeInsets.only(left: 20, top: 14, bottom: 12),
+              child: isAllDay
+                  ? Text(
+                      'ALL DAY',
+                      style: TextStyle(
+                        fontFamily: 'SF Pro Display',
+                        fontSize: 14,
+                        letterSpacing: 0.3,
+                        fontWeight: FontWeight.w600,
+                        color: CupertinoColors.systemGrey.resolveFrom(context),
+                      ),
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _extractStartTime(session['time'] as String),
+                          style: TextStyle(
+                            fontFamily: 'SF Pro Display',
+                            fontSize: 14,
+                            letterSpacing: 0.2,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? CupertinoColors.white
+                                : CupertinoColors.black,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          _formatDuration(session['duration'] as String),
+                          style: TextStyle(
+                            fontFamily: 'SF Pro Display',
+                            fontSize: 13,
+                            letterSpacing: 0.2,
+                            color: CupertinoColors.systemGrey.resolveFrom(
+                              context,
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
+                      ],
+                    ),
             ),
-          ),
-          // Right arrow
-          GestureDetector(
-            onTap: currentIdx < _weeks.length - 1 ? _nextWeek : null,
+
+            // Rounded vertical bar indicator (full height)
+            Padding(
+              padding: const EdgeInsets.only(top: 16, bottom: 16, right: 10),
+              child: Container(
+                width: 10,
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? activeColor
+                      : (isDark
+                            ? CupertinoColors.systemGrey
+                            : CupertinoColors.systemGrey4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Event details
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.only(top: 12, bottom: 12, right: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      session['title'] as String,
+                      style: TextStyle(
+                        fontFamily: 'SF Pro Display',
+                        fontSize: 15,
+                        letterSpacing: 0.2,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? CupertinoColors.white
+                            : CupertinoColors.black,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (speakers.isNotEmpty || organizer != null) ...[
+                      const SizedBox(height: 6),
+                      _buildSpeakerAvatars(speakers, organizer),
+                    ],
+                    if (session['location'] != null &&
+                        (session['location'] as String).isNotEmpty) ...[
+                      // const SizedBox(height: 0),
+                      Row(
+                        children: [
+                          Icon(
+                            CupertinoIcons.location,
+                            size: 14,
+                            color: CupertinoColors.systemGrey.resolveFrom(
+                              context,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              session['location'] as String,
+                              style: TextStyle(
+                                fontFamily: 'SF Pro Display',
+                                fontSize: 14,
+                                letterSpacing: 0.2,
+                                color: CupertinoColors.systemGrey.resolveFrom(
+                                  context,
+                                ),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          // Add button next to location (only for actual sessions)
+                          if (canAddToSchedule) ...[
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => _handleToggleSession(session['id']),
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isAdded
+                                      ? activeColor.withValues(alpha: 0.2)
+                                      : activeColor,
+                                  border: isAdded
+                                      ? Border.all(
+                                          color: activeColor.withValues(
+                                            alpha: 0.4,
+                                          ),
+                                          width: 1.5,
+                                        )
+                                      : null,
+                                ),
+                                child: Icon(
+                                  isAdded
+                                      ? CupertinoIcons.checkmark
+                                      : CupertinoIcons.plus,
+                                  color: isAdded
+                                      ? activeColor
+                                      : CupertinoColors.white,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSpeakerAvatars(
+    List<dynamic> speakers,
+    SessionOrganizer? organizer,
+  ) {
+    final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
+
+    final List<Color> avatarColors = [
+      CupertinoColors.systemBlue,
+      CupertinoColors.systemOrange,
+      CupertinoColors.systemPurple,
+      CupertinoColors.systemPink,
+      CupertinoColors.systemTeal,
+    ];
+
+    // Build list of people to display (speakers or organizer as fallback)
+    List<Map<String, dynamic>> peopleToDisplay = [];
+
+    if (speakers.isNotEmpty) {
+      // Use speakers if available
+      peopleToDisplay = speakers.cast<Map<String, dynamic>>();
+    } else if (organizer != null && organizer.name != null) {
+      // Fallback to organizer if no speakers
+      peopleToDisplay = [
+        {
+          'name': organizer.name!,
+          'initials': _getInitials(organizer.name),
+          'photo': organizer.photo,
+          'id': organizer.id,
+        },
+      ];
+    }
+
+    if (peopleToDisplay.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Show max 5 avatars, rest in +X format
+    final displayCount = peopleToDisplay.length > 5
+        ? 5
+        : peopleToDisplay.length;
+    final extraCount = peopleToDisplay.length > 5
+        ? peopleToDisplay.length - 5
+        : 0;
+    final showName = peopleToDisplay.length == 1;
+
+    return Row(
+      children: [
+        ...List.generate(displayCount, (index) {
+          final person = peopleToDisplay[index];
+          final initials = person['initials'] as String;
+          final name = person['name'] as String;
+          final photo = person['photo'] as String?;
+          final hasPhoto = photo != null && photo.isNotEmpty;
+          final isSpecialInitial = initials == '?';
+
+          return Padding(
+            padding: EdgeInsets.only(left: index > 0 ? 4 : 0),
+            child: Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: hasPhoto
+                        ? Colors.transparent
+                        : (isSpecialInitial
+                              ? CupertinoColors.systemGrey
+                              : avatarColors[index % avatarColors.length]
+                                    .withValues(alpha: 0.5)),
+                    shape: BoxShape.circle,
+                  ),
+                  child: hasPhoto
+                      ? ClipOval(
+                          child: Image.network(
+                            photo,
+                            width: 28,
+                            height: 28,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              // Fallback to initials if image fails to load
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color:
+                                      avatarColors[index % avatarColors.length]
+                                          .withValues(alpha: 0.5),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    initials,
+                                    style: const TextStyle(
+                                      fontFamily: 'SF Pro Display',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: CupertinoColors.white,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      : Center(
+                          child: Text(
+                            initials,
+                            style: const TextStyle(
+                              fontFamily: 'SF Pro Display',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: CupertinoColors.white,
+                            ),
+                          ),
+                        ),
+                ),
+                if (showName && index == 0) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontFamily: 'SF Pro Display',
+                      fontSize: 14,
+                      letterSpacing: 0.2,
+                      color: isDark
+                          ? CupertinoColors.white
+                          : CupertinoColors.black,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        }),
+        if (extraCount > 0) ...[
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
             child: Container(
-              width: 40,
-              height: 80,
-              alignment: Alignment.center,
-              child: Icon(
-                CupertinoIcons.chevron_right,
-                color: currentIdx < _weeks.length - 1
-                    ? activeColor
-                    : CupertinoColors.systemGrey4.resolveFrom(context),
-                size: 24,
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: CupertinoColors.systemGrey5.resolveFrom(context),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  '+$extraCount',
+                  style: TextStyle(
+                    fontFamily: 'SF Pro Display',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: CupertinoColors.systemGrey.resolveFrom(context),
+                  ),
+                ),
               ),
             ),
           ),
         ],
-      ),
+      ],
     );
+  }
+
+  String _extractStartTime(String timeRange) {
+    if (timeRange.isEmpty) return '';
+    final parts = timeRange.split(' - ');
+    if (parts.isEmpty) return timeRange;
+    return parts[0];
   }
 
   String _getWeekdayShort(int weekday) {
@@ -767,957 +1656,6 @@ class _ScheduleTabState extends State<ScheduleTab>
         return '';
     }
   }
-
-  Widget _buildDateLabel() {
-    final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
-    final activeColor = isDark
-        ? const Color(0xFF23C061)
-        : const Color(0xFF21AA62);
-
-    // Calculate day number (Day 1, Day 2, etc.)
-    int dayNumber = 1;
-    if (_eventStartDate != null) {
-      final difference = _selectedDate.difference(_eventStartDate!).inDays;
-      dayNumber = difference + 1;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-      alignment: Alignment.centerLeft,
-      child: Row(
-        children: [
-          RichText(
-            text: TextSpan(
-              style: TextStyle(
-                fontFamily: 'SF Pro Display',
-                fontSize: 18,
-                letterSpacing: 0.2,
-                color: isDark ? CupertinoColors.white : CupertinoColors.black,
-              ),
-              children: [
-                TextSpan(
-                  text: '${_getMonthName(_selectedDate.month)} ',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                TextSpan(
-                  text: '${_selectedDate.day},  ',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                TextSpan(
-                  text: _getWeekdayFull(_selectedDate.weekday),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w400,
-                    color: CupertinoColors.systemGrey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: activeColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: activeColor.withValues(alpha: 0.3),
-                width: 1,
-              ),
-            ),
-            child: Text(
-              'Day $dayNumber',
-              style: TextStyle(
-                fontFamily: 'SF Pro Display',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.2,
-                color: activeColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Calculate height for event card based on title length
-  double _calculateCardHeight(String title) {
-    // Base height for card content:
-    // Padding: 32px (16 all sides)
-    // Time/Duration: 25px
-    // SizedBox: 8px
-    // Location: 18px
-    // SizedBox: 4px
-    // Organizer: 18px
-    // SizedBox: 12px
-    // Footer: 36px
-    // Base total: 153px
-
-    double baseHeight = 153.0;
-
-    // Add title height based on content length
-    // Short titles (<30 chars): ~20px (1 line)
-    // Medium titles (30-45 chars): ~36px (2 lines)
-    // Long titles (>45 chars): ~52px (3 lines)
-    double titleHeight;
-    if (title.length > 45) {
-      titleHeight = 52.0;
-    } else if (title.length > 30) {
-      titleHeight = 36.0;
-    } else {
-      titleHeight = 20.0;
-    }
-
-    // Add SizedBox after title
-    double titleSpacing = 8.0;
-
-    return baseHeight + titleHeight + titleSpacing; // 181-213px
-  }
-
-  // Calculate height for event card based on content
-  double _estimateCardHeight(Map<String, dynamic> event) {
-    final title = event['title'] as String;
-    return _calculateCardHeight(title);
-  }
-
-  // Create timeline slots structure (events and gaps)
-  List<Map<String, dynamic>> _buildTimelineSlots() {
-    if (_filteredSessions.isEmpty) return [];
-
-    final slots = <Map<String, dynamic>>[];
-
-    // Sort sessions by start time
-    final sortedSessions = List<Map<String, dynamic>>.from(_filteredSessions);
-    sortedSessions.sort((a, b) {
-      final aOffset = a['topOffset'] as double;
-      final bOffset = b['topOffset'] as double;
-      return aOffset.compareTo(bOffset);
-    });
-
-    // Group sessions that start at the same time
-    final Map<double, List<Map<String, dynamic>>> sessionsByStartTime = {};
-    for (var session in sortedSessions) {
-      final startOffset = session['topOffset'] as double;
-      sessionsByStartTime.putIfAbsent(startOffset, () => []).add(session);
-    }
-
-    // Get sorted unique start times
-    final startTimes = sessionsByStartTime.keys.toList()..sort();
-
-    for (int i = 0; i < startTimes.length; i++) {
-      final currentStartTime = startTimes[i];
-      final sessionsAtTime = sessionsByStartTime[currentStartTime]!;
-
-      // Add event slot
-      slots.add({
-        'type': 'event',
-        'slotIndex': currentStartTime,
-        'sessions': sessionsAtTime,
-      });
-
-      // Check if there's a gap before the next event
-      if (i < startTimes.length - 1) {
-        final nextStartTime = startTimes[i + 1];
-
-        // Find the maximum end time of all sessions at current time
-        double maxEndTime = currentStartTime;
-        for (var session in sessionsAtTime) {
-          final sessionEnd =
-              (session['topOffset'] as double) + (session['height'] as double);
-          if (sessionEnd > maxEndTime) {
-            maxEndTime = sessionEnd;
-          }
-        }
-
-        // If there's a gap, add a gap slot
-        if (maxEndTime < nextStartTime) {
-          final gapDuration = nextStartTime - maxEndTime;
-          slots.add({
-            'type': 'gap',
-            'slotIndex': maxEndTime,
-            'duration': gapDuration,
-            'endSlotIndex': nextStartTime,
-          });
-        }
-      }
-    }
-
-    return slots;
-  }
-
-  // Convert slot index to time string
-  String _slotIndexToTime(double slotIndex) {
-    final hour = (slotIndex / 2).floor();
-    final minute = (slotIndex % 2) == 0 ? 0 : 30;
-    final period = hour >= 12 ? 'PM' : 'AM';
-    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-    return '${displayHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period';
-  }
-
-  Widget _buildTimelineGrid() {
-    if (_filteredSessions.isEmpty) {
-      return Container(
-        height: 300,
-        alignment: Alignment.center,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              CupertinoIcons.calendar,
-              size: 64,
-              color: CupertinoColors.systemGrey3,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _selectedTabIndex == 1
-                  ? 'No sessions in your schedule'
-                  : 'No sessions scheduled for this day',
-              style: const TextStyle(
-                fontFamily: 'SF Pro Display',
-                fontSize: 16,
-                letterSpacing: 0.2,
-                color: CupertinoColors.systemGrey,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final timelineSlots = _buildTimelineSlots();
-
-    // Calculate total height based on slots
-    double totalHeight = 0;
-    for (var slot in timelineSlots) {
-      if (slot['type'] == 'event') {
-        final sessions = slot['sessions'] as List<Map<String, dynamic>>;
-
-        // Calculate height for stacked events
-        double slotHeight = _eventCardTopPadding;
-        for (int i = 0; i < sessions.length; i++) {
-          slotHeight += _estimateCardHeight(sessions[i]);
-          if (i < sessions.length - 1) {
-            slotHeight += _eventCardSpacing;
-          }
-        }
-        slotHeight += _eventCardBottomPadding;
-        totalHeight += slotHeight;
-      } else if (slot['type'] == 'gap') {
-        // Fixed height for gap indicators
-        totalHeight += 40.0; // Height for gap display
-      }
-    }
-
-    return SizedBox(
-      height: totalHeight,
-      child: Stack(
-        children: [
-          // Time markers and gap indicators
-          ..._buildTimeMarkersAndGaps(timelineSlots),
-          // Events positioned absolutely
-          ..._buildEventsFromSlots(timelineSlots),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _buildTimeMarkersAndGaps(
-    List<Map<String, dynamic>> timelineSlots,
-  ) {
-    final widgets = <Widget>[];
-    double currentTop = 0;
-
-    for (var slot in timelineSlots) {
-      if (slot['type'] == 'event') {
-        final sessions = slot['sessions'] as List<Map<String, dynamic>>;
-        final slotIndex = slot['slotIndex'] as double;
-        final timeString = _slotIndexToTime(slotIndex);
-
-        // Calculate height for this event slot
-        double slotHeight = _eventCardTopPadding;
-        for (int i = 0; i < sessions.length; i++) {
-          slotHeight += _estimateCardHeight(sessions[i]);
-          if (i < sessions.length - 1) {
-            slotHeight += _eventCardSpacing;
-          }
-        }
-        slotHeight += _eventCardBottomPadding;
-
-        // Add time marker at the start of event
-        widgets.add(
-          Positioned(
-            top: currentTop,
-            left: 0,
-            right: 0,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 80,
-                  child: Text(
-                    timeString,
-                    style: const TextStyle(
-                      fontFamily: 'SF Pro Display',
-                      fontSize: 14,
-                      letterSpacing: 0.2,
-                      fontWeight: FontWeight.w500,
-                      color: CupertinoColors.systemGrey,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    height: 1,
-                    color: Colors.grey.withValues(alpha: 0.2),
-                    margin: const EdgeInsets.only(left: 8, top: 5),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-
-        currentTop += slotHeight;
-      } else if (slot['type'] == 'gap') {
-        final startSlotIndex = slot['slotIndex'] as double;
-
-        final startTime = _slotIndexToTime(startSlotIndex);
-
-        // Add gap start time with border line (end time will be shown by next event)
-        widgets.add(
-          Positioned(
-            top: currentTop,
-            left: 0,
-            right: 0,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 80,
-                  child: Text(
-                    startTime,
-                    style: const TextStyle(
-                      fontFamily: 'SF Pro Display',
-                      fontSize: 14,
-                      letterSpacing: 0.2,
-                      fontWeight: FontWeight.w500,
-                      color: CupertinoColors.systemGrey,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    height: 1,
-                    color: Colors.grey.withValues(alpha: 0.2),
-                    margin: const EdgeInsets.only(left: 8, top: 5),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-
-        currentTop += 40.0;
-      }
-    }
-
-    return widgets;
-  }
-
-  List<Widget> _buildEventsFromSlots(List<Map<String, dynamic>> timelineSlots) {
-    final widgets = <Widget>[];
-    double currentTop = 0;
-
-    for (var slot in timelineSlots) {
-      if (slot['type'] == 'event') {
-        final sessions = slot['sessions'] as List<Map<String, dynamic>>;
-
-        // Stack multiple events vertically
-        double cardTopOffset = currentTop + _eventCardTopPadding;
-        for (int i = 0; i < sessions.length; i++) {
-          final evt = sessions[i];
-          final cardHeight = _estimateCardHeight(evt);
-
-          if (evt['isActive'] == true) {
-            widgets.add(
-              _buildActiveEventCard(
-                topOffset: cardTopOffset,
-                time: evt['time'] as String,
-                duration: evt['duration'] as String,
-                title: evt['title'] as String,
-                location: evt['location'] as String,
-                organizer: evt['organizer'] as String,
-                status: evt['status'] as String,
-                category: evt['category'] as String,
-                categoryColor: evt['categoryColor'] as Color,
-                currentTime: evt['currentTime'] as String,
-                sessionId: evt['id'] as int,
-              ),
-            );
-          } else {
-            widgets.add(
-              _buildEventCard(
-                topOffset: cardTopOffset,
-                time: evt['time'] as String,
-                duration: evt['duration'] as String,
-                title: evt['title'] as String,
-                location: evt['location'] as String,
-                organizer: evt['organizer'] as String,
-                status: evt['status'] as String,
-                category: evt['category'] as String,
-                categoryColor: evt['categoryColor'] as Color,
-                color: evt['bgColor'] as Color,
-                showAvatar: evt['showAvatar'] as bool? ?? false,
-                sessionId: evt['id'] as int,
-              ),
-            );
-          }
-
-          // Move to next card position
-          cardTopOffset += cardHeight + _eventCardSpacing;
-        }
-
-        // Calculate height for this event slot
-        double slotHeight = _eventCardTopPadding;
-        for (int i = 0; i < sessions.length; i++) {
-          slotHeight += _estimateCardHeight(sessions[i]);
-          if (i < sessions.length - 1) {
-            slotHeight += _eventCardSpacing;
-          }
-        }
-        slotHeight += _eventCardBottomPadding;
-
-        currentTop += slotHeight;
-      } else if (slot['type'] == 'gap') {
-        // Gap takes fixed height
-        currentTop += 40.0;
-      }
-    }
-
-    return widgets;
-  }
-
-  Widget _buildEventCard({
-    required double topOffset,
-    required String time,
-    required String duration,
-    required String title,
-    required String location,
-    required String organizer,
-    required String status,
-    required String category,
-    required Color categoryColor,
-    required Color color,
-    required int sessionId,
-    bool showAvatar = false,
-  }) {
-    final isAdded = _myScheduleIds.contains(sessionId);
-    final cardHeight = _calculateCardHeight(title);
-    final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
-    final activeColor = isDark
-        ? const Color(0xFF23C061)
-        : const Color(0xFF21AA62);
-
-    // Get the full session data
-    final sessionData = _allSessions.firstWhere(
-      (s) => s['id'] == sessionId,
-      orElse: () => {},
-    );
-
-    return Positioned(
-      top: topOffset,
-      left: 90, // Space for time on left
-      right: 0,
-      height: cardHeight,
-      child: GestureDetector(
-        onTap: () {
-          Navigator.of(context).push(
-            CupertinoPageRoute(
-              builder: (context) => SessionDetailPage(session: sessionData),
-            ),
-          );
-        },
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark
-                  ? CupertinoColors.white.withValues(alpha: 0.2)
-                  : CupertinoColors.black.withValues(alpha: 0.2),
-              width: 1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              // Header: Time/Duration + Category Badge
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          time,
-                          style: TextStyle(
-                            fontFamily: 'SF Pro Display',
-                            fontSize: 12,
-                            letterSpacing: 0.2,
-                            fontWeight: FontWeight.w600,
-                            color: isDark
-                                ? CupertinoColors.white
-                                : CupertinoColors.black,
-                          ),
-                        ),
-                        Text(
-                          '($duration)',
-                          style: TextStyle(
-                            fontFamily: 'SF Pro Display',
-                            fontSize: 11,
-                            letterSpacing: 0.2,
-                            color: isDark
-                                ? CupertinoColors.white.withValues(alpha: 0.6)
-                                : CupertinoColors.black.withValues(alpha: 0.6),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: activeColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: activeColor.withValues(alpha: 0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      category,
-                      style: TextStyle(
-                        fontFamily: 'SF Pro Display',
-                        fontSize: 12,
-                        letterSpacing: 0.2,
-                        fontWeight: FontWeight.w600,
-                        color: activeColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // Title
-              Text(
-                title,
-                style: TextStyle(
-                  fontFamily: 'SF Pro Display',
-                  fontSize: 16,
-                  letterSpacing: 0.2,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? CupertinoColors.white : CupertinoColors.black,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              // Location
-              Row(
-                children: [
-                  Icon(
-                    CupertinoIcons.location,
-                    size: 14,
-                    color: isDark
-                        ? CupertinoColors.systemGrey
-                        : CupertinoColors.systemGrey,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      location,
-                      style: TextStyle(
-                        fontFamily: 'SF Pro Display',
-                        fontSize: 12,
-                        letterSpacing: 0.2,
-                        color: isDark
-                            ? CupertinoColors.white.withValues(alpha: 0.6)
-                            : CupertinoColors.black.withValues(alpha: 0.6),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              // Organizer
-              Row(
-                children: [
-                  Icon(
-                    CupertinoIcons.person,
-                    size: 14,
-                    color: isDark
-                        ? CupertinoColors.systemGrey
-                        : CupertinoColors.systemGrey,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      organizer,
-                      style: TextStyle(
-                        fontFamily: 'SF Pro Display',
-                        fontSize: 12,
-                        letterSpacing: 0.2,
-                        color: isDark
-                            ? CupertinoColors.white.withValues(alpha: 0.6)
-                            : CupertinoColors.black.withValues(alpha: 0.6),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              // Footer: Add Button only
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        if (isAdded) {
-                          _myScheduleIds.remove(sessionId);
-                        } else {
-                          _myScheduleIds.add(sessionId);
-                        }
-                      });
-                    },
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isAdded
-                            ? activeColor.withValues(alpha: 0.2)
-                            : activeColor,
-                        border: isAdded
-                            ? Border.all(
-                                color: activeColor.withValues(alpha: 0.4),
-                                width: 1.5,
-                              )
-                            : null,
-                      ),
-                      child: Icon(
-                        isAdded
-                            ? CupertinoIcons.checkmark
-                            : CupertinoIcons.plus,
-                        color: isAdded ? activeColor : CupertinoColors.white,
-                        size: 18,
-                        weight: 600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActiveEventCard({
-    required double topOffset,
-    required String time,
-    required String duration,
-    required String title,
-    required String location,
-    required String organizer,
-    required String status,
-    required String category,
-    required Color categoryColor,
-    required String currentTime,
-    required int sessionId,
-  }) {
-    final isAdded = _myScheduleIds.contains(sessionId);
-    final cardHeight = _calculateCardHeight(title);
-    final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
-    final activeColor = isDark
-        ? const Color(0xFF23C061)
-        : const Color(0xFF21AA62);
-
-    // Get the full session data
-    final sessionData = _allSessions.firstWhere(
-      (s) => s['id'] == sessionId,
-      orElse: () => {},
-    );
-
-    return Positioned(
-      top: topOffset,
-      left: 90, // Space for time on left
-      right: 0,
-      height: cardHeight,
-      child: GestureDetector(
-        onTap: () {
-          Navigator.of(context, rootNavigator: true).push(
-            CupertinoPageRoute(
-              builder: (context) => SessionDetailPage(session: sessionData),
-            ),
-          );
-        },
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? CupertinoColors.white.withValues(alpha: 0.10)
-                    : CupertinoColors.systemGrey.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: activeColor, width: 3),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  // Header: Time/Duration + Category Badge
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              time,
-                              style: TextStyle(
-                                fontFamily: 'SF Pro Display',
-                                fontSize: 12,
-                                letterSpacing: 0.2,
-                                fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? CupertinoColors.white
-                                    : CupertinoColors.black,
-                              ),
-                            ),
-                            Text(
-                              '($duration)',
-                              style: TextStyle(
-                                fontFamily: 'SF Pro Display',
-                                fontSize: 11,
-                                letterSpacing: 0.2,
-                                color: isDark
-                                    ? CupertinoColors.white.withValues(
-                                        alpha: 0.6,
-                                      )
-                                    : CupertinoColors.black.withValues(
-                                        alpha: 0.6,
-                                      ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: activeColor.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: activeColor.withValues(alpha: 0.3),
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              category,
-                              style: TextStyle(
-                                fontFamily: 'SF Pro Display',
-                                fontSize: 12,
-                                letterSpacing: 0.2,
-                                fontWeight: FontWeight.w600,
-                                color: activeColor,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: activeColor,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  // Title
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontFamily: 'SF Pro Display',
-                      fontSize: 16,
-                      letterSpacing: 0.2,
-                      fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? CupertinoColors.white
-                          : CupertinoColors.black,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  // Location
-                  Row(
-                    children: [
-                      Icon(
-                        CupertinoIcons.location,
-                        size: 14,
-                        color: isDark
-                            ? CupertinoColors.systemGrey
-                            : CupertinoColors.systemGrey,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          location,
-                          style: TextStyle(
-                            fontFamily: 'SF Pro Display',
-                            fontSize: 12,
-                            letterSpacing: 0.2,
-                            color: isDark
-                                ? CupertinoColors.white.withValues(alpha: 0.6)
-                                : CupertinoColors.black.withValues(alpha: 0.6),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  // Organizer
-                  Row(
-                    children: [
-                      Icon(
-                        CupertinoIcons.person,
-                        size: 14,
-                        color: isDark
-                            ? CupertinoColors.systemGrey
-                            : CupertinoColors.systemGrey,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          organizer,
-                          style: TextStyle(
-                            fontFamily: 'SF Pro Display',
-                            fontSize: 12,
-                            letterSpacing: 0.2,
-                            color: isDark
-                                ? CupertinoColors.white.withValues(alpha: 0.6)
-                                : CupertinoColors.black.withValues(alpha: 0.6),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  // Footer: Add Button only
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            if (isAdded) {
-                              _myScheduleIds.remove(sessionId);
-                            } else {
-                              _myScheduleIds.add(sessionId);
-                            }
-                          });
-                        },
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isAdded
-                                ? activeColor.withValues(alpha: 0.2)
-                                : activeColor,
-                            border: isAdded
-                                ? Border.all(
-                                    color: activeColor.withValues(alpha: 0.4),
-                                    width: 1.5,
-                                  )
-                                : null,
-                          ),
-                          child: Icon(
-                            isAdded
-                                ? CupertinoIcons.checkmark
-                                : CupertinoIcons.plus,
-                            color: isAdded
-                                ? activeColor
-                                : CupertinoColors.white,
-                            size: 18,
-                            weight: 600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            // Left orange indicator
-            Positioned(
-              left: -90,
-              top: 0,
-              bottom: 0,
-              child: Center(
-                child: Row(
-                  children: [
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: activeColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: activeColor, width: 5),
-                      ),
-                    ),
-                    Container(width: 78, height: 4, color: activeColor),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 // Delegate for pinned headers
@@ -1749,7 +1687,54 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(_StickyHeaderDelegate oldDelegate) {
-    // Always rebuild when state changes
     return true;
+  }
+}
+
+// Delegate for date headers with visibility tracking
+class _DateHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final double minHeight;
+  final double maxHeight;
+  final Widget child;
+  final DateTime date;
+  final DateTime selectedDate;
+  final Function(DateTime) onDateVisible;
+
+  _DateHeaderDelegate({
+    required this.minHeight,
+    required this.maxHeight,
+    required this.child,
+    required this.date,
+    required this.selectedDate,
+    required this.onDateVisible,
+  });
+
+  @override
+  double get minExtent => minHeight;
+
+  @override
+  double get maxExtent => maxHeight;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    // Notify when this header overlaps content (is pinned) or when selected date matches
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (overlapsContent ||
+          (date.year == selectedDate.year &&
+              date.month == selectedDate.month &&
+              date.day == selectedDate.day)) {
+        onDateVisible(date);
+      }
+    });
+    return SizedBox.expand(child: child);
+  }
+
+  @override
+  bool shouldRebuild(_DateHeaderDelegate oldDelegate) {
+    return oldDelegate.date != date || oldDelegate.selectedDate != selectedDate;
   }
 }

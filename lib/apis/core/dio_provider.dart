@@ -4,9 +4,18 @@ import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'api_urls.dart';
+import '../../services/auth_service.dart';
 
 // Token provider - store auth token here
 final authTokenProvider = StateProvider<String?>((ref) => null);
+
+// Token initialization provider - loads token from storage on app startup
+final tokenInitializerProvider = FutureProvider<void>((ref) async {
+  final token = await AuthService.getToken();
+  if (token != null) {
+    ref.read(authTokenProvider.notifier).state = token;
+  }
+});
 
 // Dio provider with automatic token and headers
 final dioProvider = Provider<Dio>((ref) {
@@ -19,7 +28,7 @@ final dioProvider = Provider<Dio>((ref) {
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 30),
     sendTimeout: const Duration(seconds: 30),
-    headers: {'Content-Type': 'multipart/form-data'},
+    headers: {'Content-Type': 'application/json'},
   );
 
   // Add token if available
@@ -78,14 +87,30 @@ class AuthHelper {
   final Ref ref;
   AuthHelper(this.ref);
 
-  // Set token
+  // Set token - saves to both state and storage
   void setToken(String token) {
     ref.read(authTokenProvider.notifier).state = token;
+    // Save to storage asynchronously (fire and forget)
+    AuthService.updateToken(token);
   }
 
-  // Clear token
+  // Clear token - clears from both state and storage
   void clearToken() {
     ref.read(authTokenProvider.notifier).state = null;
+    // Clear storage asynchronously (fire and forget)
+    AuthService.logout();
+  }
+
+  // Set token with async storage confirmation
+  Future<void> setTokenAsync(String token) async {
+    ref.read(authTokenProvider.notifier).state = token;
+    await AuthService.updateToken(token);
+  }
+
+  // Clear token with async storage confirmation
+  Future<void> clearTokenAsync() async {
+    ref.read(authTokenProvider.notifier).state = null;
+    await AuthService.logout();
   }
 
   // Get current token

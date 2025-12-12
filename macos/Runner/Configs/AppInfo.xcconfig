@@ -8,7 +8,7 @@
 PRODUCT_NAME = AESURG26
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.aesurg.aesurg26
+PRODUCT_BUNDLE_IDENTIFIER = com.aesurg.rajapsicon
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2025 AESURG. All rights reserved.

@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:go_router/go_router.dart';
 
 class NotificationsPage extends StatelessWidget {
   const NotificationsPage({super.key});
@@ -6,9 +7,7 @@ class NotificationsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: Text('Notifications'),
-      ),
+      navigationBar: CupertinoNavigationBar(middle: Text('Notifications')),
       child: SafeArea(
         child: Center(
           child: Column(
@@ -22,10 +21,7 @@ class NotificationsPage extends StatelessWidget {
               SizedBox(height: 20),
               Text(
                 'Notifications',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
               ),
               SizedBox(height: 10),
               Text(
@@ -33,6 +29,19 @@ class NotificationsPage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   color: CupertinoColors.secondaryLabel,
+                ),
+              ),
+              SizedBox(height: 20),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(0, 0),
+                onPressed: () => context.push('/home'),
+                child: Text(
+                  'Go to Home',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: CupertinoColors.activeBlue,
+                  ),
                 ),
               ),
             ],

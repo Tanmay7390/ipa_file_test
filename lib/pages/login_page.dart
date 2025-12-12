@@ -1,57 +1,66 @@
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
+import '../apis/providers/auth_provider.dart';
+import '../providers/home_data_provider.dart';
+import '../providers/user_data_provider.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _emailController = TextEditingController(
-    text: 'abc@mail.com',
+class _LoginPageState extends ConsumerState<LoginPage> {
+  final TextEditingController _identifierController = TextEditingController(
+    text: '',
   );
   final TextEditingController _passwordController = TextEditingController();
-  bool _isEmailStep = true;
   bool _isLoading = false;
-  String? _emailError;
+  String? _identifierError;
   String? _passwordError;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _identifierController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _handleNext() {
-    final email = _emailController.text.trim();
+  bool _isValidEmail(String value) {
+    return value.contains('@') && value.contains('.');
+  }
 
-    // Simple email validation
-    if (email.isEmpty) {
-      setState(() {
-        _emailError = 'Please enter an email';
-      });
-      return;
-    }
-
-    if (!email.contains('@') || !email.contains('.')) {
-      setState(() {
-        _emailError = 'Please enter a valid email address';
-      });
-      return;
-    }
-
-    setState(() {
-      _emailError = null;
-      _isEmailStep = false;
-    });
+  bool _isValidPhone(String value) {
+    // Remove any non-digit characters for validation
+    final digitsOnly = value.replaceAll(RegExp(r'\D'), '');
+    // Check if it's a valid phone number (at least 10 digits)
+    return digitsOnly.length >= 10;
   }
 
   void _handleLogin() async {
-    if (_passwordController.text.trim().isEmpty) {
+    final identifier = _identifierController.text.trim();
+    final password = _passwordController.text.trim();
+
+    // Validate identifier (email or phone)
+    if (identifier.isEmpty) {
+      setState(() {
+        _identifierError = 'Please enter an email or phone number';
+      });
+      return;
+    }
+
+    if (!_isValidEmail(identifier) && !_isValidPhone(identifier)) {
+      setState(() {
+        _identifierError = 'Please enter a valid email or phone number';
+      });
+      return;
+    }
+
+    // Validate password
+    if (password.isEmpty) {
       setState(() {
         _passwordError = 'Please enter a password';
       });
@@ -60,67 +69,57 @@ class _LoginPageState extends State<LoginPage> {
 
     setState(() {
       _isLoading = true;
+      _identifierError = null;
       _passwordError = null;
     });
 
-    // Simulate API call
-    await Future.delayed(Duration(seconds: 1));
+    try {
+      // Call the login API
+      final authActions = ref.read(authActionsProvider);
+      final result = await authActions.login(
+        email: identifier,
+        password: password,
+      );
 
-    // Dummy validation
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+      if (!mounted) return;
 
-    // For now, accept any email and password "123456"
-    if (password == '123456' || password == 'password') {
-      // Save login info
-      await AuthService.saveLoginInfo(email);
+      if (result.success && result.data != null) {
+        // Save login info to AsyncStorage (SharedPreferences)
+        await AuthService.saveLoginInfo(
+          email: identifier,
+          token: result.data!.token,
+          homePage: result.data!.homePage,
+          userData: result.data!.user,
+        );
 
-      // Navigate to home using GoRouter with forward animation
-      if (mounted) {
-        context.go('/home', extra: {'fromLogin': true});
-      }
-    } else {
-      setState(() {
-        _isLoading = false;
-        _passwordError = 'Invalid password. Try "123456" or "password"';
-      });
-    }
-  }
+        // Refresh home page data cache
+        ref.read(homePageDataProvider.notifier).refresh();
 
-  void _goBack() {
-    if (_isEmailStep) {
-      // Go back to onboarding
-      if (context.canPop()) {
-        context.pop();
+        // Refresh user data cache
+        ref.read(userDataProvider.notifier).refresh();
+
+        // Navigate to home using GoRouter with forward animation
+        if (mounted) {
+          context.go('/home', extra: {'fromLogin': true});
+        }
       } else {
-        context.go('/onboarding');
+        setState(() {
+          _isLoading = false;
+          _passwordError = result.error ?? 'Login failed. Please try again.';
+        });
       }
-    } else {
-      // Go back to email step
-      setState(() {
-        _isEmailStep = true;
-        _passwordController.clear();
-        _passwordError = null;
-      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _passwordError = 'An unexpected error occurred. Please try again.';
+        });
+      }
     }
   }
 
   Future<bool> _onWillPop() async {
-    if (!_isEmailStep) {
-      // If on password step, go back to email step
-      setState(() {
-        _isEmailStep = true;
-        _passwordController.clear();
-        _passwordError = null;
-      });
-      return false;
-    }
-    // If on email step, go back to onboarding
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      context.go('/onboarding');
-    }
+    // Prevent going back
     return false;
   }
 
@@ -136,38 +135,8 @@ class _LoginPageState extends State<LoginPage> {
         }
       },
       child: CupertinoPageScaffold(
-        navigationBar: CupertinoNavigationBar(
-          backgroundColor: CupertinoColors.systemBackground.resolveFrom(
-            context,
-          ),
-          border: null,
-          leading: CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: _goBack,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  CupertinoIcons.chevron_left,
-                  size: 28,
-                  color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
-                ),
-                SizedBox(width: 4),
-                Text(
-                  _isEmailStep ? 'Back' : 'Back',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w400,
-                    color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
         backgroundColor: CupertinoColors.systemBackground,
         child: SafeArea(
-          top: false,
           child: GestureDetector(
             onTap: () => FocusScope.of(context).unfocus(),
             child: SingleChildScrollView(
@@ -177,20 +146,19 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   SizedBox(height: 40),
 
-                  // Icon with gradient
+                  // Logo
                   Container(
-                    width: 64,
-                    height: 64,
+                    width: 120,
+                    height: 120,
                     decoration: BoxDecoration(
-                      color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Icon(
-                      _isEmailStep
-                          ? CupertinoIcons.mail_solid
-                          : CupertinoIcons.lock_fill,
-                      size: 32,
-                      color: isDark ? Color(0xFF000000) : Color(0xFFFFFFFF),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.asset(
+                        'assets/images/banner-logo.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
 
@@ -198,7 +166,7 @@ class _LoginPageState extends State<LoginPage> {
 
                   // Title
                   Text(
-                    _isEmailStep ? 'Continue with Email' : 'Enter Password',
+                    'Welcome Back',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
@@ -210,9 +178,7 @@ class _LoginPageState extends State<LoginPage> {
 
                   // Subtitle
                   Text(
-                    _isEmailStep
-                        ? 'Enter your email to continue.'
-                        : 'Enter your password to sign in.',
+                    'Sign in to your account to continue.',
                     style: TextStyle(
                       fontSize: 17,
                       color: CupertinoColors.systemGrey,
@@ -222,7 +188,7 @@ class _LoginPageState extends State<LoginPage> {
 
                   SizedBox(height: 32),
 
-                  // Input Field
+                  // Email/Phone Input Field
                   Container(
                     decoration: BoxDecoration(
                       color: isDark
@@ -232,10 +198,8 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     child: CupertinoTextField(
-                      controller: _isEmailStep
-                          ? _emailController
-                          : _passwordController,
-                      placeholder: _isEmailStep ? 'Email' : 'Password',
+                      controller: _identifierController,
+                      placeholder: 'Email or Phone',
                       placeholderStyle: TextStyle(
                         color: CupertinoColors.systemGrey,
                         fontSize: 17,
@@ -247,25 +211,66 @@ class _LoginPageState extends State<LoginPage> {
                             ? CupertinoColors.white
                             : CupertinoColors.black,
                       ),
-                      obscureText: !_isEmailStep,
-                      keyboardType: _isEmailStep
-                          ? TextInputType.emailAddress
-                          : TextInputType.text,
+                      keyboardType: TextInputType.emailAddress,
                       decoration: BoxDecoration(),
                       padding: EdgeInsets.symmetric(vertical: 16),
-                      textInputAction: _isEmailStep
-                          ? TextInputAction.next
-                          : TextInputAction.done,
-                      onSubmitted: (_) =>
-                          _isEmailStep ? _handleNext() : _handleLogin(),
-                      autofocus: !_isEmailStep,
+                      textInputAction: TextInputAction.next,
                       onChanged: (_) {
-                        // Clear errors on typing
-                        if (_isEmailStep && _emailError != null) {
+                        if (_identifierError != null) {
                           setState(() {
-                            _emailError = null;
+                            _identifierError = null;
                           });
-                        } else if (!_isEmailStep && _passwordError != null) {
+                        }
+                      },
+                    ),
+                  ),
+
+                  // Error message for identifier
+                  if (_identifierError != null)
+                    Padding(
+                      padding: EdgeInsets.only(top: 8, left: 4),
+                      child: Text(
+                        _identifierError!,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: CupertinoColors.systemRed,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+
+                  SizedBox(height: 16),
+
+                  // Password Input Field
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Color(0xFF23C061).withOpacity(0.15)
+                          : Color(0xFF21AA62).withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: CupertinoTextField(
+                      controller: _passwordController,
+                      placeholder: 'Password',
+                      placeholderStyle: TextStyle(
+                        color: CupertinoColors.systemGrey,
+                        fontSize: 17,
+                      ),
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w400,
+                        color: isDark
+                            ? CupertinoColors.white
+                            : CupertinoColors.black,
+                      ),
+                      obscureText: true,
+                      decoration: BoxDecoration(),
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _handleLogin(),
+                      onChanged: (_) {
+                        if (_passwordError != null) {
                           setState(() {
                             _passwordError = null;
                           });
@@ -274,13 +279,12 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
 
-                  // Error message
-                  if ((_isEmailStep && _emailError != null) ||
-                      (!_isEmailStep && _passwordError != null))
+                  // Error message for password
+                  if (_passwordError != null)
                     Padding(
                       padding: EdgeInsets.only(top: 8, left: 4),
                       child: Text(
-                        _isEmailStep ? _emailError! : _passwordError!,
+                        _passwordError!,
                         style: TextStyle(
                           fontSize: 14,
                           color: CupertinoColors.systemRed,
@@ -291,22 +295,20 @@ class _LoginPageState extends State<LoginPage> {
 
                   SizedBox(height: 20),
 
-                  // Button with gradient effect
+                  // Login Button
                   Container(
                     width: double.infinity,
                     child: CupertinoButton(
                       padding: EdgeInsets.symmetric(vertical: 16),
                       borderRadius: BorderRadius.circular(16),
                       color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
-                      onPressed: _isLoading
-                          ? null
-                          : (_isEmailStep ? _handleNext : _handleLogin),
+                      onPressed: _isLoading ? null : _handleLogin,
                       child: _isLoading
                           ? CupertinoActivityIndicator(
                               color: CupertinoColors.white,
                             )
                           : Text(
-                              _isEmailStep ? 'Next' : 'Log In',
+                              'Log In',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -318,26 +320,24 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
 
-                  if (!_isEmailStep) ...[
-                    SizedBox(height: 16),
-                    Center(
-                      child: CupertinoButton(
-                        onPressed: () {
-                          // Handle forgot password
-                        },
-                        child: Text(
-                          'Forgot Password?',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w400,
-                            color: isDark
-                                ? Color(0xFF23C061)
-                                : Color(0xFF21AA62),
-                          ),
+                  SizedBox(height: 16),
+
+                  // Forgot Password
+                  Center(
+                    child: CupertinoButton(
+                      onPressed: () {
+                        // Handle forgot password
+                      },
+                      child: Text(
+                        'Forgot Password?',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w400,
+                          color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
                         ),
                       ),
                     ),
-                  ],
+                  ),
 
                   SizedBox(height: 40),
                 ],

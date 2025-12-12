@@ -1,4 +1,4 @@
-package com.pi.medspaevent
+package com.pi.rajapsicon
 
 import io.flutter.embedding.android.FlutterActivity
 

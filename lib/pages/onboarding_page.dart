@@ -329,13 +329,13 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
             // Logo at top left
             Positioned(
               top: 20,
-              left: 10,
+              left: 20,
               child: Image.asset(
                 isDarkMode
-                    ? 'assets/images/logo-dark-no-bg.png'
-                    : 'assets/images/logo-light-no-bg.png',
-                width: 110,
-                height: 110,
+                    ? 'assets/images/banner-logo.png'
+                    : 'assets/images/banner-logo.png',
+                width: 80,
+                height: 80,
               ),
             ),
 

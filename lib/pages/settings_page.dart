@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aesurg26/theme_provider.dart';
+import 'package:rajapsicon/theme_provider.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -17,9 +17,7 @@ class SettingsPage extends ConsumerWidget {
         : CupertinoColors.black.withValues(alpha: 0.6);
 
     return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: Text('Settings'),
-      ),
+      navigationBar: CupertinoNavigationBar(middle: Text('Settings')),
       child: SafeArea(
         child: Center(
           child: Padding(

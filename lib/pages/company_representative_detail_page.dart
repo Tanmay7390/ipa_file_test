@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:aesurg26/components/page_scaffold.dart';
-import 'package:aesurg26/pages/chat_page.dart';
+import 'package:rajapsicon/components/page_scaffold.dart';
+// import 'package:rajapsicon/pages/chat_page.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class CompanyRepresentativeDetailPage extends StatefulWidget {
@@ -261,14 +261,14 @@ class _CompanyRepresentativeDetailPageState
               padding: EdgeInsets.symmetric(vertical: 12),
               borderRadius: BorderRadius.circular(12),
               onPressed: () {
-                Navigator.of(context).push(
-                  CupertinoPageRoute(
-                    builder: (context) => ChatPage(
-                      userName: widget.representative['name'] ?? '',
-                      userPhoto: widget.representative['photo'],
-                    ),
-                  ),
-                );
+                // Navigator.of(context).push(
+                //   CupertinoPageRoute(
+                //     builder: (context) => ChatPage(
+                //       userName: widget.representative['name'] ?? '',
+                //       userPhoto: widget.representative['photo'],
+                //     ),
+                //   ),
+                // );
               },
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -339,11 +339,7 @@ class _CompanyRepresentativeDetailPageState
             padding: EdgeInsets.all(12),
             borderRadius: BorderRadius.circular(50),
             onPressed: () {},
-            child: Icon(
-              CupertinoIcons.star,
-              size: 22,
-              color: activeColor,
-            ),
+            child: Icon(CupertinoIcons.star, size: 22, color: activeColor),
           ),
         ),
       ],
@@ -496,7 +492,6 @@ class _CompanyRepresentativeDetailPageState
       ),
     );
   }
-
 
   Widget _buildAdditionalInfoSection(bool isDark) {
     final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
@@ -858,16 +853,18 @@ class _CompanyRepresentativeDetailPageState
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: (isDark
-                                          ? Color(0xFF23C061)
-                                          : Color(0xFF21AA62))
-                                      .withValues(alpha: 0.15),
+                                  color:
+                                      (isDark
+                                              ? Color(0xFF23C061)
+                                              : Color(0xFF21AA62))
+                                          .withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: (isDark
-                                            ? Color(0xFF23C061)
-                                            : Color(0xFF21AA62))
-                                        .withValues(alpha: 0.3),
+                                    color:
+                                        (isDark
+                                                ? Color(0xFF23C061)
+                                                : Color(0xFF21AA62))
+                                            .withValues(alpha: 0.3),
                                     width: 1,
                                   ),
                                 ),

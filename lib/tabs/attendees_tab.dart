@@ -1,703 +1,79 @@
+import 'dart:async';
+import 'dart:developer';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../components/page_scaffold.dart';
 import '../pages/attendee_detail_page.dart';
+import '../apis/providers/attendees_provider.dart';
+import '../providers/home_data_provider.dart';
 
-class AttendeesTab extends StatefulWidget {
+class AttendeesTab extends ConsumerStatefulWidget {
   const AttendeesTab({super.key});
 
   @override
-  State<AttendeesTab> createState() => _AttendeesTabState();
+  ConsumerState<AttendeesTab> createState() => _AttendeesTabState();
 }
 
-class _AttendeesTabState extends State<AttendeesTab> {
+class _AttendeesTabState extends ConsumerState<AttendeesTab> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _showSearchField = false;
-  List<Map<String, dynamic>> _filteredAttendees = [];
-  Map<String, List<Map<String, dynamic>>> _groupedAttendees = {};
+  List<Attendee> _filteredAttendees = [];
+  Map<String, List<Attendee>> _groupedAttendees = {};
   Map<String, GlobalKey> _sectionKeys = {};
   String? _scrollingLetter;
   final GlobalKey _indexBarKey = GlobalKey();
-
-  // Static JSON data for attendees
-  final List<Map<String, dynamic>> _attendees = [
-    {
-      'id': '1',
-      'name': 'Dr. Karan Mehta',
-      'email': 'karan.mehta@hospital.com',
-      'title': 'Senior Consultant',
-      'organization': 'Fortis Hospital',
-      'role': 'Plastic Surgeon',
-      'location': 'Mumbai, India',
-      'countryCode': 'IN',
-      'venue': 'Four Season Hotel Toronto',
-      'room': 'Room 1823',
-      'photo': 'https://randomuser.me/api/portraits/men/11.jpg',
-      'about':
-          'John Smith is an experienced surgeon with over 15 years in the field. He specializes in general and emergency surgery and is passionate about advancing surgical techniques and improving patient outcomes.',
-    },
-    {
-      'id': '2',
-      'name': 'Dr. Lavanya Reddy',
-      'email': 'lavanya.reddy@medcenter.com',
-      'title': 'Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Aesthetic Surgeon',
-      'location': 'Hyderabad, India',
-      'countryCode': 'IN',
-      'venue': 'Four Season Hotel Toronto',
-      'room': 'Room 2145',
-      'photo': 'https://randomuser.me/api/portraits/women/12.jpg',
-      'about':
-          'Maria Garcia is a dedicated medical resident specializing in internal medicine. She is enthusiastic about learning and attending medical conferences to expand her knowledge and network with fellow healthcare professionals.',
-    },
-    {
-      'id': '3',
-      'name': 'Dr. Manish Verma',
-      'email': 'manish.verma@clinic.com',
-      'title': 'Associate Consultant',
-      'organization': 'Max Hospital',
-      'role': 'Reconstructive Surgeon',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'venue': 'Four Season Hotel Toronto',
-      'room': 'Room 1567',
-      'photo': 'https://randomuser.me/api/portraits/men/13.jpg',
-      'about':
-          'Ahmed Hassan is a surgical fellow with a keen interest in minimally invasive procedures. He actively participates in medical conferences to stay updated with the latest advancements in surgical technology.',
-    },
-    {
-      'id': '4',
-      'name': 'Jennifer Lee',
-      'email': 'jennifer.lee@healthsystem.com',
-      'title': 'ATTENDING PHYSICIAN',
-      'organization': 'Metro Health System',
-      'role': 'Attending Physician',
-      'location': 'Seattle, WA',
-      'venue': 'Four Season Hotel Toronto',
-      'room': 'Room 1998',
-      'photo': 'https://randomuser.me/api/portraits/women/14.jpg',
-      'about':
-          'Jennifer Lee is an attending physician with expertise in patient care and medical education. She is committed to mentoring the next generation of physicians and staying current with medical innovations.',
-    },
-    {
-      'id': '5',
-      'name': 'Carlos Rodriguez',
-      'email': 'carlos.rodriguez@hospital.org',
-      'title': 'CHIEF RESIDENT',
-      'organization': 'Regional Medical Center',
-      'role': 'Chief Resident',
-      'location': 'Miami, FL',
-      'venue': 'Four Season Hotel Toronto',
-      'room': 'Room 2067',
-      'photo': 'https://randomuser.me/api/portraits/men/15.jpg',
-      'about':
-          'Carlos Rodriguez serves as Chief Resident, leading his team with dedication and excellence. He has a strong interest in surgical education and quality improvement initiatives.',
-    },
-    {
-      'id': '6',
-      'name': 'Priya Sharma',
-      'email': 'priya.sharma@healthcenter.com',
-      'title': 'MEDICAL STUDENT',
-      'organization': 'University Health Center',
-      'role': 'Medical Student',
-      'location': 'Boston, MA',
-      'photo': 'https://randomuser.me/api/portraits/women/16.jpg',
-      'about':
-          'Priya Sharma is an aspiring medical student passionate about healthcare and patient advocacy. She attends conferences to learn from experienced professionals and explore various medical specialties.',
-    },
-    {
-      'id': '7',
-      'name': 'Thomas Anderson',
-      'email': 'thomas.anderson@clinic.net',
-      'organization': 'Specialty Surgical Group',
-      'role': 'Surgeon',
-      'photo': 'https://randomuser.me/api/portraits/men/17.jpg',
-    },
-    {
-      'id': '8',
-      'name': 'Sophie Martin',
-      'email': 'sophie.martin@hospital.fr',
-      'organization': 'International Medical Institute',
-      'role': 'Research Fellow',
-      'photo': 'https://randomuser.me/api/portraits/women/18.jpg',
-    },
-    {
-      'id': '9',
-      'name': 'Raj Patel',
-      'email': 'raj.patel@medgroup.com',
-      'organization': 'Surgical Associates',
-      'role': 'Partner',
-      'photo': 'https://randomuser.me/api/portraits/men/19.jpg',
-    },
-    {
-      'id': '10',
-      'name': 'Emma Wilson',
-      'email': 'emma.wilson@healthcare.com',
-      'organization': 'Community Healthcare Network',
-      'role': 'Intern',
-      'photo': 'https://randomuser.me/api/portraits/women/20.jpg',
-    },
-    {
-      'id': '11',
-      'name': 'Luis Fernandez',
-      'email': 'luis.fernandez@medcenter.es',
-      'organization': 'Centro Medico Especializado',
-      'role': 'Consultant',
-      'photo': 'https://randomuser.me/api/portraits/men/21.jpg',
-    },
-    {
-      'id': '12',
-      'name': 'Yuki Tanaka',
-      'email': 'yuki.tanaka@hospital.jp',
-      'organization': 'Tokyo Medical University',
-      'role': 'Associate Professor',
-      'photo': 'https://randomuser.me/api/portraits/men/22.jpg',
-    },
-    // Moved from speakers list
-    {
-      'id': '13',
-      'name': 'Dr. Manoj Khanna',
-      'title': 'Consultant',
-      'organization': 'Max Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/48.jpg',
-    },
-    {
-      'id': '14',
-      'name': 'Dr. Mayank Singh',
-      'title': 'Senior Consultant',
-      'organization': 'Medanta Hospital',
-      'role': 'Attendee',
-      'location': 'Gurgaon, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/49.jpg',
-    },
-    {
-      'id': '15',
-      'name': 'Dr. Milan Doshi',
-      'title': 'Consultant Plastic Surgeon',
-      'organization': 'Kokilaben Hospital',
-      'role': 'Attendee',
-      'location': 'Mumbai, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/50.jpg',
-    },
-    {
-      'id': '16',
-      'name': 'Dr. Milind Wagh',
-      'title': 'Consultant',
-      'organization': 'Fortis Hospital',
-      'role': 'Attendee',
-      'location': 'Pune, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/51.jpg',
-    },
-    {
-      'id': '17',
-      'name': 'Dr. Mohit Sharma',
-      'title': 'Senior Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/52.jpg',
-    },
-    {
-      'id': '18',
-      'name': 'Dr. Mukund Jagannathan',
-      'title': 'Consultant Plastic Surgeon',
-      'organization': 'Manipal Hospital',
-      'role': 'Attendee',
-      'location': 'Bangalore, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/53.jpg',
-    },
-    {
-      'id': '19',
-      'name': 'Dr. Narendra Kaushik',
-      'title': 'Consultant',
-      'organization': 'Fortis Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/54.jpg',
-    },
-    {
-      'id': '20',
-      'name': 'Dr. Narendrakumar',
-      'title': 'Senior Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Ahmedabad, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/55.jpg',
-    },
-    {
-      'id': '21',
-      'name': 'Dr. Nilesh Satbhai',
-      'title': 'Consultant Plastic Surgeon',
-      'organization': 'Kokilaben Hospital',
-      'role': 'Attendee',
-      'location': 'Mumbai, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/56.jpg',
-    },
-    {
-      'id': '22',
-      'name': 'Dr. Nitin Ghag',
-      'title': 'Consultant',
-      'organization': 'Fortis Hospital',
-      'role': 'Attendee',
-      'location': 'Mumbai, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/57.jpg',
-    },
-    {
-      'id': '23',
-      'name': 'Dr. Nitin Mokal',
-      'title': 'Senior Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Mumbai, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/58.jpg',
-    },
-    {
-      'id': '24',
-      'name': 'Dr. Nitin Sethi',
-      'title': 'Consultant Plastic Surgeon',
-      'organization': 'Max Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/59.jpg',
-    },
-    {
-      'id': '25',
-      'name': 'Dr. P. V. Sudhakar',
-      'title': 'Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Hyderabad, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/60.jpg',
-    },
-    {
-      'id': '26',
-      'name': 'Dr. Parag Vibhakar',
-      'title': 'Senior Consultant',
-      'organization': 'Fortis Hospital',
-      'role': 'Attendee',
-      'location': 'Mumbai, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/61.jpg',
-    },
-    {
-      'id': '27',
-      'name': 'Dr. Pradeep Goil',
-      'title': 'Consultant Plastic Surgeon',
-      'organization': 'Max Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/62.jpg',
-    },
-    {
-      'id': '28',
-      'name': 'Dr. Priti Shukla',
-      'title': 'Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Lucknow, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/women/24.jpg',
-    },
-    {
-      'id': '29',
-      'name': 'Dr. Priya Bansal',
-      'title': 'Senior Consultant',
-      'organization': 'Fortis Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/women/25.jpg',
-    },
-    {
-      'id': '30',
-      'name': 'Dr. R. Venkatesh',
-      'title': 'Consultant Plastic Surgeon',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Chennai, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/63.jpg',
-    },
-    {
-      'id': '31',
-      'name': 'Dr. Rahul Amble',
-      'title': 'Consultant',
-      'organization': 'Manipal Hospital',
-      'role': 'Attendee',
-      'location': 'Bangalore, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/64.jpg',
-    },
-    {
-      'id': '32',
-      'name': 'Dr. Raja Shanmugakrishnan',
-      'title': 'Senior Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Chennai, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/65.jpg',
-    },
-    {
-      'id': '33',
-      'name': 'Dr. Raja Tiwari',
-      'title': 'Consultant Plastic Surgeon',
-      'organization': 'Max Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/66.jpg',
-    },
-    {
-      'id': '34',
-      'name': 'Dr. Rajan Garach',
-      'title': 'Consultant',
-      'organization': 'Fortis Hospital',
-      'role': 'Attendee',
-      'location': 'Mumbai, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/67.jpg',
-    },
-    {
-      'id': '35',
-      'name': 'Dr. Rajat Gupta',
-      'title': 'Senior Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/68.jpg',
-    },
-    {
-      'id': '36',
-      'name': 'Dr. Rajat Kapoor',
-      'title': 'Consultant Plastic Surgeon',
-      'organization': 'Max Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/69.jpg',
-    },
-    {
-      'id': '37',
-      'name': 'Dr. Rakesh Kalra',
-      'title': 'Consultant',
-      'organization': 'Fortis Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/70.jpg',
-    },
-    {
-      'id': '38',
-      'name': 'Dr. Rameen Lull',
-      'title': 'Senior Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Mumbai, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/women/26.jpg',
-    },
-    {
-      'id': '39',
-      'name': 'Dr. Ravi Mahajan',
-      'title': 'Consultant Plastic Surgeon',
-      'organization': 'Max Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/71.jpg',
-    },
-    {
-      'id': '40',
-      'name': 'Dr. Rustom Ginwala',
-      'title': 'Consultant',
-      'organization': 'Fortis Hospital',
-      'role': 'Attendee',
-      'location': 'Mumbai, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/72.jpg',
-    },
-    {
-      'id': '41',
-      'name': 'Dr. Sandeep Sattur',
-      'title': 'Senior Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Bangalore, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/73.jpg',
-    },
-    {
-      'id': '42',
-      'name': 'Dr. Sandeep Sharma',
-      'title': 'Consultant Plastic Surgeon',
-      'organization': 'Max Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/74.jpg',
-    },
-    {
-      'id': '43',
-      'name': 'Dr. Sandeep Vijayraghavan',
-      'title': 'Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Kochi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/75.jpg',
-    },
-    {
-      'id': '44',
-      'name': 'Dr. Sandip Jain',
-      'title': 'Senior Consultant',
-      'organization': 'Fortis Hospital',
-      'role': 'Attendee',
-      'location': 'Mumbai, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/76.jpg',
-    },
-    {
-      'id': '45',
-      'name': 'Dr. Sanjay Dhar',
-      'title': 'Consultant Plastic Surgeon',
-      'organization': 'Max Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/77.jpg',
-    },
-    {
-      'id': '46',
-      'name': 'Dr. Saumya Mathews',
-      'title': 'Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Kochi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/women/27.jpg',
-    },
-    {
-      'id': '47',
-      'name': 'Dr. Saumya Nayak',
-      'title': 'Senior Consultant',
-      'organization': 'Manipal Hospital',
-      'role': 'Attendee',
-      'location': 'Bangalore, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/women/28.jpg',
-    },
-    {
-      'id': '48',
-      'name': 'Dr. Saurabh Rawat',
-      'title': 'Consultant Plastic Surgeon',
-      'organization': 'Fortis Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/78.jpg',
-    },
-    {
-      'id': '49',
-      'name': 'Dr. Seema Rekha Devi',
-      'title': 'Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Hyderabad, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/women/29.jpg',
-    },
-    {
-      'id': '50',
-      'name': 'Dr. Sheeja Rajan',
-      'title': 'Senior Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Kochi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/women/30.jpg',
-    },
-    {
-      'id': '51',
-      'name': 'Dr. Shilpi Bhadani',
-      'title': 'Consultant Plastic Surgeon',
-      'organization': 'Max Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/women/31.jpg',
-    },
-    {
-      'id': '52',
-      'name': 'Dr. Shivangi Saha',
-      'title': 'Consultant',
-      'organization': 'Fortis Hospital',
-      'role': 'Attendee',
-      'location': 'Kolkata, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/women/32.jpg',
-    },
-    {
-      'id': '53',
-      'name': 'Dr. Shrirang Pandit',
-      'title': 'Senior Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Pune, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/79.jpg',
-    },
-    {
-      'id': '54',
-      'name': 'Dr. Sudhanshu Kothe',
-      'title': 'Consultant Plastic Surgeon',
-      'organization': 'Manipal Hospital',
-      'role': 'Attendee',
-      'location': 'Bangalore, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/80.jpg',
-    },
-    {
-      'id': '55',
-      'name': 'Dr. Sudhir Mehta',
-      'title': 'Consultant',
-      'organization': 'Fortis Hospital',
-      'role': 'Attendee',
-      'location': 'Mumbai, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/81.jpg',
-    },
-    {
-      'id': '56',
-      'name': 'Dr. Sukhbir Singh',
-      'title': 'Senior Consultant',
-      'organization': 'Max Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/82.jpg',
-    },
-    {
-      'id': '57',
-      'name': 'Dr. Sumit Agarwal',
-      'title': 'Consultant Plastic Surgeon',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/83.jpg',
-    },
-    {
-      'id': '58',
-      'name': 'Dr. Sundeep Vijayraghavan',
-      'title': 'Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Kochi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/84.jpg',
-    },
-    {
-      'id': '59',
-      'name': 'Dr. Sunil Arora',
-      'title': 'Senior Consultant',
-      'organization': 'Fortis Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/85.jpg',
-    },
-    {
-      'id': '60',
-      'name': 'Dr. Sunil Gaba',
-      'title': 'Consultant Plastic Surgeon',
-      'organization': 'Max Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/86.jpg',
-    },
-    {
-      'id': '61',
-      'name': 'Dr. Tejinder Bhatti',
-      'title': 'Consultant',
-      'organization': 'Apollo Hospital',
-      'role': 'Attendee',
-      'location': 'Delhi, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/87.jpg',
-    },
-    {
-      'id': '62',
-      'name': 'Dr. Uday Bhatt',
-      'title': 'Senior Consultant',
-      'organization': 'Fortis Hospital',
-      'role': 'Attendee',
-      'location': 'Ahmedabad, India',
-      'countryCode': 'IN',
-      'photo': 'https://randomuser.me/api/portraits/men/88.jpg',
-    },
-  ];
+  String? _eventId;
+  Timer? _debounceTimer;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
     super.initState();
-    _filteredAttendees = _attendees;
-    _groupAttendees();
     _searchController.addListener(_onSearchChanged);
+    // Load attendees after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadAttendees();
+    });
+  }
+
+  void _loadAttendees() {
+    // Get eventId from home data provider
+    final homeData = ref.read(homePageDataProvider).valueOrNull;
+    _eventId = homeData?.event?.id;
+
+    if (_eventId != null) {
+      // Load attendees for this event
+      ref.read(attendeesProvider.notifier).loadAttendees(_eventId!);
+    }
   }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  String _getFirstName(String fullName) {
-    // Remove titles like Dr., Prof., etc.
-    final cleaned = fullName.replaceAll(
-      RegExp(r'^(Dr\.|Prof\.|Mr\.|Mrs\.|Ms\.)\s*'),
-      '',
-    );
-    final parts = cleaned.split(' ');
-    return parts.first;
-  }
-
   void _groupAttendees() {
-    // Sort attendees by first name
+    // Sort attendees by sortFirstName from API
     _filteredAttendees.sort((a, b) {
-      final firstNameA = _getFirstName(a['name']);
-      final firstNameB = _getFirstName(b['name']);
+      final firstNameA = a.sortFirstName ?? '';
+      final firstNameB = b.sortFirstName ?? '';
       return firstNameA.compareTo(firstNameB);
     });
 
-    // Group by first letter of first name
+    // Group by first letter of sortFirstName
     _groupedAttendees.clear();
     _sectionKeys.clear();
 
     for (var attendee in _filteredAttendees) {
-      final firstName = _getFirstName(attendee['name']);
-      final firstLetter = firstName[0].toUpperCase();
+      final sortName = attendee.sortFirstName ?? '';
+      if (sortName.isEmpty) continue;
+
+      final firstLetter = sortName[0].toUpperCase();
 
       if (!_groupedAttendees.containsKey(firstLetter)) {
         _groupedAttendees[firstLetter] = [];
@@ -705,30 +81,18 @@ class _AttendeesTabState extends State<AttendeesTab> {
       }
       _groupedAttendees[firstLetter]!.add(attendee);
     }
-
-    // Remove records if there are more than 10 with the same first letter
-    _groupedAttendees.forEach((letter, attendees) {
-      if (attendees.length > 10) {
-        _groupedAttendees[letter] = attendees.sublist(0, 10);
-      }
-    });
   }
 
   void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      if (query.isEmpty) {
-        _filteredAttendees = _attendees;
-      } else {
-        _filteredAttendees = _attendees.where((attendee) {
-          return attendee['name'].toLowerCase().contains(query) ||
-              attendee['organization'].toLowerCase().contains(query) ||
-              attendee['role'].toLowerCase().contains(query) ||
-              (attendee['title']?.toLowerCase().contains(query) ?? false) ||
-              (attendee['location']?.toLowerCase().contains(query) ?? false);
-        }).toList();
+    // Cancel previous timer
+    _debounceTimer?.cancel();
+
+    // Debounce search by 500ms
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      final query = _searchController.text.trim();
+      if (_eventId != null) {
+        ref.read(attendeesProvider.notifier).search(query);
       }
-      _groupAttendees();
     });
   }
 
@@ -736,20 +100,60 @@ class _AttendeesTabState extends State<AttendeesTab> {
     setState(() {
       _showSearchField = !_showSearchField;
       if (!_showSearchField) {
+        _debounceTimer?.cancel();
         _searchController.clear();
-        _filteredAttendees = _attendees;
-        _groupAttendees();
+        // Reset search on server
+        if (_eventId != null) {
+          ref.read(attendeesProvider.notifier).search('');
+        }
       }
     });
   }
 
   Future<void> _onRefresh() async {
-    // Simulate refresh delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    setState(() {
-      _filteredAttendees = _attendees;
-      _groupAttendees();
-    });
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    log('🔄 [$timestamp] _onRefresh() ENTRY - _isRefreshing=$_isRefreshing');
+
+    // Prevent multiple refresh calls during pull gesture
+    if (_isRefreshing) {
+      log('⚠️ [$timestamp] Already refreshing, BLOCKED duplicate call');
+      return;
+    }
+
+    _isRefreshing = true;
+    log('🔄 [$timestamp] _isRefreshing set to TRUE, proceeding with refresh');
+
+    try {
+      if (_eventId != null) {
+        // Just trigger refresh - ref.listen will handle state update
+        await ref.read(attendeesProvider.notifier).refresh();
+        log('🔄 [$timestamp] _onRefresh() COMPLETED successfully');
+
+        // Keep the flag true for 500ms to prevent rapid successive calls
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+    } catch (e) {
+      log('❌ [$timestamp] _onRefresh() ERROR: $e');
+    } finally {
+      _isRefreshing = false;
+      log('🔄 [$timestamp] _isRefreshing set to FALSE');
+    }
+  }
+
+  Future<void> _loadMore() async {
+    log('🔄 _loadMore called in UI');
+    if (_eventId != null) {
+      final notifier = ref.read(attendeesProvider.notifier);
+      log('🔄 hasMore: ${notifier.hasMore}');
+      if (notifier.hasMore) {
+        log('🔄 Calling notifier.loadMore()');
+        await notifier.loadMore();
+      } else {
+        log('🔄 No more data to load');
+      }
+    } else {
+      log('🔄 eventId is null');
+    }
   }
 
   String? _getLetterAtPosition(double localY) {
@@ -801,13 +205,15 @@ class _AttendeesTabState extends State<AttendeesTab> {
     final key = _sectionKeys[letter];
     if (key?.currentContext != null) {
       try {
+        // Use ensureVisible which automatically handles all the scrolling logic
         Scrollable.ensureVisible(
           key!.currentContext!,
-          duration: Duration.zero, // Instant scroll like iOS
-          alignment: 0.0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          alignment: 0.0, // Align to top of viewport
         );
       } catch (e) {
-        // Ignore scroll errors
+        // Ignore scroll errors - section might not be in viewport yet
       }
     }
   }
@@ -820,53 +226,81 @@ class _AttendeesTabState extends State<AttendeesTab> {
     );
   }
 
-  Widget _buildSubtitle(BuildContext context, Map<String, dynamic> attendee) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          attendee['role'] ?? attendee['title'] ?? '',
-          style: TextStyle(fontSize: 15, letterSpacing: 0.25),
+  // Helper function to get initials from name
+  String _getInitials(String? name) {
+    if (name == null || name.isEmpty) return '?';
+
+    // Remove titles with or without period (Dr, Dr., Prof, Prof., Mr, Mr., etc.)
+    final cleaned = name.replaceAll(
+      RegExp(r'^(Dr\.?|Prof\.?|Mr\.?|Mrs\.?|Ms\.?)\s+', caseSensitive: false),
+      '',
+    );
+
+    final parts = cleaned.trim().split(' ');
+    if (parts.isEmpty) return '?';
+
+    if (parts.length == 1) {
+      return parts[0].substring(0, 1).toUpperCase();
+    }
+
+    // First letter of first name + first letter of last name
+    return (parts[0].substring(0, 1) + parts[parts.length - 1].substring(0, 1))
+        .toUpperCase();
+  }
+
+  // Build initials avatar widget
+  Widget _buildInitialsAvatar(String? name, bool isDark) {
+    final initials = _getInitials(name);
+
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        color: isDark
+            ? CupertinoColors.systemGrey.resolveFrom(context)
+            : CupertinoColors.systemGrey5.resolveFrom(context),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: isDark
+                ? CupertinoColors.white
+                : CupertinoColors.darkBackgroundGray,
+          ),
         ),
-        SizedBox(height: 4),
-        Row(
-          children: [
-            if (attendee['countryCode'] != null)
-              Text(
-                _countryCodeToEmoji(attendee['countryCode']),
-                style: TextStyle(fontSize: 14),
-              ),
-            if (attendee['countryCode'] != null) SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                attendee['location'] ?? attendee['organization'] ?? '',
-                style: TextStyle(
-                  fontSize: 14,
-                  letterSpacing: 0.25,
-                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final attendeesAsync = ref.watch(attendeesProvider);
+
+    // Listen to provider changes and update local state
+    ref.listen<AsyncValue<AttendeesData>>(attendeesProvider, (previous, next) {
+      next.whenData((data) {
+        setState(() {
+          _filteredAttendees = data.attendees;
+          _groupAttendees();
+        });
+      });
+    });
+
     return Stack(
       children: [
         CustomPageScaffold(
           scrollController: _scrollController,
-          isLoading: false,
+          isLoading: attendeesAsync.isLoading,
           heading: 'Attendees',
           searchController: _searchController,
           showSearchField: _showSearchField,
           onSearchToggle: (_) => _toggleSearch(),
-          onBottomRefresh: () => _onRefresh(),
+          onBottomRefresh: _loadMore,
           onRefresh: _onRefresh,
           sliverList: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
@@ -879,7 +313,7 @@ class _AttendeesTabState extends State<AttendeesTab> {
                 key: _sectionKeys[letter],
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Section header - Full width
+                  // Section header - Full width with sticky effect using Container
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
@@ -915,19 +349,37 @@ class _AttendeesTabState extends State<AttendeesTab> {
                               vertical: 12.0,
                             ),
                             leadingSize: 60,
-                            leading: ClipRRect(
-                              borderRadius: BorderRadius.circular(30),
-                              child: Image.network(
-                                attendee['photo']!,
-                                width: 60,
-                                height: 60,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    const FlutterLogo(size: 60),
-                              ),
+                            leading: Stack(
+                              children: [
+                                // Always show initials first (instant load)
+                                _buildInitialsAvatar(attendee.name, isDark),
+                                // Overlay photo on top if available
+                                if (attendee.photo != null &&
+                                    attendee.photo!.isNotEmpty)
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(30),
+                                    child: Image.network(
+                                      attendee.photo!,
+                                      width: 60,
+                                      height: 60,
+                                      fit: BoxFit.cover,
+                                      loadingBuilder:
+                                          (context, child, loadingProgress) {
+                                            if (loadingProgress == null)
+                                              return child;
+                                            // While loading, show nothing (initials visible underneath)
+                                            return const SizedBox.shrink();
+                                          },
+                                      errorBuilder: (context, error, stackTrace) {
+                                        // On error, show nothing (initials remain visible)
+                                        return const SizedBox.shrink();
+                                      },
+                                    ),
+                                  ),
+                              ],
                             ),
                             title: Text(
-                              attendee['name'] ?? '',
+                              '${attendee.title?.isNotEmpty == true ? attendee.title! + ' ' : ''}${attendee.name ?? ''}',
                               style: TextStyle(
                                 fontFamily: 'SF Pro Display',
                                 fontSize: 18,
@@ -935,7 +387,50 @@ class _AttendeesTabState extends State<AttendeesTab> {
                                 letterSpacing: 0.25,
                               ),
                             ),
-                            subtitle: _buildSubtitle(context, attendee),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (attendee.designation != null &&
+                                    attendee.designation!.isNotEmpty)
+                                  Text(
+                                    attendee.designation!,
+                                    style: TextStyle(
+                                      fontFamily: 'SF Pro Display',
+                                      fontSize: 15,
+                                      letterSpacing: 0.25,
+                                    ),
+                                  ),
+                                if (attendee.designation != null &&
+                                    attendee.designation!.isNotEmpty)
+                                  SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    if (attendee.countryCode != null)
+                                      Text(
+                                        _countryCodeToEmoji(
+                                          attendee.countryCode!,
+                                        ),
+                                        style: TextStyle(fontSize: 14),
+                                      ),
+                                    if (attendee.countryCode != null)
+                                      SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        '${attendee.organization ?? ''}${attendee.organization != null && attendee.organization!.isNotEmpty && attendee.location != null && attendee.location!.isNotEmpty ? ', ' : ''}${attendee.location ?? ''}',
+                                        style: TextStyle(
+                                          fontFamily: 'SF Pro Display',
+                                          fontSize: 14,
+                                          letterSpacing: 0.25,
+                                          color: CupertinoColors.secondaryLabel
+                                              .resolveFrom(context),
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                             trailing: Padding(
                               padding: const EdgeInsets.only(right: 8.0),
                               child: const CupertinoListTileChevron(),
@@ -943,8 +438,9 @@ class _AttendeesTabState extends State<AttendeesTab> {
                             onTap: () {
                               Navigator.of(context, rootNavigator: true).push(
                                 CupertinoPageRoute(
-                                  builder: (context) =>
-                                      AttendeeDetailPage(attendee: attendee),
+                                  builder: (context) => AttendeeDetailPage(
+                                    attendeeId: attendee.id,
+                                  ),
                                 ),
                               );
                             },
@@ -1033,7 +529,7 @@ class _AttendeesTabState extends State<AttendeesTab> {
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w600,
-                  color: CupertinoColors.systemGrey.withOpacity(0.8),
+                  color: CupertinoColors.systemGrey.withValues(alpha: 0.8),
                 ),
               ),
             ),

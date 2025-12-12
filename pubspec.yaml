@@ -1,5 +1,5 @@
-name: aesurg26
-description: "AESURG26 Conference App"
+name: rajapsicon
+description: "Event Managment App"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.0.3
 
 environment:
   sdk: ^3.8.0
@@ -33,9 +33,6 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
   pull_down_button: ^0.10.2
   flutter_swipe_action_cell: ^3.1.5
   smooth_sheets: ^0.12.0
@@ -45,10 +42,12 @@ dependencies:
   flutter_riverpod: ^2.6.1
   dio: ^5.8.0+1
   shared_preferences: ^2.3.3
-  lucide_icons_flutter: ^3.1.6
   font_awesome_flutter: ^10.7.0
   video_player: ^2.9.2
-  chewie: ^1.8.5
+  flick_video_player: ^0.9.0
+  socket_io_client: ^2.0.3+1
+  url_launcher: ^6.3.1
+  flash: ^3.1.0
 
 dev_dependencies:
   flutter_test:
@@ -120,12 +119,12 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/logo-light.png"
-  image_path_ios: "assets/images/logo-light.png"
-  image_path_ios_dark_transparent: "assets/images/logo-dark.png"
+  image_path: "assets/images/banner-logo.png"
+  image_path_ios: "assets/images/banner-logo.png"
+  image_path_ios_dark_transparent: "assets/images/banner-logo.png"
   remove_alpha_ios: true
   # Android adaptive icons with dark mode support
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/images/logo-light-no-bg.png"
+  adaptive_icon_foreground: "assets/images/banner-logo.png"
   # Android 13+ themed icons (appears as monochrome in dark mode)
-  adaptive_icon_monochrome: "assets/images/logo-dark-no-bg.png"
+  adaptive_icon_monochrome: "assets/images/banner-logo.png"

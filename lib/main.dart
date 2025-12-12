@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
-import 'package:aesurg26/router.dart';
-import 'package:aesurg26/theme_provider.dart'; // Add this import
+import 'package:rajapsicon/router.dart';
+import 'package:rajapsicon/theme_provider.dart'; // Add this import
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rajapsicon/apis/core/dio_provider.dart';
+import 'package:rajapsicon/providers/home_data_provider.dart';
 
 void main() => runApp(const ProviderScope(child: MyApp()));
 
@@ -15,7 +17,14 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Initialize token from storage on app startup
+    ref.watch(tokenInitializerProvider);
+
+    // Pre-load home page data on app startup
+    ref.watch(homePageDataKeepaliveProvider);
+
     return CupertinoApp.router(
+      debugShowCheckedModeBanner: false,
       routerConfig: appRouter,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

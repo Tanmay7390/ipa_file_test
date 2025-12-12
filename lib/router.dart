@@ -1,69 +1,60 @@
 import 'package:flutter/cupertino.dart';
-import 'package:aesurg26/drawer.dart';
-import 'package:aesurg26/tabs/home_tab.dart';
-import 'package:aesurg26/tabs/agenda_tab.dart';
-import 'package:aesurg26/tabs/speakers_tab.dart';
-import 'package:aesurg26/tabs/attendees_tab.dart';
-import 'package:aesurg26/tabs/exhibitors_tab.dart';
-import 'package:aesurg26/tabs/more_tab.dart';
-import 'package:aesurg26/pages/settings_page.dart';
-import 'package:aesurg26/pages/notifications_page.dart';
-import 'package:aesurg26/pages/profile_page.dart';
-import 'package:aesurg26/pages/login_page.dart';
-import 'package:aesurg26/pages/onboarding_page.dart';
-import 'package:aesurg26/pages/more/about_aesurg_page.dart';
-import 'package:aesurg26/pages/more/international_faculty_page.dart';
-import 'package:aesurg26/pages/more/committee_messages_page.dart';
-import 'package:aesurg26/pages/more/venue_info_page.dart';
-import 'package:aesurg26/pages/more/about_mumbai_page.dart';
-import 'package:aesurg26/pages/more/contact_info_page.dart';
-import 'package:aesurg26/pages/more/iaaps_member_page.dart';
-import 'package:aesurg26/services/auth_service.dart';
+import 'package:rajapsicon/drawer.dart';
+import 'package:rajapsicon/tabs/home_tab.dart';
+import 'package:rajapsicon/tabs/agenda_tab.dart';
+import 'package:rajapsicon/tabs/speakers_tab.dart';
+import 'package:rajapsicon/tabs/attendees_tab.dart';
+import 'package:rajapsicon/tabs/exhibitors_tab.dart';
+import 'package:rajapsicon/pages/settings_page.dart';
+import 'package:rajapsicon/pages/notifications_page.dart';
+import 'package:rajapsicon/pages/profile_page.dart';
+import 'package:rajapsicon/pages/login_page.dart';
+import 'package:rajapsicon/services/auth_service.dart';
 import 'package:go_router/go_router.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
-  initialLocation: '/onboarding',
+  initialLocation: '/login', // Changed from '/onboarding'
   redirect: (context, state) async {
     final isLoggedIn = await AuthService.isLoggedIn();
-    final isOnboarding = state.matchedLocation == '/onboarding';
     final isLogin = state.matchedLocation == '/login';
 
-    // If logged in and trying to access onboarding or login, redirect to home
-    if (isLoggedIn && (isOnboarding || isLogin)) {
+    // If logged in and trying to access login, redirect to home
+    if (isLoggedIn && isLogin) {
       return '/home';
     }
 
-    // If not logged in and trying to access protected routes, redirect to onboarding
-    if (!isLoggedIn && !isOnboarding && !isLogin) {
-      return '/onboarding';
+    // If not logged in and trying to access protected routes, redirect to login
+    if (!isLoggedIn && !isLogin) {
+      return '/login';
     }
 
     return null; // No redirect needed
   },
   routes: [
-    GoRoute(
-      path: '/onboarding',
-      pageBuilder: (context, state) => CustomTransitionPage(
-        key: state.pageKey,
-        child: const OnboardingPage(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          // Slide from left to right (reverse direction)
-          return SlideTransition(
-            position:
-                Tween<Offset>(
-                  begin: const Offset(-1.0, 0.0), // Start from left
-                  end: Offset.zero, // End at center
-                ).animate(
-                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-                ),
-            child: child,
-          );
-        },
-      ),
-    ),
+    // Commented out onboarding page - login is now the first screen
+    // GoRoute(
+    //   path: '/onboarding',
+    //   pageBuilder: (context, state) => CustomTransitionPage(
+    //     key: state.pageKey,
+    //     child: const OnboardingPage(),
+    //     transitionsBuilder: (context, animation, secondaryAnimation, child) {
+    //       // Slide from left to right (reverse direction)
+    //       return SlideTransition(
+    //         position:
+    //             Tween<Offset>(
+    //               begin: const Offset(-1.0, 0.0), // Start from left
+    //               end: Offset.zero, // End at center
+    //             ).animate(
+    //               CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+    //             ),
+    //         child: child,
+    //       );
+    //     },
+    //   ),
+    // ),
     GoRoute(
       path: '/login',
       pageBuilder: (context, state) =>
@@ -81,12 +72,13 @@ final appRouter = GoRouter(
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           // Slide from right to left when entering
           return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1.0, 0.0), // Start from right
-              end: Offset.zero, // End at center
-            ).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-            ),
+            position:
+                Tween<Offset>(
+                  begin: const Offset(1.0, 0.0), // Start from right
+                  end: Offset.zero, // End at center
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                ),
             child: child,
           );
         },
@@ -100,12 +92,13 @@ final appRouter = GoRouter(
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           // Slide from right to left when entering
           return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1.0, 0.0), // Start from right
-              end: Offset.zero, // End at center
-            ).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-            ),
+            position:
+                Tween<Offset>(
+                  begin: const Offset(1.0, 0.0), // Start from right
+                  end: Offset.zero, // End at center
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                ),
             child: child,
           );
         },
@@ -119,12 +112,13 @@ final appRouter = GoRouter(
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           // Slide from right to left when entering
           return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1.0, 0.0), // Start from right
-              end: Offset.zero, // End at center
-            ).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-            ),
+            position:
+                Tween<Offset>(
+                  begin: const Offset(1.0, 0.0), // Start from right
+                  end: Offset.zero, // End at center
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                ),
             child: child,
           );
         },
@@ -133,10 +127,10 @@ final appRouter = GoRouter(
     StatefulShellRoute.indexedStack(
       pageBuilder: (context, state, navigationShell) {
         // Check navigation source
-        final isComingFromDetail = state.extra is Map &&
-            (state.extra as Map)['fromDetail'] == true;
-        final isComingFromLogin = state.extra is Map &&
-            (state.extra as Map)['fromLogin'] == true;
+        final isComingFromDetail =
+            state.extra is Map && (state.extra as Map)['fromDetail'] == true;
+        final isComingFromLogin =
+            state.extra is Map && (state.extra as Map)['fromLogin'] == true;
 
         return CustomTransitionPage(
           key: state.pageKey,
@@ -145,12 +139,16 @@ final appRouter = GoRouter(
             // If coming from detail page, slide from left (reverse animation)
             if (isComingFromDetail) {
               return SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(-1.0, 0.0), // Start from left
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-                ),
+                position:
+                    Tween<Offset>(
+                      begin: const Offset(-1.0, 0.0), // Start from left
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeInOut,
+                      ),
+                    ),
                 child: child,
               );
             }
@@ -158,12 +156,16 @@ final appRouter = GoRouter(
             // If coming from login, slide from right (forward animation)
             if (isComingFromLogin) {
               return SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(1.0, 0.0), // Start from right
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-                ),
+                position:
+                    Tween<Offset>(
+                      begin: const Offset(1.0, 0.0), // Start from right
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeInOut,
+                      ),
+                    ),
                 child: child,
               );
             }
@@ -191,7 +193,7 @@ final appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/agenda',
+              path: '/company',
               builder: (context, state) => const ScheduleTab(),
             ),
           ],
@@ -199,7 +201,7 @@ final appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/speakers',
+              path: '/funds',
               builder: (context, state) => const SpeakersTab(),
             ),
           ],
@@ -207,7 +209,7 @@ final appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/attendees',
+              path: '/people',
               builder: (context, state) => const AttendeesTab(),
             ),
           ],
@@ -215,7 +217,7 @@ final appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/exhibitors',
+              path: '/trials',
               builder: (context, state) => const ExhibitorsTab(),
               routes: [
                 // GoRoute(
@@ -233,44 +235,7 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/more',
-              builder: (context, state) => const MoreTab(),
-            ),
-          ],
-        ),
       ],
-    ),
-    // More detail pages (outside the tab structure)
-    GoRoute(
-      path: '/more/about-aesurg',
-      builder: (context, state) => const AboutAesurgPage(),
-    ),
-    GoRoute(
-      path: '/more/international-faculty',
-      builder: (context, state) => const InternationalFacultyPage(),
-    ),
-    GoRoute(
-      path: '/more/committee-messages',
-      builder: (context, state) => const CommitteeMessagesPage(),
-    ),
-    GoRoute(
-      path: '/more/venue-info',
-      builder: (context, state) => const VenueInfoPage(),
-    ),
-    GoRoute(
-      path: '/more/about-mumbai',
-      builder: (context, state) => const AboutMumbaiPage(),
-    ),
-    GoRoute(
-      path: '/more/contact-info',
-      builder: (context, state) => const ContactInfoPage(),
-    ),
-    GoRoute(
-      path: '/more/iaaps-member',
-      builder: (context, state) => const IaapsMemberPage(),
     ),
   ],
 );

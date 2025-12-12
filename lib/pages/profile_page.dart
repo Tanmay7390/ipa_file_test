@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aesurg26/theme_provider.dart';
+import 'package:rajapsicon/theme_provider.dart';
+import 'package:go_router/go_router.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -17,9 +18,7 @@ class ProfilePage extends ConsumerWidget {
         : CupertinoColors.black.withValues(alpha: 0.6);
 
     return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: Text('Profile'),
-      ),
+      navigationBar: CupertinoNavigationBar(middle: Text('Profile')),
       child: SafeArea(
         child: Center(
           child: Padding(
@@ -85,45 +84,58 @@ class ProfilePage extends ConsumerWidget {
                     letterSpacing: 0.2,
                   ),
                 ),
-                const SizedBox(height: 32),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFFEC4899).withValues(alpha: 0.15),
-                        const Color(0xFF8B5CF6).withValues(alpha: 0.15),
-                      ],
+                // const SizedBox(height: 32),
+                // Container(
+                //   padding: const EdgeInsets.symmetric(
+                //     horizontal: 24,
+                //     vertical: 12,
+                //   ),
+                //   decoration: BoxDecoration(
+                //     gradient: LinearGradient(
+                //       colors: [
+                //         const Color(0xFFEC4899).withValues(alpha: 0.15),
+                //         const Color(0xFF8B5CF6).withValues(alpha: 0.15),
+                //       ],
+                //     ),
+                //     borderRadius: BorderRadius.circular(20),
+                //   ),
+                //   child: Row(
+                //     mainAxisSize: MainAxisSize.min,
+                //     children: [
+                //       Icon(
+                //         CupertinoIcons.sparkles,
+                //         size: 16,
+                //         color: isDarkMode
+                //             ? const Color(0xFFF472B6)
+                //             : const Color(0xFFEC4899),
+                //       ),
+                //       const SizedBox(width: 8),
+                //       Text(
+                //         'Stay tuned for updates',
+                //         style: TextStyle(
+                //           fontSize: 14,
+                //           fontWeight: FontWeight.w600,
+                //           color: isDarkMode
+                //               ? const Color(0xFFF472B6)
+                //               : const Color(0xFFEC4899),
+                //           fontFamily: 'SF Pro Display',
+                //           letterSpacing: 0.2,
+                //         ),
+                //       ),
+                //     ],
+                //   ),
+                // ),
+                SizedBox(height: 20),
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 0),
+                  onPressed: () => context.go('/home'),
+                  child: Text(
+                    'Go to Home',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: CupertinoColors.activeBlue,
                     ),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        CupertinoIcons.sparkles,
-                        size: 16,
-                        color: isDarkMode
-                            ? const Color(0xFFF472B6)
-                            : const Color(0xFFEC4899),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Stay tuned for updates',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: isDarkMode
-                              ? const Color(0xFFF472B6)
-                              : const Color(0xFFEC4899),
-                          fontFamily: 'SF Pro Display',
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ],

@@ -182,7 +182,9 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
 
   Widget _buildBackButton(BuildContext context) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-    final activeColor = isDark ? const Color(0xFF23C061) : const Color(0xFF21AA62);
+    final activeColor = isDark
+        ? const Color(0xFF23C061)
+        : const Color(0xFF21AA62);
 
     return CupertinoButton(
       padding: EdgeInsets.zero,
@@ -190,11 +192,7 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            CupertinoIcons.back,
-            size: 28,
-            color: activeColor,
-          ),
+          Icon(CupertinoIcons.back, size: 28, color: activeColor),
           Text(
             'Back',
             style: TextStyle(
@@ -212,8 +210,8 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
   @override
   Widget build(BuildContext context) {
     final bool canPop = Navigator.of(context).canPop();
-    final Widget? effectiveLeading = widget.leading ??
-        (canPop ? _buildBackButton(context) : null);
+    final Widget? effectiveLeading =
+        widget.leading ?? (canPop ? _buildBackButton(context) : null);
 
     return CupertinoPageScaffold(
       resizeToAvoidBottomInset: false,

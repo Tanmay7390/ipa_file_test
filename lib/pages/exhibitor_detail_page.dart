@@ -1,60 +1,49 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:aesurg26/components/page_scaffold.dart';
-import 'package:aesurg26/pages/chat_page.dart';
+import 'package:rajapsicon/components/page_scaffold.dart';
+// import 'package:rajapsicon/pages/chat_page.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
-import 'package:aesurg26/pages/company_representative_detail_page.dart';
+import 'package:flick_video_player/flick_video_player.dart';
+import 'package:rajapsicon/pages/company_representative_detail_page.dart';
 
-class ExhibitorDetailPage extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../apis/providers/exhibitors_provider.dart';
+
+class ExhibitorDetailPage extends ConsumerStatefulWidget {
   final Map<String, dynamic> exhibitor;
 
   const ExhibitorDetailPage({super.key, required this.exhibitor});
 
   @override
-  State<ExhibitorDetailPage> createState() => _ExhibitorDetailPageState();
+  ConsumerState<ExhibitorDetailPage> createState() =>
+      _ExhibitorDetailPageState();
 }
 
-class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
+class _ExhibitorDetailPageState extends ConsumerState<ExhibitorDetailPage> {
   bool _isAboutExpanded = false;
   bool _isVideoExpanded = true;
   bool _isCompanyRepExpanded = false;
   bool _isDocumentsExpanded = false;
-  VideoPlayerController? _videoPlayerController;
-  ChewieController? _chewieController;
+  FlickManager? _flickManager;
   bool _videoError = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeVideoPlayer();
+    // Video initialization will be handled when data is loaded
   }
 
-  Future<void> _initializeVideoPlayer() async {
+  void _initializeVideoPlayer(String videoUrl) {
+    if (_flickManager != null) return;
+
     try {
-      // Try to load network video (more reliable than asset for testing)
-      _videoPlayerController = VideoPlayerController.networkUrl(
-        Uri.parse(
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      _flickManager = FlickManager(
+        videoPlayerController: VideoPlayerController.networkUrl(
+          Uri.parse(videoUrl),
         ),
-      );
-
-      await _videoPlayerController!.initialize();
-
-      _chewieController = ChewieController(
-        videoPlayerController: _videoPlayerController!,
         autoPlay: false,
-        looping: false,
-        allowFullScreen: true,
-        allowMuting: true,
-        showControls: true,
-        materialProgressColors: ChewieProgressColors(
-          playedColor: Color(0xFF21AA62),
-          handleColor: Color(0xFF21AA62),
-          backgroundColor: Colors.grey,
-          bufferedColor: Colors.grey.withValues(alpha: 0.5),
-        ),
       );
 
       if (mounted) {
@@ -73,21 +62,75 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
 
   @override
   void dispose() {
-    _videoPlayerController?.dispose();
-    _chewieController?.dispose();
+    _flickManager?.dispose();
     super.dispose();
   }
 
-  void _showMeetingSheet() {
+  void _showMeetingSheet(String exhibitorName) {
     showCupertinoModalPopup(
       context: context,
       builder: (BuildContext context) =>
-          _MeetingFormSheet(exhibitorName: widget.exhibitor['name'] ?? ''),
+          _MeetingFormSheet(exhibitorName: exhibitorName),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final exhibitorId = widget.exhibitor['id']?.toString() ?? '';
+
+    // Use provider to fetch fresh details
+    final exhibitorAsync = ref.watch(exhibitorDetailProvider(exhibitorId));
+
+    return exhibitorAsync.when(
+      data: (exhibitorData) {
+        final exhibitorMap = exhibitorData.toJson();
+
+        // Initialize video if available
+        if (exhibitorData.media?.type == 'VIDEO' &&
+            exhibitorData.media?.url != null) {
+          _initializeVideoPlayer(exhibitorData.media!.url!);
+        }
+
+        return _buildContent(context, exhibitorMap);
+      },
+      loading: () => CustomPageScaffold(
+        heading: 'Exhibitor Details',
+        hideSearch: true,
+        isLoading: true,
+        hideLargeTitle: true,
+        sliverList: SliverList(delegate: SliverChildListDelegate([])),
+      ),
+      error: (error, stack) => CustomPageScaffold(
+        heading: 'Exhibitor Details',
+        hideSearch: true,
+        isLoading: false,
+        hideLargeTitle: true,
+        sliverList: SliverList(
+          delegate: SliverChildListDelegate([
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Failed to load details'),
+                    SizedBox(height: 16),
+                    CupertinoButton(
+                      child: Text('Retry'),
+                      onPressed: () =>
+                          ref.refresh(exhibitorDetailProvider(exhibitorId)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, Map<String, dynamic> exhibitor) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
 
     return CustomPageScaffold(
@@ -100,54 +143,52 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
           // Header with photo and basic info
           Container(
             color: CupertinoColors.systemBackground.resolveFrom(context),
-            child: _buildHeader(isDark),
+            child: _buildHeader(isDark, exhibitor),
           ),
 
           // Action buttons
-          Container(
-            color: CupertinoColors.systemBackground.resolveFrom(context),
-            padding: EdgeInsets.only(top: 12, bottom: 12, left: 20, right: 20),
-            child: _buildActionButtons(context),
-          ),
-
+          // Container(
+          //   color: CupertinoColors.systemBackground.resolveFrom(context),
+          //   padding: EdgeInsets.only(top: 12, bottom: 12, left: 20, right: 20),
+          //   child: _buildActionButtons(context, exhibitor),
+          // ),
           _buildSeparator(context),
 
           // About section
-          if (widget.exhibitor['about'] != null &&
-              widget.exhibitor['about'].toString().isNotEmpty)
+          if (exhibitor['about'] != null &&
+              exhibitor['about'].toString().isNotEmpty)
             Container(
               color: CupertinoColors.systemBackground.resolveFrom(context),
               padding: EdgeInsets.only(top: 12, bottom: 12),
-              child: _buildAboutSection(isDark),
+              child: _buildAboutSection(isDark, exhibitor),
             ),
 
-          _buildSeparator(context),
+          // _buildSeparator(context),
 
           // Video section
-          Container(
-            color: CupertinoColors.systemBackground.resolveFrom(context),
-            padding: EdgeInsets.zero,
-            child: _buildVideoSection(isDark),
-          ),
+          // Container(
+          //   color: CupertinoColors.systemBackground.resolveFrom(context),
+          //   padding: EdgeInsets.zero,
+          //   child: _buildVideoSection(isDark),
+          // ),
 
-          _buildSeparator(context),
+          // _buildSeparator(context),
 
           // Company Representative section
-          Container(
-            color: CupertinoColors.systemBackground.resolveFrom(context),
-            padding: EdgeInsets.zero,
-            child: _buildCompanyRepSection(isDark),
-          ),
+          // Container(
+          //   color: CupertinoColors.systemBackground.resolveFrom(context),
+          //   padding: EdgeInsets.zero,
+          //   child: _buildCompanyRepSection(isDark),
+          // ),
 
-          _buildSeparator(context),
+          // _buildSeparator(context),
 
           // Documents section
-          Container(
-            color: CupertinoColors.systemBackground.resolveFrom(context),
-            padding: EdgeInsets.zero,
-            child: _buildDocumentsSection(isDark),
-          ),
-
+          // Container(
+          //   color: CupertinoColors.systemBackground.resolveFrom(context),
+          //   padding: EdgeInsets.zero,
+          //   child: _buildDocumentsSection(isDark),
+          // ),
           SizedBox(height: 20),
         ]),
       ),
@@ -164,7 +205,7 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
     );
   }
 
-  Widget _buildHeader(bool isDark) {
+  Widget _buildHeader(bool isDark, Map<String, dynamic> exhibitor) {
     final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
 
     return Container(
@@ -173,26 +214,25 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Profile photo
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Image.network(
-              widget.exhibitor['photo'] ?? '',
-              width: 120,
-              height: 120,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: CupertinoColors.systemGrey5.resolveFrom(context),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Icon(
-                  CupertinoIcons.person_fill,
-                  size: 60,
-                  color: CupertinoColors.systemGrey.resolveFrom(context),
-                ),
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: CupertinoColors.systemGrey.withOpacity(0.5),
               ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: exhibitor['photo'] != null && exhibitor['photo'].isNotEmpty
+                  ? Image.network(
+                      exhibitor['photo'],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          Image.asset('assets/images/midcoin.png'),
+                    )
+                  : Image.asset('assets/images/midcoin.png'),
             ),
           ),
           SizedBox(width: 20),
@@ -204,9 +244,7 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
               children: [
                 // Exhibitor name
                 Text(
-                  widget.exhibitor['companyName'] ??
-                      widget.exhibitor['name'] ??
-                      '',
+                  exhibitor['companyName'] ?? exhibitor['name'] ?? '',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
@@ -217,52 +255,30 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
                 ),
                 SizedBox(height: 8),
 
-                // Location/Conference Room
-                Row(
-                  children: [
-                    Icon(
-                      CupertinoIcons.location_solid,
-                      size: 16,
-                      color: activeColor,
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      widget.exhibitor['location'] ?? 'Conference Room 1',
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: activeColor,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'SF Pro Display',
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 12),
-
                 // Sponsor type and Exhibitor badges
                 Row(
                   children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Color(0xFFE8E0F5),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        widget.exhibitor['sponsorType'] ?? 'Platinum Sponsor',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF7B5FC7),
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'SF Pro Display',
-                          letterSpacing: 0.2,
+                    if (exhibitor['sponsorType'] != null)
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Color(0xFFE8E0F5),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          exhibitor['sponsorType'] ?? 'Sponsor',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF7B5FC7),
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'SF Pro Display',
+                            letterSpacing: 0.2,
+                          ),
                         ),
                       ),
-                    ),
                     SizedBox(width: 8),
                     // Exhibitor badge
                     Container(
@@ -293,66 +309,35 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
                 ),
                 SizedBox(height: 12),
                 // Social media buttons
-                Row(
-                  children: [
-                    // Facebook
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Color(0xFF1877F2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () {},
-                        child: FaIcon(
+                if (exhibitor['socialMedia'] != null)
+                  Row(
+                    children: [
+                      if (exhibitor['socialMedia']['facebook'] != null)
+                        _buildSocialButton(
                           FontAwesomeIcons.facebookF,
-                          color: CupertinoColors.white,
-                          size: 14,
+                          Color(0xFF1877F2),
+                          exhibitor['socialMedia']['facebook'],
                         ),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    // Instagram
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Color(0xFFE4405F),
-                        shape: BoxShape.circle,
-                      ),
-                      child: CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () {},
-                        child: FaIcon(
+                      if (exhibitor['socialMedia']['twitter'] != null)
+                        _buildSocialButton(
+                          FontAwesomeIcons.twitter,
+                          Color(0xFF1DA1F2),
+                          exhibitor['socialMedia']['twitter'],
+                        ),
+                      if (exhibitor['socialMedia']['instagram'] != null)
+                        _buildSocialButton(
                           FontAwesomeIcons.instagram,
-                          color: CupertinoColors.white,
-                          size: 14,
+                          Color(0xFFE1306C),
+                          exhibitor['socialMedia']['instagram'],
                         ),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    // LinkedIn
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Color(0xFF0A66C2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () {},
-                        child: FaIcon(
+                      if (exhibitor['socialMedia']['linkedin'] != null)
+                        _buildSocialButton(
                           FontAwesomeIcons.linkedinIn,
-                          color: CupertinoColors.white,
-                          size: 14,
+                          Color(0xFF0077B5),
+                          exhibitor['socialMedia']['linkedin'],
                         ),
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -361,7 +346,33 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
+  Widget _buildSocialButton(IconData icon, Color color, String url) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        child: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => _launchUrl(url),
+          child: FaIcon(icon, color: Colors.white, size: 16),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _launchUrl(String urlString) async {
+    final url = Uri.parse(urlString);
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    }
+  }
+
+  Widget _buildActionButtons(
+    BuildContext context,
+    Map<String, dynamic> exhibitor,
+  ) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
     final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
 
@@ -376,7 +387,8 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
             child: CupertinoButton(
               padding: EdgeInsets.symmetric(vertical: 12),
               borderRadius: BorderRadius.circular(12),
-              onPressed: _showMeetingSheet,
+              onPressed: () =>
+                  _showMeetingSheet(exhibitor['companyName'] ?? ''),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -412,14 +424,15 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
               padding: EdgeInsets.symmetric(vertical: 12),
               borderRadius: BorderRadius.circular(12),
               onPressed: () {
-                Navigator.of(context).push(
-                  CupertinoPageRoute(
-                    builder: (context) => ChatPage(
-                      userName: widget.exhibitor['companyName'] ?? widget.exhibitor['name'] ?? '',
-                      userPhoto: widget.exhibitor['photo'],
-                    ),
-                  ),
-                );
+                // Navigator.of(context).push(
+                //   CupertinoPageRoute(
+                //     builder: (context) => ChatPage(
+                //       userName:
+                //           exhibitor['companyName'] ?? exhibitor['name'] ?? '',
+                //       userPhoto: exhibitor['photo'],
+                //     ),
+                //   ),
+                // );
               },
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -455,19 +468,15 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
             padding: EdgeInsets.all(12),
             borderRadius: BorderRadius.circular(50),
             onPressed: () {},
-            child: Icon(
-              CupertinoIcons.star,
-              size: 22,
-              color: activeColor,
-            ),
+            child: Icon(CupertinoIcons.star, size: 22, color: activeColor),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildAboutSection(bool isDark) {
-    final aboutText = widget.exhibitor['about'] ?? '';
+  Widget _buildAboutSection(bool isDark, Map<String, dynamic> exhibitor) {
+    final aboutText = exhibitor['about'] ?? '';
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -613,7 +622,6 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
     );
   }
 
-
   Widget _buildVideoSection(bool isDark) {
     final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
 
@@ -698,16 +706,25 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
                             ),
                           ),
                         )
-                      else if (_chewieController != null &&
-                          _chewieController!
-                              .videoPlayerController
-                              .value
-                              .isInitialized)
+                      else if (_flickManager != null)
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: AspectRatio(
-                            aspectRatio: 16 / 9,
-                            child: Chewie(controller: _chewieController!),
+                          child: FlickVideoPlayer(
+                            flickManager: _flickManager!,
+                            flickVideoWithControls: FlickVideoWithControls(
+                              controls: FlickPortraitControls(
+                                progressBarSettings: FlickProgressBarSettings(
+                                  playedColor: Color(0xFF21AA62),
+                                  handleColor: Color(0xFF21AA62),
+                                  bufferedColor: Colors.grey.withValues(
+                                    alpha: 0.5,
+                                  ),
+                                  backgroundColor: Colors.grey.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         )
                       else
@@ -908,24 +925,24 @@ class _ExhibitorDetailPageState extends State<ExhibitorDetailPage> {
         'size': '2.4 MB',
         'icon': 'doc.fill',
       },
-      {
-        'name': 'Product Catalog 2026',
-        'type': 'PDF',
-        'size': '5.8 MB',
-        'icon': 'doc.fill',
-      },
-      {
-        'name': 'Technical Specifications',
-        'type': 'PDF',
-        'size': '1.2 MB',
-        'icon': 'doc.fill',
-      },
-      {
-        'name': 'Certification Documents',
-        'type': 'PDF',
-        'size': '890 KB',
-        'icon': 'doc.fill',
-      },
+      // {
+      //   'name': 'Product Catalog 2026',
+      //   'type': 'PDF',
+      //   'size': '5.8 MB',
+      //   'icon': 'doc.fill',
+      // },
+      // {
+      //   'name': 'Technical Specifications',
+      //   'type': 'PDF',
+      //   'size': '1.2 MB',
+      //   'icon': 'doc.fill',
+      // },
+      // {
+      //   'name': 'Certification Documents',
+      //   'type': 'PDF',
+      //   'size': '890 KB',
+      //   'icon': 'doc.fill',
+      // },
     ];
 
     return Padding(

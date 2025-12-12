@@ -1,9 +1,13 @@
+import 'dart:developer';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aesurg26/theme_provider.dart';
+import 'package:rajapsicon/theme_provider.dart';
 import '../components/page_scaffold.dart';
 import '../pages/exhibitor_detail_page.dart';
+import '../apis/providers/exhibitors_provider.dart';
+import '../providers/home_data_provider.dart';
+import '../services/auth_service.dart';
 
 class ExhibitorsTab extends ConsumerStatefulWidget {
   const ExhibitorsTab({super.key});
@@ -17,433 +21,119 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
   final ScrollController _scrollController = ScrollController();
   bool _showSearchField = false;
   bool _isGridView = false;
-  List<Map<String, dynamic>> _filteredExhibitors = [];
+  List<Exhibitor> _filteredExhibitors = [];
   String? _selectedCategory;
-
-  // Static JSON data for exhibitors
-  final List<Map<String, dynamic>> _exhibitors = [
-    {
-      'id': '1',
-      'companyName': 'MedTech Innovations',
-      'category': 'Surgical Instruments',
-      'booth': 'A-101',
-      'badge': 'Platinum Sponsor',
-      'website': 'www.medtechinnovations.com',
-      'description': 'Leading manufacturer of advanced surgical instruments',
-      'about':
-          'MedTech Innovations is a leading manufacturer of advanced surgical instruments with over 25 years of experience in the medical device industry. We specialize in precision-engineered tools that enhance surgical outcomes and improve patient safety. Our commitment to innovation and quality has made us a trusted partner for hospitals and surgical centers worldwide.',
-      'photo':
-          'https://ui-avatars.com/api/?name=MedTech+Innovations&size=200&background=5856D6&color=fff&bold=true',
-      'mediaUrl':
-          'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800',
-      'representatives': [
-        {
-          'name': 'Michael Chen',
-          'title': 'VP of Sales',
-          'company': 'MedTech Innovations',
-          'photo': 'https://randomuser.me/api/portraits/men/32.jpg',
-        },
-        {
-          'name': 'Sarah Williams',
-          'title': 'Product Manager',
-          'company': 'MedTech Innovations',
-          'photo': 'https://randomuser.me/api/portraits/women/32.jpg',
-        },
-      ],
-      'documents': [
-        {'name': 'Product Catalog 2024', 'size': '4.2 MB'},
-        {'name': 'Technical Specifications', 'size': '1.8 MB'},
-      ],
-      'sessions': [
-        {
-          'title': 'Innovation in Surgical Instruments',
-          'time': '10:00 am - 11:00 am EDT',
-          'location': 'Demo Room A',
-        },
-        {
-          'title': 'Product Showcase & Demo',
-          'time': '2:00 pm - 3:30 pm EDT',
-          'location': 'Booth A-101',
-        },
-      ],
-    },
-    {
-      'id': '2',
-      'companyName': 'BioSurgical Solutions',
-      'category': 'Medical Devices',
-      'booth': 'A-102',
-      'badge': 'Gold Sponsor',
-      'website': 'www.biosurgical.com',
-      'description': 'Innovative medical device solutions for modern surgery',
-      'about':
-          'BioSurgical Solutions develops cutting-edge medical devices that revolutionize surgical procedures. Our products combine advanced biomaterials with intelligent design to minimize invasiveness and accelerate patient recovery. With a focus on research and development, we continue to push the boundaries of what\'s possible in modern surgery.',
-      'photo':
-          'https://ui-avatars.com/api/?name=BioSurgical+Solutions&size=200&background=34C759&color=fff&bold=true',
-      'mediaUrl':
-          'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800',
-      'representatives': [
-        {
-          'name': 'David Kim',
-          'title': 'Senior Sales Director',
-          'company': 'BioSurgical Solutions',
-          'photo': 'https://randomuser.me/api/portraits/men/33.jpg',
-        },
-      ],
-      'documents': [
-        {'name': 'Clinical Studies Report', 'size': '6.5 MB'},
-      ],
-      'sessions': [
-        {
-          'title': 'Next-Gen Medical Devices',
-          'time': '11:30 am - 12:30 pm EDT',
-          'location': 'Conference Room B',
-        },
-      ],
-    },
-    {
-      'id': '3',
-      'companyName': 'SurgiCare Systems',
-      'category': 'Operating Room Equipment',
-      'booth': 'B-201',
-      'badge': 'Exhibitor',
-      'website': 'www.surgicare.com',
-      'description': 'Complete operating room equipment and systems',
-      'about':
-          'SurgiCare Systems provides comprehensive operating room solutions, from surgical tables and lighting systems to advanced monitoring equipment. Our integrated approach ensures seamless workflow and optimal patient care. We work closely with healthcare facilities to design custom solutions that meet their specific needs and budget requirements.',
-      'photo':
-          'https://ui-avatars.com/api/?name=SurgiCare+Systems&size=200&background=007AFF&color=fff&bold=true',
-      'mediaUrl':
-          'https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=800',
-      'representatives': [
-        {
-          'name': 'Jennifer Martinez',
-          'title': 'Account Manager',
-          'company': 'SurgiCare Systems',
-          'photo': 'https://randomuser.me/api/portraits/women/34.jpg',
-        },
-        {
-          'name': 'Robert Taylor',
-          'title': 'Technical Specialist',
-          'company': 'SurgiCare Systems',
-          'photo': 'https://randomuser.me/api/portraits/men/34.jpg',
-        },
-      ],
-      'documents': [
-        {'name': 'Equipment Brochure', 'size': '3.1 MB'},
-        {'name': 'Installation Guide', 'size': '2.4 MB'},
-      ],
-      'sessions': [
-        {
-          'title': 'OR Equipment Demo',
-          'time': '1:00 pm - 2:00 pm EDT',
-          'location': 'Booth B-201',
-        },
-      ],
-    },
-    {
-      'id': '4',
-      'companyName': 'Advanced Imaging Corp',
-      'category': 'Imaging Technology',
-      'booth': 'B-202',
-      'badge': 'Silver Sponsor',
-      'website': 'www.advancedimaging.com',
-      'description': 'State-of-the-art surgical imaging solutions',
-      'about':
-          'Advanced Imaging Corp specializes in cutting-edge imaging technology for surgical applications. Our high-resolution imaging systems provide surgeons with unprecedented visibility and precision during procedures. We leverage AI and machine learning to enhance image quality and assist in real-time decision-making.',
-      'photo':
-          'https://ui-avatars.com/api/?name=Advanced+Imaging&size=200&background=FF9500&color=fff&bold=true',
-      'mediaUrl':
-          'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=800',
-      'representatives': [
-        {
-          'name': 'Amanda Foster',
-          'title': 'Regional Sales Manager',
-          'company': 'Advanced Imaging Corp',
-          'photo': 'https://randomuser.me/api/portraits/women/35.jpg',
-        },
-      ],
-      'documents': [
-        {'name': 'Imaging Solutions Overview', 'size': '5.7 MB'},
-      ],
-      'sessions': [
-        {
-          'title': 'AI in Surgical Imaging',
-          'time': '3:00 pm - 4:00 pm EDT',
-          'location': 'Tech Theater',
-        },
-      ],
-    },
-    {
-      'id': '5',
-      'companyName': 'Precision Robotics',
-      'category': 'Robotic Surgery',
-      'booth': 'C-301',
-      'badge': 'Platinum Sponsor',
-      'website': 'www.precisionrobotics.com',
-      'description': 'Robotic-assisted surgical systems',
-      'about':
-          'Precision Robotics is at the forefront of robotic-assisted surgery, developing systems that enhance surgeon capabilities and improve patient outcomes. Our robotic platforms offer unmatched precision, stability, and control, enabling minimally invasive procedures with superior results. We are committed to advancing the future of surgery through continuous innovation.',
-      'photo':
-          'https://ui-avatars.com/api/?name=Precision+Robotics&size=200&background=FF3B30&color=fff&bold=true',
-      'mediaUrl':
-          'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800',
-      'representatives': [
-        {
-          'name': 'Dr. James Wilson',
-          'title': 'Chief Medical Officer',
-          'company': 'Precision Robotics',
-          'photo': 'https://randomuser.me/api/portraits/men/35.jpg',
-        },
-        {
-          'name': 'Lisa Anderson',
-          'title': 'Clinical Specialist',
-          'company': 'Precision Robotics',
-          'photo': 'https://randomuser.me/api/portraits/women/36.jpg',
-        },
-      ],
-      'documents': [
-        {'name': 'Robotic Surgery White Paper', 'size': '8.3 MB'},
-        {'name': 'Training Materials', 'size': '12.1 MB'},
-      ],
-      'sessions': [
-        {
-          'title': 'Robotic Surgery Demonstration',
-          'time': '9:00 am - 10:30 am EDT',
-          'location': 'Main Exhibition Hall',
-        },
-        {
-          'title': 'Hands-On Training Session',
-          'time': '2:30 pm - 4:00 pm EDT',
-          'location': 'Training Center',
-        },
-      ],
-    },
-    {
-      'id': '6',
-      'companyName': 'SterileGuard Technologies',
-      'category': 'Sterilization Equipment',
-      'booth': 'C-302',
-      'badge': 'Exhibitor',
-      'website': 'www.sterileguard.com',
-      'description': 'Advanced sterilization and infection control',
-      'about':
-          'SterileGuard Technologies provides advanced sterilization equipment and infection control solutions for healthcare facilities. Our systems ensure the highest levels of sterility while maintaining efficiency and ease of use. We help hospitals meet stringent regulatory requirements and protect patient safety.',
-      'photo':
-          'https://ui-avatars.com/api/?name=SterileGuard&size=200&background=AF52DE&color=fff&bold=true',
-      'mediaUrl':
-          'https://images.unsplash.com/photo-1581093458791-9d42e2d19e0e?w=800',
-      'representatives': [
-        {
-          'name': 'Thomas Brown',
-          'title': 'Product Specialist',
-          'company': 'SterileGuard Technologies',
-          'photo': 'https://randomuser.me/api/portraits/men/36.jpg',
-        },
-      ],
-      'documents': [
-        {'name': 'Compliance Documentation', 'size': '2.9 MB'},
-      ],
-      'sessions': [
-        {
-          'title': 'Infection Control Best Practices',
-          'time': '11:00 am - 12:00 pm EDT',
-          'location': 'Workshop Room C',
-        },
-      ],
-    },
-    {
-      'id': '7',
-      'companyName': 'VitalMed Supplies',
-      'category': 'Medical Supplies',
-      'booth': 'D-401',
-      'badge': 'Gold Sponsor',
-      'website': 'www.vitalmed.com',
-      'description': 'Complete range of medical and surgical supplies',
-      'about':
-          'VitalMed Supplies is a trusted distributor of medical and surgical supplies, serving healthcare providers with quality products at competitive prices. Our extensive inventory includes everything from basic consumables to specialized surgical supplies. We pride ourselves on reliable delivery and exceptional customer service.',
-      'photo':
-          'https://ui-avatars.com/api/?name=VitalMed+Supplies&size=200&background=32ADE6&color=fff&bold=true',
-      'mediaUrl':
-          'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800',
-      'representatives': [
-        {
-          'name': 'Patricia Davis',
-          'title': 'Supply Chain Manager',
-          'company': 'VitalMed Supplies',
-          'photo': 'https://randomuser.me/api/portraits/women/37.jpg',
-        },
-      ],
-      'documents': [
-        {'name': 'Supply Catalog 2024', 'size': '7.4 MB'},
-      ],
-      'sessions': [
-        {
-          'title': 'Supply Chain Optimization',
-          'time': '1:30 pm - 2:30 pm EDT',
-          'location': 'Conference Room D',
-        },
-      ],
-    },
-    {
-      'id': '8',
-      'companyName': 'SurgeonWear Pro',
-      'category': 'Surgical Apparel',
-      'booth': 'D-402',
-      'badge': 'Exhibitor',
-      'website': 'www.surgeonwear.com',
-      'description': 'Premium surgical apparel and protective wear',
-      'about':
-          'SurgeonWear Pro manufactures premium surgical apparel designed for comfort, protection, and performance. Our products incorporate advanced fabrics and ergonomic designs to support healthcare professionals throughout their shifts. We understand the demands of the surgical environment and deliver apparel that meets those challenges.',
-      'photo':
-          'https://ui-avatars.com/api/?name=SurgeonWear+Pro&size=200&background=FFCC00&color=333&bold=true',
-      'mediaUrl':
-          'https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=800',
-      'representatives': [
-        {
-          'name': 'Kevin White',
-          'title': 'Sales Representative',
-          'company': 'SurgeonWear Pro',
-          'photo': 'https://randomuser.me/api/portraits/men/37.jpg',
-        },
-      ],
-      'documents': [
-        {'name': 'Apparel Catalog', 'size': '4.6 MB'},
-      ],
-      'sessions': [
-        {
-          'title': 'Comfort and Safety in Surgical Apparel',
-          'time': '10:30 am - 11:30 am EDT',
-          'location': 'Booth D-402',
-        },
-      ],
-    },
-    {
-      'id': '9',
-      'companyName': 'PharmaSurg International',
-      'category': 'Pharmaceuticals',
-      'booth': 'E-501',
-      'badge': 'Silver Sponsor',
-      'website': 'www.pharmasurg.com',
-      'description': 'Surgical pharmaceuticals and anesthetics',
-      'about':
-          'PharmaSurg International specializes in surgical pharmaceuticals and anesthetics, providing safe and effective medications for perioperative care. Our research-driven approach ensures that we deliver products that meet the highest standards of quality and efficacy. We partner with healthcare providers to improve patient outcomes and surgical success.',
-      'photo':
-          'https://ui-avatars.com/api/?name=PharmaSurg&size=200&background=FF2D55&color=fff&bold=true',
-      'mediaUrl':
-          'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=800',
-      'representatives': [
-        {
-          'name': 'Dr. Rachel Green',
-          'title': 'Medical Science Liaison',
-          'company': 'PharmaSurg International',
-          'photo': 'https://randomuser.me/api/portraits/women/38.jpg',
-        },
-        {
-          'name': 'Mark Johnson',
-          'title': 'Territory Manager',
-          'company': 'PharmaSurg International',
-          'photo': 'https://randomuser.me/api/portraits/men/38.jpg',
-        },
-      ],
-      'documents': [
-        {'name': 'Product Monographs', 'size': '5.2 MB'},
-        {'name': 'Safety Data Sheets', 'size': '3.8 MB'},
-      ],
-      'sessions': [
-        {
-          'title': 'Advances in Anesthesia',
-          'time': '2:00 pm - 3:00 pm EDT',
-          'location': 'Medical Theater',
-        },
-      ],
-    },
-    {
-      'id': '10',
-      'companyName': 'Digital Health Analytics',
-      'category': 'Healthcare IT',
-      'booth': 'E-502',
-      'badge': 'Platinum Sponsor',
-      'website': 'www.digitalhealthanalytics.com',
-      'description': 'Healthcare IT solutions and data analytics',
-      'about':
-          'Digital Health Analytics provides comprehensive healthcare IT solutions and data analytics platforms that transform how healthcare organizations operate. Our cloud-based systems integrate seamlessly with existing infrastructure, providing real-time insights and improving operational efficiency. We empower healthcare providers with the tools they need to deliver better patient care.',
-      'photo':
-          'https://ui-avatars.com/api/?name=Digital+Health&size=200&background=30B0C7&color=fff&bold=true',
-      'mediaUrl':
-          'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800',
-      'representatives': [
-        {
-          'name': 'Alex Turner',
-          'title': 'Solutions Architect',
-          'company': 'Digital Health Analytics',
-          'photo': 'https://randomuser.me/api/portraits/men/39.jpg',
-        },
-        {
-          'name': 'Emily Chen',
-          'title': 'Data Analytics Lead',
-          'company': 'Digital Health Analytics',
-          'photo': 'https://randomuser.me/api/portraits/women/39.jpg',
-        },
-      ],
-      'documents': [
-        {'name': 'Platform Overview', 'size': '6.9 MB'},
-        {'name': 'Integration Guide', 'size': '4.3 MB'},
-      ],
-      'sessions': [
-        {
-          'title': 'Healthcare Data Analytics Workshop',
-          'time': '9:30 am - 11:00 am EDT',
-          'location': 'Innovation Lab',
-        },
-        {
-          'title': 'Cloud Solutions Demo',
-          'time': '3:30 pm - 4:30 pm EDT',
-          'location': 'Booth E-502',
-        },
-      ],
-    },
-  ];
+  String? _eventId;
+  String? _userId;
+  bool _isLoading = false;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
     super.initState();
-    _filteredExhibitors = _exhibitors;
     _searchController.addListener(_onSearchChanged);
+    // Load exhibitors after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadExhibitors();
+    });
   }
 
-  List<String> _getAllCategories() {
-    final categories = _exhibitors
-        .map((e) => e['category'].toString())
+  Future<void> _loadExhibitors() async {
+    log('🔄 _loadExhibitors() called');
+
+    // 1. Try getting IDs from Home Data Provider
+    final homeData = ref.read(homePageDataProvider).valueOrNull;
+
+    if (homeData != null) {
+      _eventId = homeData.event?.id;
+
+      final userData = homeData.user;
+      if (userData is Map) {
+        _userId = userData['_id'] ?? userData['id'];
+      } else if (userData is String) {
+        _userId = userData;
+      }
+    }
+
+    // 2. Fallback: Try getting User ID from AuthService if missing
+    if (_userId == null) {
+      log('⚠️ User ID missing from HomeData, checking AuthService...');
+      try {
+        final userData = await AuthService.getUserData();
+        if (userData != null) {
+          _userId = userData['_id'] ?? userData['id'];
+          log('👤 User ID found in AuthService: $_userId');
+        }
+      } catch (e) {
+        log('❌ Error fetching user data from AuthService: $e');
+      }
+    }
+
+    // 3. Fallback: Try getting Event ID from AuthService if missing
+    if (_eventId == null) {
+      log('⚠️ Event ID missing from HomeData, checking AuthService...');
+      try {
+        final homeMap = await AuthService.getHomePage();
+        if (homeMap != null && homeMap['event'] != null) {
+          _eventId = homeMap['event']['id'];
+          log('📍 Event ID found in AuthService: $_eventId');
+        }
+      } catch (e) {
+        log('❌ Error fetching home data from AuthService: $e');
+      }
+    }
+
+    log('📝 Final IDs - Event: $_eventId, User: $_userId');
+
+    if (_eventId != null && _userId != null) {
+      log(
+        '🚀 Triggering API call: loadExhibitors(userId: $_userId, eventId: $_eventId)',
+      );
+      // Load exhibitors for this event
+      await ref
+          .read(exhibitorsProvider.notifier)
+          .loadExhibitors(userId: _userId!, eventId: _eventId!);
+    } else {
+      log('❌ Cannot load exhibitors: Missing eventId or userId');
+      if (mounted) setState(() {}); // Trigger rebuild to show error UI
+    }
+  }
+
+  List<String> _getAllCategories(List<Exhibitor> exhibitors) {
+    final categories = exhibitors
+        .map((e) => e.category ?? '')
+        .where((c) => c.isNotEmpty)
         .toSet()
         .toList();
     categories.sort();
     return categories;
   }
 
-  void _filterByCategory(String? category) {
+  void _filterByCategory(String? category, List<Exhibitor> allExhibitors) {
     setState(() {
       _selectedCategory = category;
-      _applyFilters();
+      _applyFilters(allExhibitors);
     });
   }
 
-  void _applyFilters() {
+  void _applyFilters(List<Exhibitor> allExhibitors) {
     final query = _searchController.text.toLowerCase();
 
     setState(() {
-      _filteredExhibitors = _exhibitors.where((exhibitor) {
+      _filteredExhibitors = allExhibitors.where((exhibitor) {
         // Category filter
         if (_selectedCategory != null &&
-            exhibitor['category'] != _selectedCategory) {
+            exhibitor.category != _selectedCategory) {
           return false;
         }
 
         // Search filter
         if (query.isNotEmpty) {
-          return exhibitor['companyName'].toLowerCase().contains(query) ||
-              exhibitor['category'].toLowerCase().contains(query) ||
-              exhibitor['booth'].toLowerCase().contains(query) ||
-              exhibitor['description'].toLowerCase().contains(query);
+          return (exhibitor.companyName?.toLowerCase().contains(query) ??
+                  false) ||
+              (exhibitor.category?.toLowerCase().contains(query) ?? false) ||
+              (exhibitor.booth?.toLowerCase().contains(query) ?? false) ||
+              (exhibitor.about?.toLowerCase().contains(query) ?? false);
         }
 
         return true;
@@ -459,7 +149,10 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
   }
 
   void _onSearchChanged() {
-    _applyFilters();
+    final exhibitorsAsync = ref.read(exhibitorsProvider);
+    exhibitorsAsync.whenData((data) {
+      _applyFilters(data);
+    });
   }
 
   void _toggleSearch() {
@@ -467,21 +160,47 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
       _showSearchField = !_showSearchField;
       if (!_showSearchField) {
         _searchController.clear();
-        _applyFilters();
+        final exhibitorsAsync = ref.read(exhibitorsProvider);
+        exhibitorsAsync.whenData((data) {
+          _applyFilters(data);
+        });
       }
     });
   }
 
   Future<void> _onRefresh() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    setState(() {
-      _selectedCategory = null;
-      _searchController.clear();
-      _filteredExhibitors = _exhibitors;
-    });
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    log('🔄 [$timestamp] _onRefresh() ENTRY - _isRefreshing=$_isRefreshing');
+
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+
+    try {
+      // Retry loading IDs if missing
+      if (_eventId == null || _userId == null) {
+        await _loadExhibitors();
+      }
+
+      if (_eventId != null && _userId != null) {
+        await ref.read(exhibitorsProvider.notifier).refresh();
+
+        if (mounted) {
+          setState(() {
+            _selectedCategory = null;
+            _searchController.clear();
+          });
+        }
+      }
+    } catch (e) {
+      log('❌ _onRefresh error: $e');
+    } finally {
+      _isRefreshing = false;
+    }
   }
 
-  Color _getBadgeColor(String badge) {
+  Color _getBadgeColor(String? badge) {
+    if (badge == null) return const Color(0xFF34C759);
+
     switch (badge) {
       case 'Platinum Sponsor':
         return const Color(0xFF5856D6);
@@ -552,9 +271,38 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
     final cardBg = isDarkMode ? const Color(0xFF1C1C1E) : Colors.white;
     final textColor = isDarkMode ? Colors.white : Colors.black;
 
+    final exhibitorsAsync = ref.watch(exhibitorsProvider);
+
+    // Listen to home data provider to load exhibitors when ready
+    ref.listen<AsyncValue<HomePageData?>>(homePageDataProvider, (
+      previous,
+      next,
+    ) {
+      next.whenData((data) {
+        if (data != null && (_eventId == null || _userId == null)) {
+          log('🏠 Home data loaded, triggering exhibitors fetch...');
+          _loadExhibitors();
+        }
+      });
+    });
+
+    // Listen to provider changes to update local filtered list
+    ref.listen<AsyncValue<List<Exhibitor>>>(exhibitorsProvider, (
+      previous,
+      next,
+    ) {
+      next.whenData((data) {
+        // Only update if the list changed or we are initializing
+        if (previous?.valueOrNull != data) {
+          log('📊 Exhibitors data updated: ${data.length} items');
+          _applyFilters(data);
+        }
+      });
+    });
+
     return CustomPageScaffold(
       scrollController: _scrollController,
-      isLoading: false,
+      isLoading: exhibitorsAsync.isLoading,
       heading: 'Exhibitors',
       trailing: _buildViewToggleButton(isDarkMode),
       searchController: _searchController,
@@ -565,46 +313,89 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
       sliverList: SliverList(
         delegate: SliverChildListDelegate([
           // Category Filter
-          _buildCategoryFilter(isDarkMode),
+          exhibitorsAsync.when(
+            data: (data) => _buildCategoryFilter(isDarkMode, data),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+
           // Grid/List View Container
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 350),
-              switchInCurve: Curves.easeInOutCubic,
-              switchOutCurve: Curves.easeInOutCubic,
-              transitionBuilder: (child, animation) {
-                final offsetAnimation =
-                    Tween<Offset>(
-                      begin: const Offset(0.15, 0),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeInOutCubic,
+            child:
+                (_eventId == null || _userId == null) &&
+                    !exhibitorsAsync.isLoading
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            CupertinoIcons.exclamationmark_circle,
+                            size: 48,
+                            color: CupertinoColors.systemGrey,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Unable to load data',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Event or User ID missing',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: CupertinoColors.systemGrey,
+                            ),
+                          ),
+                          SizedBox(height: 24),
+                          CupertinoButton.filled(
+                            child: Text('Retry'),
+                            onPressed: _loadExhibitors,
+                          ),
+                        ],
                       ),
-                    );
+                    ),
+                  )
+                : AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 350),
+                    switchInCurve: Curves.easeInOutCubic,
+                    switchOutCurve: Curves.easeInOutCubic,
+                    transitionBuilder: (child, animation) {
+                      final offsetAnimation =
+                          Tween<Offset>(
+                            begin: const Offset(0.15, 0),
+                            end: Offset.zero,
+                          ).animate(
+                            CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeInOutCubic,
+                            ),
+                          );
 
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: offsetAnimation,
-                    child: child,
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: offsetAnimation,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: _isGridView
+                        ? _buildGridContent(isDarkMode, cardBg, textColor)
+                        : _buildListContent(isDarkMode, cardBg, textColor),
                   ),
-                );
-              },
-              child: _isGridView
-                  ? _buildGridContent(isDarkMode, cardBg, textColor)
-                  : _buildListContent(isDarkMode, cardBg, textColor),
-            ),
           ),
         ]),
       ),
     );
   }
 
-  Widget _buildCategoryFilter(bool isDarkMode) {
-    final categories = _getAllCategories();
+  Widget _buildCategoryFilter(bool isDarkMode, List<Exhibitor> allExhibitors) {
+    final categories = _getAllCategories(allExhibitors);
+    if (categories.isEmpty) return const SizedBox.shrink();
+
     final activeColor = isDarkMode ? Color(0xFF23C061) : Color(0xFF21AA62);
 
     return Container(
@@ -617,7 +408,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
             _buildCategoryChip(
               'All',
               _selectedCategory == null,
-              () => _filterByCategory(null),
+              () => _filterByCategory(null, allExhibitors),
               isDarkMode,
               activeColor,
             ),
@@ -629,7 +420,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                 child: _buildCategoryChip(
                   category,
                   _selectedCategory == category,
-                  () => _filterByCategory(category),
+                  () => _filterByCategory(category, allExhibitors),
                   isDarkMode,
                   activeColor,
                 ),
@@ -686,6 +477,18 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
   }
 
   Widget _buildGridContent(bool isDarkMode, Color cardBg, Color textColor) {
+    if (_filteredExhibitors.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Text(
+            'No exhibitors found',
+            style: TextStyle(color: CupertinoColors.systemGrey, fontSize: 16),
+          ),
+        ),
+      );
+    }
+
     final cols = MediaQuery.of(context).size.width > 600 ? 3 : 2;
     return GridView.builder(
       key: const ValueKey('grid'),
@@ -711,6 +514,18 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
   }
 
   Widget _buildListContent(bool isDarkMode, Color cardBg, Color textColor) {
+    if (_filteredExhibitors.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Text(
+            'No exhibitors found',
+            style: TextStyle(color: CupertinoColors.systemGrey, fontSize: 16),
+          ),
+        ),
+      );
+    }
+
     return ListView.builder(
       key: const ValueKey('list'),
       shrinkWrap: true,
@@ -733,7 +548,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
   }
 
   Widget _buildExhibitorGridCard(
-    Map<String, dynamic> exhibitor,
+    Exhibitor exhibitor,
     bool isDarkMode,
     Color cardBg,
     Color textColor,
@@ -744,7 +559,8 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
       onTap: () {
         Navigator.of(context, rootNavigator: true).push(
           CupertinoPageRoute(
-            builder: (context) => ExhibitorDetailPage(exhibitor: exhibitor),
+            builder: (context) =>
+                ExhibitorDetailPage(exhibitor: exhibitor.toJson()),
           ),
         );
       },
@@ -762,7 +578,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
             BoxShadow(
               color: isDarkMode
                   ? Colors.black.withValues(alpha: 0.4)
-                  : _getBadgeColor(exhibitor['badge']).withValues(alpha: 0.12),
+                  : _getBadgeColor(exhibitor.badge).withValues(alpha: 0.12),
               blurRadius: 16,
               offset: const Offset(0, 6),
               spreadRadius: -2,
@@ -778,16 +594,17 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                 Stack(
                   children: [
                     Container(
-                      height: 120,
-                      decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(20),
-                        ),
-                        image: DecorationImage(
-                          image: NetworkImage(exhibitor['photo']),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+                      // height: 120,
+                      width: double.infinity,
+                      child:
+                          exhibitor.photo != null && exhibitor.photo!.isNotEmpty
+                          ? Image.network(
+                              exhibitor.photo!,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildPlaceholderImage(isDarkMode),
+                            )
+                          : _buildPlaceholderImage(isDarkMode),
                     ),
                     Container(
                       height: 120,
@@ -815,7 +632,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                       children: [
                         // Company Name
                         Text(
-                          exhibitor['companyName'],
+                          exhibitor.companyName ?? 'Unknown',
                           style: TextStyle(
                             color: textColor,
                             fontSize: 15,
@@ -828,70 +645,68 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                         ),
                         const SizedBox(height: 6),
                         // Category with icon
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: activeColor.withValues(
-                                  alpha: 0.1,
-                                ),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Icon(
-                                CupertinoIcons.cube_box_fill,
-                                size: 11,
-                                color: activeColor,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                exhibitor['category'],
-                                style: TextStyle(
-                                  color: textColor.withValues(alpha: 0.6),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        // Booth Number with enhanced design
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: activeColor.withValues(
-                              alpha: 0.12,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                        if (exhibitor.category != null)
+                          Row(
                             children: [
-                              Icon(
-                                CupertinoIcons.location_solid,
-                                size: 13,
-                                color: activeColor,
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                exhibitor['booth'],
-                                style: TextStyle(
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: activeColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Icon(
+                                  CupertinoIcons.cube_box_fill,
+                                  size: 11,
                                   color: activeColor,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  exhibitor.category!,
+                                  style: TextStyle(
+                                    color: textColor.withValues(alpha: 0.6),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
-                        ),
+                        const Spacer(),
+                        // Booth Number with enhanced design
+                        if (exhibitor.booth != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: activeColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  CupertinoIcons.location_solid,
+                                  size: 13,
+                                  color: activeColor,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  exhibitor.booth!,
+                                  style: TextStyle(
+                                    color: activeColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -899,45 +714,44 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
               ],
             ),
             // Badge positioned at top right
-            Positioned(
-              top: 12,
-              right: 12,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      _getBadgeColor(exhibitor['badge']),
-                      _getBadgeColor(
-                        exhibitor['badge'],
-                      ).withValues(alpha: 0.85),
+            if (exhibitor.badge != null)
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        _getBadgeColor(exhibitor.badge),
+                        _getBadgeColor(exhibitor.badge).withValues(alpha: 0.85),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _getBadgeColor(
+                          exhibitor.badge,
+                        ).withValues(alpha: 0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _getBadgeColor(
-                        exhibitor['badge'],
-                      ).withValues(alpha: 0.4),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
+                  child: Text(
+                    exhibitor.badge!.replaceAll(' Sponsor', ''),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.3,
                     ),
-                  ],
-                ),
-                child: Text(
-                  exhibitor['badge'].toString().replaceAll(' Sponsor', ''),
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 0.3,
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -945,7 +759,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
   }
 
   Widget _buildExhibitorListCard(
-    Map<String, dynamic> exhibitor,
+    Exhibitor exhibitor,
     bool isDarkMode,
     Color cardBg,
     Color textColor,
@@ -956,7 +770,8 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
       onTap: () {
         Navigator.of(context, rootNavigator: true).push(
           CupertinoPageRoute(
-            builder: (context) => ExhibitorDetailPage(exhibitor: exhibitor),
+            builder: (context) =>
+                ExhibitorDetailPage(exhibitor: exhibitor.toJson()),
           ),
         );
       },
@@ -974,7 +789,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
             BoxShadow(
               color: isDarkMode
                   ? Colors.black.withValues(alpha: 0.4)
-                  : _getBadgeColor(exhibitor['badge']).withValues(alpha: 0.1),
+                  : _getBadgeColor(exhibitor.badge).withValues(alpha: 0.1),
               blurRadius: 16,
               offset: const Offset(0, 6),
               spreadRadius: -2,
@@ -993,12 +808,16 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                       Container(
                         width: 120,
                         height: 120,
-                        decoration: BoxDecoration(
-                          image: DecorationImage(
-                            image: NetworkImage(exhibitor['photo']),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
+                        child:
+                            exhibitor.photo != null &&
+                                exhibitor.photo!.isNotEmpty
+                            ? Image.network(
+                                exhibitor.photo!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    _buildPlaceholderImage(isDarkMode),
+                              )
+                            : _buildPlaceholderImage(isDarkMode),
                       ),
                       Container(
                         width: 120,
@@ -1033,7 +852,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                         children: [
                           // Company Name
                           Text(
-                            exhibitor['companyName'],
+                            exhibitor.companyName ?? 'Unknown',
                             style: TextStyle(
                               color: textColor,
                               fontSize: 17,
@@ -1046,70 +865,68 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                           ),
                           const SizedBox(height: 8),
                           // Category with icon
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: activeColor.withValues(
-                                    alpha: 0.1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  CupertinoIcons.cube_box_fill,
-                                  size: 12,
-                                  color: activeColor,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  exhibitor['category'],
-                                  style: TextStyle(
-                                    color: textColor.withValues(alpha: 0.6),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          // Booth Number
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: activeColor.withValues(
-                                alpha: 0.12,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                          if (exhibitor.category != null)
+                            Row(
                               children: [
-                                Icon(
-                                  CupertinoIcons.location_solid,
-                                  size: 13,
-                                  color: activeColor,
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  exhibitor['booth'],
-                                  style: TextStyle(
+                                Container(
+                                  padding: const EdgeInsets.all(5),
+                                  decoration: BoxDecoration(
+                                    color: activeColor.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    CupertinoIcons.cube_box_fill,
+                                    size: 12,
                                     color: activeColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    exhibitor.category!,
+                                    style: TextStyle(
+                                      color: textColor.withValues(alpha: 0.6),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
                             ),
-                          ),
+                          const SizedBox(height: 10),
+                          // Booth Number
+                          if (exhibitor.booth != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: activeColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    CupertinoIcons.location_solid,
+                                    size: 13,
+                                    color: activeColor,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    exhibitor.booth!,
+                                    style: TextStyle(
+                                      color: activeColor,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -1120,9 +937,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: activeColor.withValues(
-                          alpha: 0.1,
-                        ),
+                        color: activeColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -1135,48 +950,60 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
                 ],
               ),
               // Badge positioned at top left
-              Positioned(
-                top: 12,
-                left: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        _getBadgeColor(exhibitor['badge']),
-                        _getBadgeColor(
-                          exhibitor['badge'],
-                        ).withValues(alpha: 0.85),
+              if (exhibitor.badge != null)
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          _getBadgeColor(exhibitor.badge),
+                          _getBadgeColor(
+                            exhibitor.badge,
+                          ).withValues(alpha: 0.85),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _getBadgeColor(
+                            exhibitor.badge,
+                          ).withValues(alpha: 0.4),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _getBadgeColor(
-                          exhibitor['badge'],
-                        ).withValues(alpha: 0.4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
+                    child: Text(
+                      exhibitor.badge!.replaceAll(' Sponsor', ''),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.3,
                       ),
-                    ],
-                  ),
-                  child: Text(
-                    exhibitor['badge'].toString().replaceAll(' Sponsor', ''),
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 0.3,
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholderImage(bool isDarkMode) {
+    return Container(
+      color: isDarkMode
+          ? CupertinoColors.systemGrey6.darkColor
+          : CupertinoColors.systemGrey6,
+      child: Center(
+        child: Icon(CupertinoIcons.photo, color: CupertinoColors.systemGrey),
       ),
     );
   }
