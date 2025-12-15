@@ -1,15 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rajapsicon/components/page_scaffold.dart';
-// import 'package:rajapsicon/pages/session_detail_page.dart';
-// import 'package:rajapsicon/pages/direct_chat_page.dart';
+import 'package:axlmed/components/page_scaffold.dart';
+// import 'package:axlmed/pages/session_detail_page.dart';
+// import 'package:axlmed/pages/direct_chat_page.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:rajapsicon/apis/providers/speakers_provider.dart';
-// import 'package:rajapsicon/apis/providers/direct_chat_provider.dart';
-import 'package:rajapsicon/apis/providers/meeting_request_provider.dart';
-import 'package:rajapsicon/providers/home_data_provider.dart';
-import 'package:rajapsicon/providers/user_data_provider.dart';
+import 'package:axlmed/apis/providers/speakers_provider.dart';
+// import 'package:axlmed/apis/providers/direct_chat_provider.dart';
+import 'package:axlmed/apis/providers/meeting_request_provider.dart';
+import 'package:axlmed/providers/home_data_provider.dart';
+import 'package:axlmed/providers/user_data_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 
@@ -543,7 +543,7 @@ class _SpeakerDetailPageState extends ConsumerState<SpeakerDetailPage> {
 
   Widget _buildActionButtons(BuildContext context, Speaker speaker) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
     final canMessage =
         speaker.canMessage == true && speaker.messengerId != null;
 
@@ -915,7 +915,7 @@ class _SpeakerDetailPageState extends ConsumerState<SpeakerDetailPage> {
 
   Widget _buildScheduleSection(Speaker speaker, bool isDark) {
     final sessions = speaker.sessions ?? [];
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -1087,7 +1087,7 @@ class _SpeakerDetailPageState extends ConsumerState<SpeakerDetailPage> {
                     Icon(
                       CupertinoIcons.clock,
                       size: 16,
-                      color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
+                      color: isDark ? Color(0xFF007AFF) : Color(0xFF0387FE),
                     ),
                     SizedBox(width: 6),
                     Text(
@@ -1095,7 +1095,7 @@ class _SpeakerDetailPageState extends ConsumerState<SpeakerDetailPage> {
                           '${_formatTime(session.startTime)} - ${_formatTime(session.endTime)}',
                       style: TextStyle(
                         fontSize: 15,
-                        color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
+                        color: isDark ? Color(0xFF007AFF) : Color(0xFF0387FE),
                         fontWeight: FontWeight.w600,
                         fontFamily: 'SF Pro Display',
                         letterSpacing: 0.2,
@@ -1151,7 +1151,7 @@ class _SpeakerDetailPageState extends ConsumerState<SpeakerDetailPage> {
                         vertical: 7,
                       ),
                       decoration: BoxDecoration(
-                        color: (isDark ? Color(0xFF23C061) : Color(0xFF21AA62))
+                        color: (isDark ? Color(0xFF007AFF) : Color(0xFF0387FE))
                             .withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -1159,7 +1159,7 @@ class _SpeakerDetailPageState extends ConsumerState<SpeakerDetailPage> {
                         session.role!,
                         style: TextStyle(
                           fontSize: 13,
-                          color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
+                          color: isDark ? Color(0xFF007AFF) : Color(0xFF0387FE),
                           fontWeight: FontWeight.w600,
                           fontFamily: 'SF Pro Display',
                           letterSpacing: 0.2,
@@ -1175,7 +1175,7 @@ class _SpeakerDetailPageState extends ConsumerState<SpeakerDetailPage> {
                         vertical: 7,
                       ),
                       decoration: BoxDecoration(
-                        color: (isDark ? Color(0xFF23C061) : Color(0xFF21AA62))
+                        color: (isDark ? Color(0xFF007AFF) : Color(0xFF0387FE))
                             .withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -1183,7 +1183,7 @@ class _SpeakerDetailPageState extends ConsumerState<SpeakerDetailPage> {
                         session.sessionType!,
                         style: TextStyle(
                           fontSize: 13,
-                          color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
+                          color: isDark ? Color(0xFF007AFF) : Color(0xFF0387FE),
                           fontWeight: FontWeight.w600,
                           fontFamily: 'SF Pro Display',
                           letterSpacing: 0.2,
@@ -1468,7 +1468,7 @@ class _MeetingFormSheetState extends ConsumerState<_MeetingFormSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,

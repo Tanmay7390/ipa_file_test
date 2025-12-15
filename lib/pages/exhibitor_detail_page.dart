@@ -1,11 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:rajapsicon/components/page_scaffold.dart';
-// import 'package:rajapsicon/pages/chat_page.dart';
+import 'package:axlmed/components/page_scaffold.dart';
+// import 'package:axlmed/pages/chat_page.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:video_player/video_player.dart';
-import 'package:flick_video_player/flick_video_player.dart';
-import 'package:rajapsicon/pages/company_representative_detail_page.dart';
+// import 'package:video_player/video_player.dart';
+// import 'package:flick_video_player/flick_video_player.dart';
+import 'package:axlmed/pages/company_representative_detail_page.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -26,7 +26,7 @@ class _ExhibitorDetailPageState extends ConsumerState<ExhibitorDetailPage> {
   bool _isVideoExpanded = true;
   bool _isCompanyRepExpanded = false;
   bool _isDocumentsExpanded = false;
-  FlickManager? _flickManager;
+  // FlickManager? _flickManager;
   bool _videoError = false;
 
   @override
@@ -36,33 +36,33 @@ class _ExhibitorDetailPageState extends ConsumerState<ExhibitorDetailPage> {
   }
 
   void _initializeVideoPlayer(String videoUrl) {
-    if (_flickManager != null) return;
+    // if (_flickManager != null) return;
 
-    try {
-      _flickManager = FlickManager(
-        videoPlayerController: VideoPlayerController.networkUrl(
-          Uri.parse(videoUrl),
-        ),
-        autoPlay: false,
-      );
+    // try {
+    //   _flickManager = FlickManager(
+    //     videoPlayerController: VideoPlayerController.networkUrl(
+    //       Uri.parse(videoUrl),
+    //     ),
+    //     autoPlay: false,
+    //   );
 
-      if (mounted) {
-        setState(() {
-          _videoError = false;
-        });
-      }
-    } catch (error) {
-      if (mounted) {
-        setState(() {
-          _videoError = true;
-        });
-      }
-    }
+    //   if (mounted) {
+    //     setState(() {
+    //       _videoError = false;
+    //     });
+    //   }
+    // } catch (error) {
+    //   if (mounted) {
+    //     setState(() {
+    //       _videoError = true;
+    //     });
+    //   }
+    // }
   }
 
   @override
   void dispose() {
-    _flickManager?.dispose();
+    // _flickManager?.dispose();
     super.dispose();
   }
 
@@ -206,7 +206,7 @@ class _ExhibitorDetailPageState extends ConsumerState<ExhibitorDetailPage> {
   }
 
   Widget _buildHeader(bool isDark, Map<String, dynamic> exhibitor) {
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -374,7 +374,7 @@ class _ExhibitorDetailPageState extends ConsumerState<ExhibitorDetailPage> {
     Map<String, dynamic> exhibitor,
   ) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return Row(
       children: [
@@ -623,7 +623,7 @@ class _ExhibitorDetailPageState extends ConsumerState<ExhibitorDetailPage> {
   }
 
   Widget _buildVideoSection(bool isDark) {
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -706,27 +706,27 @@ class _ExhibitorDetailPageState extends ConsumerState<ExhibitorDetailPage> {
                             ),
                           ),
                         )
-                      else if (_flickManager != null)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: FlickVideoPlayer(
-                            flickManager: _flickManager!,
-                            flickVideoWithControls: FlickVideoWithControls(
-                              controls: FlickPortraitControls(
-                                progressBarSettings: FlickProgressBarSettings(
-                                  playedColor: Color(0xFF21AA62),
-                                  handleColor: Color(0xFF21AA62),
-                                  bufferedColor: Colors.grey.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                  backgroundColor: Colors.grey.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        )
+                      // else if (_flickManager != null)
+                      // ClipRRect(
+                      //   borderRadius: BorderRadius.circular(12),
+                      //   child: FlickVideoPlayer(
+                      //     flickManager: _flickManager!,
+                      //     flickVideoWithControls: FlickVideoWithControls(
+                      //       controls: FlickPortraitControls(
+                      //         progressBarSettings: FlickProgressBarSettings(
+                      //           playedColor: Color(0xFF0387FE),
+                      //           handleColor: Color(0xFF0387FE),
+                      //           bufferedColor: Colors.grey.withValues(
+                      //             alpha: 0.5,
+                      //           ),
+                      //           backgroundColor: Colors.grey.withValues(
+                      //             alpha: 0.3,
+                      //           ),
+                      //         ),
+                      //       ),
+                      //     ),
+                      //   ),
+                      // )
                       else
                         Container(
                           height: 200,
@@ -750,7 +750,7 @@ class _ExhibitorDetailPageState extends ConsumerState<ExhibitorDetailPage> {
   }
 
   Widget _buildCompanyRepSection(bool isDark) {
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     // Mock company representatives data
     final List<Map<String, dynamic>> representatives = [
@@ -915,7 +915,7 @@ class _ExhibitorDetailPageState extends ConsumerState<ExhibitorDetailPage> {
   }
 
   Widget _buildDocumentsSection(bool isDark) {
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     // Mock documents data - in a real app, this would come from the exhibitor data
     final List<Map<String, String>> documents = [
@@ -1000,7 +1000,7 @@ class _ExhibitorDetailPageState extends ConsumerState<ExhibitorDetailPage> {
   }
 
   Widget _buildDocumentCard(Map<String, String> document, bool isDark) {
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return Container(
       margin: EdgeInsets.only(bottom: 12),
@@ -1113,7 +1113,7 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,

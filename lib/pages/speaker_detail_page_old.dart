@@ -1,52 +1,127 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rajapsicon/components/page_scaffold.dart';
-// import 'package:rajapsicon/pages/direct_chat_page.dart';
-import 'package:rajapsicon/apis/providers/attendees_provider.dart';
-import 'package:rajapsicon/apis/providers/meeting_request_provider.dart';
-// import 'package:rajapsicon/apis/providers/direct_chat_provider.dart';
-import 'package:rajapsicon/providers/user_data_provider.dart';
-import 'package:rajapsicon/providers/home_data_provider.dart';
+import 'package:axlmed/components/page_scaffold.dart';
+// import 'package:axlmed/pages/session_detail_page.dart';
+// import 'package:axlmed/pages/direct_chat_page.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:axlmed/apis/providers/speakers_provider.dart';
+// import 'package:axlmed/apis/providers/direct_chat_provider.dart';
+import 'package:axlmed/apis/providers/meeting_request_provider.dart';
+import 'package:axlmed/providers/home_data_provider.dart';
+import 'package:axlmed/providers/user_data_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 
-class AttendeeDetailPage extends ConsumerStatefulWidget {
-  final String attendeeId;
+class SpeakerDetailPage extends ConsumerStatefulWidget {
+  final String speakerId;
 
-  const AttendeeDetailPage({super.key, required this.attendeeId});
+  const SpeakerDetailPage({super.key, required this.speakerId});
 
   @override
-  ConsumerState<AttendeeDetailPage> createState() => _AttendeeDetailPageState();
+  ConsumerState<SpeakerDetailPage> createState() => _SpeakerDetailPageState();
 }
 
-class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
+class _SpeakerDetailPageState extends ConsumerState<SpeakerDetailPage> {
   bool _isAboutExpanded = false;
+  bool _isScheduleExpanded = false;
+  Map<int, bool> _expandedDays = {}; // Track which days are expanded
 
-  void _showMeetingSheet(String attendeeId, String attendeeName) {
+  void _showMeetingSheet(String speakerId, String speakerName) {
     showCupertinoModalPopup(
       context: context,
       builder: (BuildContext context) =>
-          _MeetingFormSheet(attendeeId: attendeeId, attendeeName: attendeeName),
+          _MeetingFormSheet(speakerId: speakerId, speakerName: speakerName),
     );
   }
 
+  Uri _normalizeUrl(String raw) {
+    final s = raw.trim();
+    if (s.isEmpty) return Uri.parse('about:blank');
+
+    // Preserve known schemes
+    if (s.startsWith('mailto:') || s.startsWith('tel:')) {
+      return Uri.parse(s);
+    }
+
+    // Ensure http/https scheme
+    if (s.startsWith('http://') || s.startsWith('https://')) {
+      return Uri.parse(s);
+    }
+
+    // Social handles or bare domains
+    if (s.contains('instagram.com')) {
+      return Uri.parse('https://' + s.replaceFirst(RegExp(r'^https?://'), ''));
+    }
+    if (s.contains('facebook.com')) {
+      return Uri.parse('https://' + s.replaceFirst(RegExp(r'^https?://'), ''));
+    }
+    if (s.contains('linkedin.com')) {
+      return Uri.parse('https://' + s.replaceFirst(RegExp(r'^https?://'), ''));
+    }
+
+    // Handle @username patterns for Instagram/Twitter if provided
+    if (s.startsWith('@')) {
+      final handle = s.substring(1);
+      return Uri.parse('https://instagram.com/$handle');
+    }
+
+    // Default: treat as web domain or path
+    return Uri.parse('https://$s');
+  }
+
   Future<void> _launchUrl(String urlString) async {
-    final uri = Uri.parse(urlString);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    try {
+      final uri = _normalizeUrl(urlString);
+      if (uri.scheme == 'about') return;
+
+      if (uri.scheme == 'http' || uri.scheme == 'https') {
+        final extOk = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+        if (!extOk) {
+          final webOk = await launchUrl(
+            uri,
+            mode: LaunchMode.inAppWebView,
+            webViewConfiguration: const WebViewConfiguration(
+              enableJavaScript: true,
+            ),
+          );
+          if (!webOk) {
+            await _showLaunchFailure(uri.toString());
+          }
+        }
+      } else {
+        final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (!ok) {
+          await _showLaunchFailure(uri.toString());
+        }
+      }
+    } catch (_) {
+      // As a last resort, show failure dialog
+      await _showLaunchFailure(urlString);
     }
   }
 
-  void _showErrorDialog(String message) {
-    showCupertinoDialog(
+  Future<void> _showLaunchFailure(String url) async {
+    await showCupertinoDialog(
       context: context,
       builder: (context) => CupertinoAlertDialog(
-        title: Text('Error'),
-        content: Text(message),
+        title: const Text('Unable to open link'),
+        content: Text(url),
         actions: [
           CupertinoDialogAction(
-            child: Text('OK'),
-            onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+            child: const Text('Copy'),
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: url));
+              Navigator.of(context).pop();
+            },
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text('OK'),
+            onPressed: () => Navigator.of(context).pop(),
           ),
         ],
       ),
@@ -73,6 +148,23 @@ class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
     // First letter of first name + first letter of last name
     return (parts[0].substring(0, 1) + parts[parts.length - 1].substring(0, 1))
         .toUpperCase();
+  }
+
+  // Show error dialog
+  void _showErrorDialog(String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text('Error'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: Text('OK'),
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+          ),
+        ],
+      ),
+    );
   }
 
   // Build initials avatar widget
@@ -103,33 +195,74 @@ class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
     );
   }
 
-  // Check if attendee has any additional info to display
-  bool _hasAdditionalInfo(Attendee attendee) {
-    return (attendee.phone != null && attendee.phone!.isNotEmpty) ||
-        (attendee.email != null && attendee.email!.isNotEmpty) ||
-        (attendee.location != null && attendee.location!.isNotEmpty) ||
-        (attendee.organization != null && attendee.organization!.isNotEmpty);
+  // Check if speaker has any additional info to display
+  bool _hasAdditionalInfo(Speaker speaker) {
+    return (speaker.specialty != null && speaker.specialty!.isNotEmpty) ||
+        (speaker.phone != null && speaker.phone!.isNotEmpty) ||
+        (speaker.email != null && speaker.email!.isNotEmpty) ||
+        (speaker.location != null && speaker.location!.isNotEmpty) ||
+        (speaker.organization != null && speaker.organization!.isNotEmpty);
+  }
+
+  // Format time from ISO string
+  String _formatTime(String? dateTimeString) {
+    if (dateTimeString == null) return '';
+    try {
+      final dateTime = DateTime.parse(dateTimeString).toLocal();
+      final hour = dateTime.hour;
+      final minute = dateTime.minute.toString().padLeft(2, '0');
+      final period = hour >= 12 ? 'PM' : 'AM';
+      final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+      return '$displayHour:$minute $period';
+    } catch (e) {
+      return dateTimeString;
+    }
+  }
+
+  // Format date from ISO string
+  String _formatDate(String? dateTimeString) {
+    if (dateTimeString == null) return '';
+    try {
+      final dateTime = DateTime.parse(dateTimeString).toLocal();
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      return '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
+    } catch (e) {
+      return dateTimeString;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-    final attendeeAsync = ref.watch(attendeeDetailProvider(widget.attendeeId));
+    final speakerAsync = ref.watch(speakerDetailProvider(widget.speakerId));
 
     return CustomPageScaffold(
-      heading: 'Attendee Details',
+      heading: 'Speaker Details',
       hideSearch: true,
-      isLoading: attendeeAsync.isLoading,
+      isLoading: speakerAsync.isLoading,
       hideLargeTitle: true,
       sliverList: SliverList(
         delegate: SliverChildListDelegate([
-          attendeeAsync.when(
-            data: (attendee) => Column(
+          speakerAsync.when(
+            data: (speaker) => Column(
               children: [
                 // Header with photo and basic info
                 Container(
                   color: CupertinoColors.systemBackground.resolveFrom(context),
-                  child: _buildHeader(attendee, isDark),
+                  child: _buildHeader(speaker, isDark),
                 ),
 
                 // Action buttons
@@ -141,31 +274,43 @@ class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
                     left: 20,
                     right: 20,
                   ),
-                  child: _buildActionButtons(context, attendee),
+                  child: _buildActionButtons(context, speaker),
                 ),
                 _buildSeparator(context),
 
                 // About section
-                if (attendee.about != null && attendee.about!.isNotEmpty)
+                if (speaker.about != null && speaker.about!.isNotEmpty)
                   Container(
                     color: CupertinoColors.systemBackground.resolveFrom(
                       context,
                     ),
                     padding: EdgeInsets.only(top: 12, bottom: 12),
-                    child: _buildAboutSection(attendee, isDark),
+                    child: _buildAboutSection(speaker, isDark),
                   ),
 
-                if (attendee.about != null && attendee.about!.isNotEmpty)
+                if (speaker.about != null && speaker.about!.isNotEmpty)
                   _buildSeparator(context),
 
                 // Additional Information section
-                if (_hasAdditionalInfo(attendee))
+                if (_hasAdditionalInfo(speaker)) ...[
                   Container(
                     color: CupertinoColors.systemBackground.resolveFrom(
                       context,
                     ),
                     padding: EdgeInsets.zero,
-                    child: _buildAdditionalInfoSection(attendee, isDark),
+                    child: _buildAdditionalInfoSection(speaker, isDark),
+                  ),
+                  _buildSeparator(context),
+                ],
+
+                // Schedule section
+                if (speaker.sessions != null && speaker.sessions!.isNotEmpty)
+                  Container(
+                    color: CupertinoColors.systemBackground.resolveFrom(
+                      context,
+                    ),
+                    padding: EdgeInsets.zero,
+                    child: _buildScheduleSection(speaker, isDark),
                   ),
 
                 SizedBox(height: 20),
@@ -183,7 +328,7 @@ class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Error loading attendee details',
+                    'Error loading speaker details',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -220,7 +365,7 @@ class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
     );
   }
 
-  Widget _buildHeader(Attendee attendee, bool isDark) {
+  Widget _buildHeader(Speaker speaker, bool isDark) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
@@ -230,13 +375,13 @@ class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
           Stack(
             children: [
               // Always show initials first (instant load)
-              _buildInitialsAvatar(attendee.name, isDark),
+              _buildInitialsAvatar(speaker.name, isDark),
               // Overlay photo on top if available
-              if (attendee.photo != null && attendee.photo!.isNotEmpty)
+              if (speaker.photo != null && speaker.photo!.isNotEmpty)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(20),
                   child: Image.network(
-                    attendee.photo!,
+                    speaker.photo!,
                     width: 120,
                     height: 120,
                     fit: BoxFit.cover,
@@ -261,7 +406,7 @@ class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  attendee.name ?? '',
+                  speaker.name ?? '',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
@@ -272,7 +417,7 @@ class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  attendee.designation ?? attendee.title ?? '',
+                  speaker.designation ?? speaker.title ?? '',
                   style: TextStyle(
                     fontSize: 16,
                     color: CupertinoColors.secondaryLabel.resolveFrom(context),
@@ -281,10 +426,10 @@ class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
                     letterSpacing: 0.2,
                   ),
                 ),
-                if (attendee.organization != null) ...[
+                if (speaker.organization != null) ...[
                   SizedBox(height: 4),
                   Text(
-                    attendee.organization!,
+                    speaker.organization!,
                     style: TextStyle(
                       fontSize: 15,
                       color: CupertinoColors.systemGrey.resolveFrom(context),
@@ -293,6 +438,9 @@ class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
                     ),
                   ),
                 ],
+                SizedBox(height: 12),
+                // Social media buttons
+                _buildSocialMediaButtons(speaker),
               ],
             ),
           ),
@@ -301,11 +449,103 @@ class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, Attendee attendee) {
+  Widget _buildSocialMediaButtons(Speaker speaker) {
+    final socialMedia = speaker.socialMedia;
+    if (socialMedia == null) return SizedBox.shrink();
+
+    return Row(
+      children: [
+        // Facebook
+        if (socialMedia.facebook != null && socialMedia.facebook!.isNotEmpty)
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Color(0xFF1877F2),
+              shape: BoxShape.circle,
+            ),
+            child: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => _launchUrl(socialMedia.facebook!),
+              child: FaIcon(
+                FontAwesomeIcons.facebookF,
+                color: CupertinoColors.white,
+                size: 14,
+              ),
+            ),
+          ),
+        if (socialMedia.facebook != null && socialMedia.facebook!.isNotEmpty)
+          SizedBox(width: 8),
+        // Instagram
+        if (socialMedia.instagram != null && socialMedia.instagram!.isNotEmpty)
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Color(0xFFE4405F),
+              shape: BoxShape.circle,
+            ),
+            child: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => _launchUrl(socialMedia.instagram!),
+              child: FaIcon(
+                FontAwesomeIcons.instagram,
+                color: CupertinoColors.white,
+                size: 14,
+              ),
+            ),
+          ),
+        if (socialMedia.instagram != null && socialMedia.instagram!.isNotEmpty)
+          SizedBox(width: 8),
+        // LinkedIn
+        if (socialMedia.linkedin != null && socialMedia.linkedin!.isNotEmpty)
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Color(0xFF0A66C2),
+              shape: BoxShape.circle,
+            ),
+            child: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => _launchUrl(socialMedia.linkedin!),
+              child: FaIcon(
+                FontAwesomeIcons.linkedinIn,
+                color: CupertinoColors.white,
+                size: 14,
+              ),
+            ),
+          ),
+        if (socialMedia.linkedin != null && socialMedia.linkedin!.isNotEmpty)
+          SizedBox(width: 8),
+        // Website
+        if (socialMedia.website != null && socialMedia.website!.isNotEmpty)
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemGrey,
+              shape: BoxShape.circle,
+            ),
+            child: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => _launchUrl(socialMedia.website!),
+              child: Icon(
+                CupertinoIcons.globe,
+                color: CupertinoColors.white,
+                size: 16,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context, Speaker speaker) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
     final canMessage =
-        attendee.canMessage == true && attendee.messengerId != null;
+        speaker.canMessage == true && speaker.messengerId != null;
 
     return Row(
       children: [
@@ -358,7 +598,7 @@ class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
               padding: EdgeInsets.symmetric(vertical: 12),
               borderRadius: BorderRadius.circular(12),
               onPressed: () =>
-                  _showMeetingSheet(attendee.id, attendee.name ?? ''),
+                  _showMeetingSheet(speaker.id, speaker.name ?? ''),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -400,8 +640,8 @@ class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
     );
   }
 
-  Widget _buildAboutSection(Attendee attendee, bool isDark) {
-    final aboutText = attendee.about ?? '';
+  Widget _buildAboutSection(Speaker speaker, bool isDark) {
+    final aboutText = speaker.about ?? '';
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -547,7 +787,7 @@ class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
     );
   }
 
-  Widget _buildAdditionalInfoSection(Attendee attendee, bool isDark) {
+  Widget _buildAdditionalInfoSection(Speaker speaker, bool isDark) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Column(
@@ -565,42 +805,50 @@ class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
           ),
           SizedBox(height: 12),
 
+          // Specialty
+          if (speaker.specialty != null && speaker.specialty!.isNotEmpty)
+            _buildMinimalisticInfoRow(
+              icon: CupertinoIcons.heart_fill,
+              label: 'Specialty',
+              value: speaker.specialty!,
+              isClickable: false,
+            ),
+
           // Phone
-          if (attendee.phone != null && attendee.phone!.isNotEmpty)
+          if (speaker.phone != null && speaker.phone!.isNotEmpty)
             _buildMinimalisticInfoRow(
               icon: CupertinoIcons.phone_fill,
               label: 'Phone',
-              value: attendee.phone!,
+              value: speaker.phone!,
               isClickable: true,
-              onTap: () => _launchUrl('tel:${attendee.phone}'),
+              onTap: () => _launchUrl('tel:${speaker.phone}'),
             ),
 
           // Email
-          if (attendee.email != null && attendee.email!.isNotEmpty)
+          if (speaker.email != null && speaker.email!.isNotEmpty)
             _buildMinimalisticInfoRow(
               icon: CupertinoIcons.mail_solid,
               label: 'Email',
-              value: attendee.email!,
+              value: speaker.email!,
               isClickable: true,
-              onTap: () => _launchUrl('mailto:${attendee.email}'),
+              onTap: () => _launchUrl('mailto:${speaker.email}'),
             ),
 
           // Location
-          if (attendee.location != null && attendee.location!.isNotEmpty)
+          if (speaker.location != null && speaker.location!.isNotEmpty)
             _buildMinimalisticInfoRow(
               icon: CupertinoIcons.location_solid,
               label: 'Location',
-              value: attendee.location!,
+              value: speaker.location!,
               isClickable: false,
             ),
 
           // Organization
-          if (attendee.organization != null &&
-              attendee.organization!.isNotEmpty)
+          if (speaker.organization != null && speaker.organization!.isNotEmpty)
             _buildMinimalisticInfoRow(
               icon: CupertinoIcons.building_2_fill,
               label: 'Organization',
-              value: attendee.organization!,
+              value: speaker.organization!,
               isClickable: false,
             ),
         ],
@@ -664,16 +912,321 @@ class _AttendeeDetailPageState extends ConsumerState<AttendeeDetailPage> {
     }
     return content;
   }
+
+  Widget _buildScheduleSection(Speaker speaker, bool isDark) {
+    final sessions = speaker.sessions ?? [];
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              setState(() {
+                _isScheduleExpanded = !_isScheduleExpanded;
+              });
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'SCHEDULE',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: CupertinoColors.systemGrey.resolveFrom(context),
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                Icon(
+                  _isScheduleExpanded
+                      ? CupertinoIcons.chevron_up
+                      : CupertinoIcons.chevron_down,
+                  size: 18,
+                  color: activeColor,
+                ),
+              ],
+            ),
+          ),
+          AnimatedSize(
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: _isScheduleExpanded && sessions.isNotEmpty
+                ? Column(
+                    children: [
+                      SizedBox(height: 16),
+                      // Day header with date - shown once for all sessions
+                      Row(
+                        children: [
+                          // Calendar icon with day number
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: activeColor,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'D1',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    fontFamily: 'SF Pro Display',
+                                    color: CupertinoColors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          // Session count
+                          Expanded(
+                            child: Text(
+                              '${sessions.length} Session${sessions.length > 1 ? 's' : ''}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'SF Pro Display',
+                                color: CupertinoColors.systemGrey.resolveFrom(
+                                  context,
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Date on the right - extracted from startTime
+                          if (sessions.isNotEmpty &&
+                              (sessions.first.date != null ||
+                                  sessions.first.startTime != null))
+                            Text(
+                              sessions.first.date ??
+                                  _formatDate(sessions.first.startTime),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'SF Pro Display',
+                                color: CupertinoColors.systemGrey.resolveFrom(
+                                  context,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      SizedBox(height: 16),
+                      // All sessions without individual day headers
+                      ...sessions.map((session) {
+                        return _buildSessionCard(session, isDark);
+                      }),
+                    ],
+                  )
+                : SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSessionCard(Session session, bool isDark) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      child: GestureDetector(
+        onTap: () {
+          // if (session.id != null && session.id!.isNotEmpty) {
+          //   Navigator.of(context, rootNavigator: true).push(
+          //     CupertinoPageRoute(
+          //       builder: (context) => SessionDetailPage(sessionId: session.id!),
+          //     ),
+          //   );
+          // }
+        },
+        child: Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: isDark
+                ? CupertinoColors.systemGrey6.darkColor
+                : CupertinoColors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark
+                  ? CupertinoColors.systemGrey5.darkColor
+                  : CupertinoColors.systemGrey5.color,
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Session title
+              if (session.title != null && session.title!.isNotEmpty)
+                Text(
+                  session.title!,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'SF Pro Display',
+                    letterSpacing: 0.2,
+                    height: 1.3,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
+                  ),
+                ),
+
+              if (session.title != null && session.title!.isNotEmpty)
+                SizedBox(height: 16),
+
+              // Time with clock icon
+              if (session.time != null ||
+                  (session.startTime != null && session.endTime != null))
+                Row(
+                  children: [
+                    Icon(
+                      CupertinoIcons.clock,
+                      size: 16,
+                      color: isDark ? Color(0xFF007AFF) : Color(0xFF0387FE),
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      session.time ??
+                          '${_formatTime(session.startTime)} - ${_formatTime(session.endTime)}',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: isDark ? Color(0xFF007AFF) : Color(0xFF0387FE),
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'SF Pro Display',
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+
+              if (session.time != null ||
+                  (session.startTime != null && session.endTime != null))
+                SizedBox(height: 12),
+
+              // Venue with location icon
+              if (session.location != null || session.venue != null)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      CupertinoIcons.location_solid,
+                      size: 16,
+                      color: CupertinoColors.systemGrey.resolveFrom(context),
+                    ),
+                    SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        session.location ?? session.venue ?? '',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: CupertinoTheme.of(
+                            context,
+                          ).textTheme.textStyle.color,
+                          fontFamily: 'SF Pro Display',
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+              if (session.location != null || session.venue != null)
+                SizedBox(height: 16),
+
+              // Badges (Role, Session Type, Status)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  // Role badge (Speaker)
+                  if (session.role != null && session.role!.isNotEmpty)
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (isDark ? Color(0xFF007AFF) : Color(0xFF0387FE))
+                            .withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        session.role!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? Color(0xFF007AFF) : Color(0xFF0387FE),
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'SF Pro Display',
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  // Session Type badge
+                  if (session.sessionType != null &&
+                      session.sessionType!.isNotEmpty)
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (isDark ? Color(0xFF007AFF) : Color(0xFF0387FE))
+                            .withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        session.sessionType!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? Color(0xFF007AFF) : Color(0xFF0387FE),
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'SF Pro Display',
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  // Status badge
+                  if (session.status != null && session.status!.isNotEmpty)
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Color(0xFF16A34A).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        session.status!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF16A34A),
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'SF Pro Display',
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _MeetingFormSheet extends ConsumerStatefulWidget {
-  final String attendeeId;
-  final String attendeeName;
+  final String speakerId;
+  final String speakerName;
 
-  const _MeetingFormSheet({
-    required this.attendeeId,
-    required this.attendeeName,
-  });
+  const _MeetingFormSheet({required this.speakerId, required this.speakerName});
 
   @override
   ConsumerState<_MeetingFormSheet> createState() => _MeetingFormSheetState();
@@ -688,72 +1241,60 @@ class _MeetingFormSheetState extends ConsumerState<_MeetingFormSheet> {
   final TextEditingController _noteController = TextEditingController();
   bool _isVideoMeeting = false;
   bool _isLoading = false;
-
   DateTime _selectedDate = DateTime.now();
-  DateTime _selectedStartTime = DateTime.now();
-  DateTime _selectedEndTime = DateTime.now().add(Duration(minutes: 30));
+  TimeOfDay _selectedStartTime = TimeOfDay(hour: 10, minute: 0);
+  TimeOfDay _selectedEndTime = TimeOfDay(hour: 10, minute: 30);
 
   @override
   void initState() {
     super.initState();
-    _titleController.text = 'Meeting - ${widget.attendeeName}';
-    _updateDateTimeDisplay();
+    _titleController.text = 'Meeting - ${widget.speakerName}';
+    final now = DateTime.now();
+    _selectedDate = now.add(Duration(days: 1));
+    _dateController.text = _formatDate(_selectedDate);
+    _startTimeController.text = '10:00 AM';
+    _endTimeController.text = '10:30 AM';
   }
 
-  void _updateDateTimeDisplay() {
-    // Format date as DD/MM/YYYY
-    _dateController.text =
-        '${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year}';
-
-    // Format time as HH:MM AM/PM
-    _startTimeController.text = _formatTime(_selectedStartTime);
-    _endTimeController.text = _formatTime(_selectedEndTime);
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
-  String _formatTime(DateTime time) {
-    final hour = time.hour > 12
-        ? time.hour - 12
-        : (time.hour == 0 ? 12 : time.hour);
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
+  String _convertDateFormat(String dateStr) {
+    // Convert from DD/MM/YYYY to YYYY-MM-DD
+    final parts = dateStr.split('/');
+    if (parts.length == 3) {
+      return '${parts[2]}-${parts[1]}-${parts[0]}';
+    }
+    return dateStr;
   }
 
   void _showDatePicker() {
     showCupertinoModalPopup(
       context: context,
-      builder: (context) => Container(
+      builder: (_) => Container(
         height: 250,
         color: CupertinoColors.systemBackground.resolveFrom(context),
         child: Column(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                CupertinoButton(
-                  child: Text('Cancel'),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                CupertinoButton(
-                  child: Text('Done'),
-                  onPressed: () {
-                    setState(() {
-                      _updateDateTimeDisplay();
-                    });
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            ),
-            Expanded(
+            SizedBox(
+              height: 180,
               child: CupertinoDatePicker(
                 mode: CupertinoDatePickerMode.date,
                 initialDateTime: _selectedDate,
-                minimumDate: DateTime.now().subtract(Duration(days: 1)),
-                onDateTimeChanged: (DateTime newDate) {
-                  _selectedDate = newDate;
+                minimumDate: DateTime.now(),
+                maximumDate: DateTime.now().add(Duration(days: 365)),
+                onDateTimeChanged: (DateTime picked) {
+                  setState(() {
+                    _selectedDate = picked;
+                    _dateController.text = _formatDate(picked);
+                  });
                 },
               ),
+            ),
+            CupertinoButton(
+              child: Text('Done'),
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ],
         ),
@@ -762,46 +1303,47 @@ class _MeetingFormSheetState extends ConsumerState<_MeetingFormSheet> {
   }
 
   void _showTimePicker(bool isStartTime) {
-    final initialTime = isStartTime ? _selectedStartTime : _selectedEndTime;
+    TimeOfDay currentTime = isStartTime ? _selectedStartTime : _selectedEndTime;
 
     showCupertinoModalPopup(
       context: context,
-      builder: (context) => Container(
+      builder: (_) => Container(
         height: 250,
         color: CupertinoColors.systemBackground.resolveFrom(context),
         child: Column(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                CupertinoButton(
-                  child: Text('Cancel'),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                CupertinoButton(
-                  child: Text('Done'),
-                  onPressed: () {
-                    setState(() {
-                      _updateDateTimeDisplay();
-                    });
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            ),
-            Expanded(
+            SizedBox(
+              height: 180,
               child: CupertinoDatePicker(
                 mode: CupertinoDatePickerMode.time,
-                initialDateTime: initialTime,
                 use24hFormat: false,
-                onDateTimeChanged: (DateTime newTime) {
-                  if (isStartTime) {
-                    _selectedStartTime = newTime;
-                  } else {
-                    _selectedEndTime = newTime;
-                  }
+                initialDateTime: DateTime(
+                  2024,
+                  1,
+                  1,
+                  currentTime.hour,
+                  currentTime.minute,
+                ),
+                onDateTimeChanged: (DateTime picked) {
+                  setState(() {
+                    final time = TimeOfDay(
+                      hour: picked.hour,
+                      minute: picked.minute,
+                    );
+                    if (isStartTime) {
+                      _selectedStartTime = time;
+                      _startTimeController.text = time.format(context);
+                    } else {
+                      _selectedEndTime = time;
+                      _endTimeController.text = time.format(context);
+                    }
+                  });
                 },
               ),
+            ),
+            CupertinoButton(
+              child: Text('Done'),
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ],
         ),
@@ -809,35 +1351,37 @@ class _MeetingFormSheetState extends ConsumerState<_MeetingFormSheet> {
     );
   }
 
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _dateController.dispose();
-    _startTimeController.dispose();
-    _endTimeController.dispose();
-    _locationController.dispose();
-    _noteController.dispose();
-    super.dispose();
+  void _showSuccessMessage(String message) {
+    // Show success message at the bottom
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: CupertinoColors.systemGreen,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
-  String _convertDateFormat(String date) {
-    // Convert from DD/MM/YYYY to YYYY-MM-DD
-    try {
-      final parts = date.split('/');
-      if (parts.length == 3) {
-        final day = parts[0].padLeft(2, '0');
-        final month = parts[1].padLeft(2, '0');
-        final year = parts[2];
-        return '$year-$month-$day';
-      }
-    } catch (e) {
-      // Return original if conversion fails
-    }
-    return date;
+  void _showError(String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text('Error'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
-  Future<void> _handleSendInvite() async {
-    // Validate required fields
+  Future<void> _submitMeetingRequest() async {
+    // Validation
     if (_titleController.text.trim().isEmpty) {
       _showError('Please enter a title');
       return;
@@ -848,13 +1392,9 @@ class _MeetingFormSheetState extends ConsumerState<_MeetingFormSheet> {
       return;
     }
 
-    if (_startTimeController.text.trim().isEmpty) {
-      _showError('Please select a start time');
-      return;
-    }
-
-    if (_endTimeController.text.trim().isEmpty) {
-      _showError('Please select an end time');
+    if (_startTimeController.text.trim().isEmpty ||
+        _endTimeController.text.trim().isEmpty) {
+      _showError('Please select start and end time');
       return;
     }
 
@@ -863,24 +1403,11 @@ class _MeetingFormSheetState extends ConsumerState<_MeetingFormSheet> {
     });
 
     try {
-      // Get current user data
       final userData = ref.read(userDataProvider).valueOrNull;
-      if (userData == null) {
-        _showError('User not found. Please login again.');
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
-
-      // Get event ID
       final homeData = ref.read(homePageDataProvider).valueOrNull;
-      if (homeData?.event?.id == null) {
-        _showError('Event not found. Please try again.');
-        setState(() {
-          _isLoading = false;
-        });
-        return;
+
+      if (userData == null || homeData?.event == null) {
+        throw Exception('User data not available');
       }
 
       // Convert date format from DD/MM/YYYY to YYYY-MM-DD
@@ -892,8 +1419,8 @@ class _MeetingFormSheetState extends ConsumerState<_MeetingFormSheet> {
         eventId: homeData!.event!.id,
         requesterId: userData.id,
         requesterName: userData.name,
-        recipientId: widget.attendeeId,
-        recipientName: widget.attendeeName,
+        recipientId: widget.speakerId,
+        recipientName: widget.speakerName,
         title: _titleController.text.trim(),
         meetingDate: formattedDate,
         startTime: _startTimeController.text.trim(),
@@ -927,44 +1454,21 @@ class _MeetingFormSheetState extends ConsumerState<_MeetingFormSheet> {
     }
   }
 
-  void _showError(String message) {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: Text('Error'),
-        content: Text(message),
-        actions: [
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSuccessMessage(String message) {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: Text('Success'),
-        content: Text(message),
-        actions: [
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('OK'),
-          ),
-        ],
-      ),
-    );
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _dateController.dispose();
+    _startTimeController.dispose();
+    _endTimeController.dispose();
+    _locationController.dispose();
+    _noteController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
@@ -987,34 +1491,18 @@ class _MeetingFormSheetState extends ConsumerState<_MeetingFormSheet> {
 
           // Header
           Padding(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Suggest a Meeting',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'SF Pro Display',
-                    ),
-                  ),
-                ),
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Icon(
-                    CupertinoIcons.xmark_circle_fill,
-                    color: CupertinoColors.systemGrey.resolveFrom(context),
-                    size: 28,
-                  ),
-                ),
-              ],
+            padding: EdgeInsets.all(20),
+            child: Text(
+              'Suggest a Meeting',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                fontFamily: 'SF Pro Display',
+                letterSpacing: 0.2,
+                color: CupertinoTheme.of(context).textTheme.textStyle.color,
+              ),
             ),
           ),
-
-          Divider(height: 1),
-          SizedBox(height: 16),
 
           Expanded(
             child: SingleChildScrollView(
@@ -1347,7 +1835,7 @@ class _MeetingFormSheetState extends ConsumerState<_MeetingFormSheet> {
                           padding: EdgeInsets.symmetric(vertical: 16),
                           borderRadius: BorderRadius.circular(12),
                           color: activeColor,
-                          onPressed: _isLoading ? null : _handleSendInvite,
+                          onPressed: _isLoading ? null : _submitMeetingRequest,
                           child: _isLoading
                               ? CupertinoActivityIndicator(
                                   color: CupertinoColors.white,

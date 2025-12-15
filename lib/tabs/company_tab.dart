@@ -4,27 +4,27 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../components/page_scaffold.dart';
-import '../pages/attendee_detail_page.dart';
-import '../apis/providers/attendees_provider.dart';
-import '../providers/home_data_provider.dart';
+import '../pages/company_detail_page.dart';
+import '../apis/providers/company_provider.dart';
+import '../models/company.dart';
+import '../widgets/company_filter_sheet.dart';
 
-class AttendeesTab extends ConsumerStatefulWidget {
-  const AttendeesTab({super.key});
+class CompanyTab extends ConsumerStatefulWidget {
+  const CompanyTab({super.key});
 
   @override
-  ConsumerState<AttendeesTab> createState() => _AttendeesTabState();
+  ConsumerState<CompanyTab> createState() => _CompanyTabState();
 }
 
-class _AttendeesTabState extends ConsumerState<AttendeesTab> {
+class _CompanyTabState extends ConsumerState<CompanyTab> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _showSearchField = false;
-  List<Attendee> _filteredAttendees = [];
-  Map<String, List<Attendee>> _groupedAttendees = {};
+  List<Company> _companies = [];
+  Map<String, List<Company>> _groupedCompanies = {};
   Map<String, GlobalKey> _sectionKeys = {};
   String? _scrollingLetter;
   final GlobalKey _indexBarKey = GlobalKey();
-  String? _eventId;
   Timer? _debounceTimer;
   bool _isRefreshing = false;
 
@@ -32,21 +32,7 @@ class _AttendeesTabState extends ConsumerState<AttendeesTab> {
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
-    // Load attendees after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadAttendees();
-    });
-  }
-
-  void _loadAttendees() {
-    // Get eventId from home data provider
-    final homeData = ref.read(homePageDataProvider).valueOrNull;
-    _eventId = homeData?.event?.id;
-
-    if (_eventId != null) {
-      // Load attendees for this event
-      ref.read(attendeesProvider.notifier).loadAttendees(_eventId!);
-    }
+    _scrollController.addListener(_onScroll);
   }
 
   @override
@@ -57,29 +43,36 @@ class _AttendeesTabState extends ConsumerState<AttendeesTab> {
     super.dispose();
   }
 
-  void _groupAttendees() {
-    // Sort attendees by sortFirstName from API
-    _filteredAttendees.sort((a, b) {
-      final firstNameA = a.sortFirstName ?? '';
-      final firstNameB = b.sortFirstName ?? '';
-      return firstNameA.compareTo(firstNameB);
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      ref.read(companyListProvider.notifier).loadMore();
+    }
+  }
+
+  void _groupCompanies() {
+    // Sort companies by name
+    _companies.sort((a, b) {
+      final nameA = a.displayName.toLowerCase();
+      final nameB = b.displayName.toLowerCase();
+      return nameA.compareTo(nameB);
     });
 
-    // Group by first letter of sortFirstName
-    _groupedAttendees.clear();
+    // Group by first letter of name
+    _groupedCompanies.clear();
     _sectionKeys.clear();
 
-    for (var attendee in _filteredAttendees) {
-      final sortName = attendee.sortFirstName ?? '';
-      if (sortName.isEmpty) continue;
+    for (var company in _companies) {
+      final name = company.displayName;
+      if (name.isEmpty) continue;
 
-      final firstLetter = sortName[0].toUpperCase();
+      final firstLetter = name[0].toUpperCase();
 
-      if (!_groupedAttendees.containsKey(firstLetter)) {
-        _groupedAttendees[firstLetter] = [];
+      if (!_groupedCompanies.containsKey(firstLetter)) {
+        _groupedCompanies[firstLetter] = [];
         _sectionKeys[firstLetter] = GlobalKey();
       }
-      _groupedAttendees[firstLetter]!.add(attendee);
+      _groupedCompanies[firstLetter]!.add(company);
     }
   }
 
@@ -90,9 +83,7 @@ class _AttendeesTabState extends ConsumerState<AttendeesTab> {
     // Debounce search by 500ms
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
       final query = _searchController.text.trim();
-      if (_eventId != null) {
-        ref.read(attendeesProvider.notifier).search(query);
-      }
+      ref.read(companyListProvider.notifier).search(query);
     });
   }
 
@@ -102,58 +93,35 @@ class _AttendeesTabState extends ConsumerState<AttendeesTab> {
       if (!_showSearchField) {
         _debounceTimer?.cancel();
         _searchController.clear();
-        // Reset search on server
-        if (_eventId != null) {
-          ref.read(attendeesProvider.notifier).search('');
-        }
+        ref.read(companyListProvider.notifier).search('');
       }
     });
   }
 
   Future<void> _onRefresh() async {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    log('🔄 [$timestamp] _onRefresh() ENTRY - _isRefreshing=$_isRefreshing');
-
-    // Prevent multiple refresh calls during pull gesture
-    if (_isRefreshing) {
-      log('⚠️ [$timestamp] Already refreshing, BLOCKED duplicate call');
-      return;
-    }
+    if (_isRefreshing) return;
 
     _isRefreshing = true;
-    log('🔄 [$timestamp] _isRefreshing set to TRUE, proceeding with refresh');
 
     try {
-      if (_eventId != null) {
-        // Just trigger refresh - ref.listen will handle state update
-        await ref.read(attendeesProvider.notifier).refresh();
-        log('🔄 [$timestamp] _onRefresh() COMPLETED successfully');
-
-        // Keep the flag true for 500ms to prevent rapid successive calls
-        await Future.delayed(const Duration(milliseconds: 500));
-      }
-    } catch (e) {
-      log('❌ [$timestamp] _onRefresh() ERROR: $e');
+      await ref.read(companyListProvider.notifier).refresh();
+      await Future.delayed(const Duration(milliseconds: 500));
     } finally {
       _isRefreshing = false;
-      log('🔄 [$timestamp] _isRefreshing set to FALSE');
     }
   }
 
-  Future<void> _loadMore() async {
-    log('🔄 _loadMore called in UI');
-    if (_eventId != null) {
-      final notifier = ref.read(attendeesProvider.notifier);
-      log('🔄 hasMore: ${notifier.hasMore}');
-      if (notifier.hasMore) {
-        log('🔄 Calling notifier.loadMore()');
-        await notifier.loadMore();
-      } else {
-        log('🔄 No more data to load');
+  void _showFilters() {
+    showCupertinoModalPopup<Map<String, String>>(
+      context: context,
+      builder: (BuildContext context) => CompanyFilterSheet(
+        currentFilters: ref.read(companyListProvider.notifier).currentFilters,
+      ),
+    ).then((filters) {
+      if (filters != null) {
+        ref.read(companyListProvider.notifier).applyFilters(filters);
       }
-    } else {
-      log('🔄 eventId is null');
-    }
+    });
   }
 
   String? _getLetterAtPosition(double localY) {
@@ -166,7 +134,7 @@ class _AttendeesTabState extends ConsumerState<AttendeesTab> {
     final index = (localY / itemHeight).floor().clamp(0, 25);
     final letter = String.fromCharCode(65 + index);
 
-    return _groupedAttendees.containsKey(letter) ? letter : null;
+    return _groupedCompanies.containsKey(letter) ? letter : null;
   }
 
   void _handleIndexDragStart(DragStartDetails details) {
@@ -205,53 +173,19 @@ class _AttendeesTabState extends ConsumerState<AttendeesTab> {
     final key = _sectionKeys[letter];
     if (key?.currentContext != null) {
       try {
-        // Use ensureVisible which automatically handles all the scrolling logic
         Scrollable.ensureVisible(
           key!.currentContext!,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
-          alignment: 0.0, // Align to top of viewport
+          alignment: 0.0,
         );
       } catch (e) {
-        // Ignore scroll errors - section might not be in viewport yet
+        // Ignore scroll errors
       }
     }
   }
 
-  // Helper function to convert country code to emoji flag
-  String _countryCodeToEmoji(String countryCode) {
-    final codePoints = countryCode.toUpperCase().codeUnits;
-    return String.fromCharCodes(
-      codePoints.map((code) => 0x1F1E6 + (code - 0x41)),
-    );
-  }
-
-  // Helper function to get initials from name
-  String _getInitials(String? name) {
-    if (name == null || name.isEmpty) return '?';
-
-    // Remove titles with or without period (Dr, Dr., Prof, Prof., Mr, Mr., etc.)
-    final cleaned = name.replaceAll(
-      RegExp(r'^(Dr\.?|Prof\.?|Mr\.?|Mrs\.?|Ms\.?)\s+', caseSensitive: false),
-      '',
-    );
-
-    final parts = cleaned.trim().split(' ');
-    if (parts.isEmpty) return '?';
-
-    if (parts.length == 1) {
-      return parts[0].substring(0, 1).toUpperCase();
-    }
-
-    // First letter of first name + first letter of last name
-    return (parts[0].substring(0, 1) + parts[parts.length - 1].substring(0, 1))
-        .toUpperCase();
-  }
-
-  // Build initials avatar widget
-  Widget _buildInitialsAvatar(String? name, bool isDark) {
-    final initials = _getInitials(name);
-
+  Widget _buildInitialsAvatar(String initials, bool isDark) {
     return Container(
       width: 60,
       height: 60,
@@ -276,44 +210,101 @@ class _AttendeesTabState extends ConsumerState<AttendeesTab> {
     );
   }
 
+  Widget _buildStatusBadge(String? status) {
+    if (status == null || status.isEmpty || status == 'null') {
+      return const SizedBox.shrink();
+    }
+
+    Color badgeColor;
+    if (status.toUpperCase().contains('ACTIVE')) {
+      badgeColor = CupertinoColors.systemGreen;
+    } else if (status.toUpperCase().contains('PUBLIC')) {
+      badgeColor = CupertinoColors.systemBlue;
+    } else if (status.toUpperCase().contains('ACQUIRED')) {
+      badgeColor = CupertinoColors.systemPurple;
+    } else if (status.toUpperCase().contains('INACTIVE') ||
+        status.toUpperCase().contains('SHUTDOWN')) {
+      badgeColor = CupertinoColors.systemRed;
+    } else {
+      badgeColor = CupertinoColors.systemGrey;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: badgeColor.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: badgeColor.withValues(alpha: 0.5), width: 1),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: badgeColor,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
-    final attendeesAsync = ref.watch(attendeesProvider);
+    final companiesAsync = ref.watch(companyListProvider);
 
     // Listen to provider changes and update local state
-    ref.listen<AsyncValue<AttendeesData>>(attendeesProvider, (previous, next) {
-      next.whenData((data) {
-        setState(() {
-          _filteredAttendees = data.attendees;
-          _groupAttendees();
-        });
-      });
+    ref.listen<AsyncValue<List<Company>>>(companyListProvider, (
+      previous,
+      next,
+    ) {
+      next.when(
+        data: (data) {
+          setState(() {
+            _companies = data;
+            _groupCompanies();
+          });
+        },
+        loading: () {
+          // Keep showing loading
+        },
+        error: (error, stack) {
+          // Show error message if needed
+          log('Error loading companies: $error');
+        },
+      );
     });
 
     return Stack(
       children: [
         CustomPageScaffold(
           scrollController: _scrollController,
-          isLoading: attendeesAsync.isLoading,
-          heading: 'Attendees',
+          isLoading: companiesAsync.isLoading && _companies.isEmpty,
+          heading: 'Companies',
           searchController: _searchController,
           showSearchField: _showSearchField,
           onSearchToggle: (_) => _toggleSearch(),
-          onBottomRefresh: _loadMore,
           onRefresh: _onRefresh,
+          trailing: CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: _showFilters,
+            child: Icon(
+              CupertinoIcons.slider_horizontal_3,
+              size: 22,
+              color: isDark ? Color(0xFF007AFF) : Color(0xFF0387FE),
+            ),
+          ),
           sliverList: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
-              final entries = _groupedAttendees.entries.toList();
+              final entries = _groupedCompanies.entries.toList();
               final entry = entries[index];
               final letter = entry.key;
-              final attendees = entry.value;
+              final companies = entry.value;
 
               return Column(
                 key: _sectionKeys[letter],
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Section header - Full width with sticky effect using Container
+                  // Section header
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
@@ -331,7 +322,7 @@ class _AttendeesTabState extends ConsumerState<AttendeesTab> {
                       ),
                     ),
                   ),
-                  // Attendees list for this section
+                  // Companies list for this section
                   ClipRect(
                     child: Transform.translate(
                       offset: Offset(0, -0.5),
@@ -340,7 +331,7 @@ class _AttendeesTabState extends ConsumerState<AttendeesTab> {
                         additionalDividerMargin: 72,
                         backgroundColor: CupertinoColors.systemBackground,
                         topMargin: 0,
-                        children: attendees.map((attendee) {
+                        children: companies.map((company) {
                           return CupertinoListTile(
                             backgroundColor: CupertinoColors.systemBackground
                                 .resolveFrom(context),
@@ -349,37 +340,41 @@ class _AttendeesTabState extends ConsumerState<AttendeesTab> {
                               vertical: 12.0,
                             ),
                             leadingSize: 60,
-                            leading: Stack(
-                              children: [
-                                // Always show initials first (instant load)
-                                _buildInitialsAvatar(attendee.name, isDark),
-                                // Overlay photo on top if available
-                                if (attendee.photo != null &&
-                                    attendee.photo!.isNotEmpty)
-                                  ClipRRect(
+                            leading:
+                                (company.axlCompanyLogo != null &&
+                                    company.axlCompanyLogo!.isNotEmpty)
+                                ? ClipRRect(
                                     borderRadius: BorderRadius.circular(30),
                                     child: Image.network(
-                                      attendee.photo!,
+                                      company.axlCompanyLogo!,
                                       width: 60,
                                       height: 60,
                                       fit: BoxFit.cover,
                                       loadingBuilder:
                                           (context, child, loadingProgress) {
-                                            if (loadingProgress == null)
+                                            if (loadingProgress == null) {
                                               return child;
-                                            // While loading, show nothing (initials visible underneath)
-                                            return const SizedBox.shrink();
+                                            }
+                                            return _buildInitialsAvatar(
+                                              company.initials,
+                                              isDark,
+                                            );
                                           },
-                                      errorBuilder: (context, error, stackTrace) {
-                                        // On error, show nothing (initials remain visible)
-                                        return const SizedBox.shrink();
-                                      },
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return _buildInitialsAvatar(
+                                              company.initials,
+                                              isDark,
+                                            );
+                                          },
                                     ),
+                                  )
+                                : _buildInitialsAvatar(
+                                    company.initials,
+                                    isDark,
                                   ),
-                              ],
-                            ),
                             title: Text(
-                              '${attendee.title?.isNotEmpty == true ? attendee.title! + ' ' : ''}${attendee.name ?? ''}',
+                              company.displayName,
                               style: TextStyle(
                                 fontFamily: 'SF Pro Display',
                                 fontSize: 18,
@@ -390,45 +385,36 @@ class _AttendeesTabState extends ConsumerState<AttendeesTab> {
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (attendee.designation != null &&
-                                    attendee.designation!.isNotEmpty)
+                                if (company.displayType.isNotEmpty)
                                   Text(
-                                    attendee.designation!,
+                                    company.displayType,
                                     style: TextStyle(
                                       fontFamily: 'SF Pro Display',
                                       fontSize: 15,
                                       letterSpacing: 0.25,
                                     ),
                                   ),
-                                if (attendee.designation != null &&
-                                    attendee.designation!.isNotEmpty)
-                                  SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    if (attendee.countryCode != null)
-                                      Text(
-                                        _countryCodeToEmoji(
-                                          attendee.countryCode!,
-                                        ),
-                                        style: TextStyle(fontSize: 14),
-                                      ),
-                                    if (attendee.countryCode != null)
-                                      SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        '${attendee.organization ?? ''}${attendee.organization != null && attendee.organization!.isNotEmpty && attendee.location != null && attendee.location!.isNotEmpty ? ', ' : ''}${attendee.location ?? ''}',
-                                        style: TextStyle(
-                                          fontFamily: 'SF Pro Display',
-                                          fontSize: 14,
-                                          letterSpacing: 0.25,
-                                          color: CupertinoColors.secondaryLabel
-                                              .resolveFrom(context),
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
+                                if (company.displayStatus.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: _buildStatusBadge(
+                                      company.displayStatus,
+                                    ),
+                                  ),
+                                if (company.displayLocation.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      company.displayLocation,
+                                      style: TextStyle(
+                                        fontFamily: 'SF Pro Display',
+                                        fontSize: 13,
+                                        letterSpacing: 0.25,
+                                        color: CupertinoColors.tertiaryLabel
+                                            .resolveFrom(context),
                                       ),
                                     ),
-                                  ],
-                                ),
+                                  ),
                               ],
                             ),
                             trailing: Padding(
@@ -438,9 +424,8 @@ class _AttendeesTabState extends ConsumerState<AttendeesTab> {
                             onTap: () {
                               Navigator.of(context, rootNavigator: true).push(
                                 CupertinoPageRoute(
-                                  builder: (context) => AttendeeDetailPage(
-                                    attendeeId: attendee.id,
-                                  ),
+                                  builder: (context) =>
+                                      CompanyDetailPage(companyId: company.id),
                                 ),
                               );
                             },
@@ -451,10 +436,10 @@ class _AttendeesTabState extends ConsumerState<AttendeesTab> {
                   ),
                 ],
               );
-            }, childCount: _groupedAttendees.length),
+            }, childCount: _groupedCompanies.length),
           ),
         ),
-        // A-Z Index on the right - iOS style
+        // A-Z Index on the right
         Positioned(
           right: 2,
           top: 0,
@@ -472,7 +457,7 @@ class _AttendeesTabState extends ConsumerState<AttendeesTab> {
                   mainAxisSize: MainAxisSize.min,
                   children: List.generate(26, (index) {
                     final letter = String.fromCharCode(65 + index);
-                    final hasSection = _groupedAttendees.containsKey(letter);
+                    final hasSection = _groupedCompanies.containsKey(letter);
 
                     return GestureDetector(
                       onTap: hasSection
@@ -504,8 +489,8 @@ class _AttendeesTabState extends ConsumerState<AttendeesTab> {
                             fontWeight: FontWeight.w600,
                             color: hasSection
                                 ? isDark
-                                      ? Color(0xFF23C061)
-                                      : Color(0xFF21AA62)
+                                      ? Color(0xFF007AFF)
+                                      : Color(0xFF0387FE)
                                 : CupertinoColors.systemGrey3,
                           ),
                         ),

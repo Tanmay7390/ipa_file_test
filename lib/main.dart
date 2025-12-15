@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
-import 'package:rajapsicon/router.dart';
-import 'package:rajapsicon/theme_provider.dart'; // Add this import
+import 'package:axlmed/router.dart';
+import 'package:axlmed/theme_provider.dart'; // Add this import
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rajapsicon/apis/core/dio_provider.dart';
-import 'package:rajapsicon/providers/home_data_provider.dart';
+import 'package:axlmed/apis/core/dio_provider.dart';
+import 'package:axlmed/providers/home_data_provider.dart';
 
 void main() => runApp(const ProviderScope(child: MyApp()));
 

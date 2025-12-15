@@ -3,12 +3,12 @@ import 'dart:developer';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rajapsicon/theme_provider.dart';
-import 'package:rajapsicon/drawer.dart';
-import 'package:rajapsicon/components/page_scaffold.dart';
+import 'package:axlmed/theme_provider.dart';
+import 'package:axlmed/drawer.dart';
+import 'package:axlmed/components/page_scaffold.dart';
 import 'package:go_router/go_router.dart';
-import 'package:rajapsicon/providers/home_data_provider.dart';
-import 'package:rajapsicon/providers/user_data_provider.dart';
+import 'package:axlmed/providers/home_data_provider.dart';
+import 'package:axlmed/providers/user_data_provider.dart';
 
 class HomeTab extends ConsumerStatefulWidget {
   const HomeTab({super.key});
@@ -20,44 +20,109 @@ class HomeTab extends ConsumerStatefulWidget {
 class _HomeTabState extends ConsumerState<HomeTab> {
   bool _isRefreshing = false;
 
+  // Static content data for each category
+  final List<Map<String, dynamic>> _vcContent = [
+    {
+      'title': 'Series B Funding Round Closes at \$50M',
+      'description':
+          'Healthcare startup secures major investment for expansion',
+      'date': 'Dec 12, 2024',
+      'tag': 'Funding',
+    },
+    {
+      'title': 'New VC Fund Targets Digital Health',
+      'description': 'Leading investors launch \$200M healthcare-focused fund',
+      'date': 'Dec 10, 2024',
+      'tag': 'Investment',
+    },
+  ];
+
+  final List<Map<String, dynamic>> _maContent = [
+    {
+      'title': 'Major Pharma Acquires Biotech Firm',
+      'description': 'Deal valued at \$3.2B expands oncology portfolio',
+      'date': 'Dec 11, 2024',
+      'tag': 'Acquisition',
+    },
+    {
+      'title': 'Hospital Systems Announce Merger',
+      'description': 'Combined entity to serve 5M+ patients annually',
+      'date': 'Dec 9, 2024',
+      'tag': 'Merger',
+    },
+  ];
+
+  final List<Map<String, dynamic>> _drugsContent = [
+    {
+      'title': 'FDA Approves New Cancer Treatment',
+      'description': 'Breakthrough therapy shows 40% improvement in outcomes',
+      'date': 'Dec 12, 2024',
+      'tag': 'Approval',
+    },
+    {
+      'title': 'Phase 3 Trial Results Published',
+      'description': 'Novel diabetes drug exceeds efficacy endpoints',
+      'date': 'Dec 8, 2024',
+      'tag': 'Clinical Trial',
+    },
+  ];
+
+  final List<Map<String, dynamic>> _devicesContent = [
+    {
+      'title': 'AI-Powered Diagnostic Device Launched',
+      'description': 'New imaging system reduces diagnosis time by 60%',
+      'date': 'Dec 11, 2024',
+      'tag': 'Launch',
+    },
+    {
+      'title': 'Wearable Health Monitor Gets CE Mark',
+      'description': 'Continuous glucose monitoring for diabetes management',
+      'date': 'Dec 7, 2024',
+      'tag': 'Regulatory',
+    },
+  ];
+
+  final List<Map<String, dynamic>> _dxContent = [
+    {
+      'title': 'Liquid Biopsy Test Gains Traction',
+      'description': 'Non-invasive cancer detection now available nationwide',
+      'date': 'Dec 10, 2024',
+      'tag': 'Diagnostics',
+    },
+    {
+      'title': 'Point-of-Care Testing Revolution',
+      'description': 'Rapid testing solutions transform patient care delivery',
+      'date': 'Dec 6, 2024',
+      'tag': 'Innovation',
+    },
+  ];
+
   Future<void> _onRefresh() async {
-    print('🎯🎯🎯 REFRESH CALLED! 🎯🎯🎯');
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     log('🔄 [$timestamp] _onRefresh() ENTRY - _isRefreshing=$_isRefreshing');
 
-    // Prevent multiple refresh calls during pull gesture
     if (_isRefreshing) {
       log('⚠️ [$timestamp] Already refreshing, BLOCKED duplicate call');
       return;
     }
 
     _isRefreshing = true;
-    log('🔄 [$timestamp] _isRefreshing set to TRUE, proceeding with refresh');
 
     try {
-      // Refresh home page data from API
       await ref.read(homePageDataProvider.notifier).refresh();
-
-      log('🔄 [$timestamp] _onRefresh() COMPLETED successfully');
-
-      // Keep the flag true for 500ms to prevent rapid successive calls
       await Future.delayed(const Duration(milliseconds: 500));
     } catch (e) {
       log('❌ [$timestamp] _onRefresh() ERROR: $e');
     } finally {
       _isRefreshing = false;
-      log('🔄 [$timestamp] _isRefreshing set to FALSE');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final homeDataAsync = ref.watch(homePageDataProvider);
-
-    // Extract data immediately, or use null if still loading
     final homeData = homeDataAsync.valueOrNull;
 
-    // Always show content immediately, data will update when loaded
     return _buildHomeContent(context, ref, homeData);
   }
 
@@ -70,7 +135,7 @@ class _HomeTabState extends ConsumerState<HomeTab> {
 
     return CustomPageScaffold(
       heading: eventTitle,
-      hideLargeTitle: true, // ← Changed to false like agenda tab
+      hideLargeTitle: true,
       hideSearch: true,
       showSearchField: false,
       isLoading: false,
@@ -79,18 +144,410 @@ class _HomeTabState extends ConsumerState<HomeTab> {
       onRefresh: _onRefresh,
       sliverList: SliverList(
         delegate: SliverChildListDelegate([
-          _buildParallaxCarousel(context, ref, homeData),
-          // Stats Card
-          const SizedBox(height: 20),
-          _buildStatsCard(context, ref, homeData),
+          const SizedBox(height: 24),
+          // Hero Banner
+          _buildHeroBanner(context, ref),
 
-          // Featured Content
-          const SizedBox(height: 20),
-          // _buildFeaturedSessions(context, ref, homeData),
+          const SizedBox(height: 24),
 
-          // Bottom Spacing
-          const SizedBox(height: 25),
+          // VC Section
+          _buildSection(
+            context,
+            ref,
+            title: 'VC',
+            subtitle: 'Venture Capital & Funding',
+            icon: CupertinoIcons.money_dollar_circle,
+            color: const Color(0xFF6366F1),
+            items: _vcContent,
+          ),
+
+          const SizedBox(height: 24),
+
+          // M&A Section
+          _buildSection(
+            context,
+            ref,
+            title: 'M&A',
+            subtitle: 'Mergers & Acquisitions',
+            icon: CupertinoIcons.arrow_right_arrow_left,
+            color: const Color(0xFF8B5CF6),
+            items: _maContent,
+          ),
+
+          const SizedBox(height: 24),
+
+          // Drugs Section
+          _buildSection(
+            context,
+            ref,
+            title: 'Drugs',
+            subtitle: 'Pharmaceuticals & Treatments',
+            icon: CupertinoIcons.capsule,
+            color: const Color(0xFF10B981),
+            items: _drugsContent,
+          ),
+
+          const SizedBox(height: 24),
+
+          // Devices Section
+          _buildSection(
+            context,
+            ref,
+            title: 'Devices',
+            subtitle: 'Medical Devices & Equipment',
+            icon: CupertinoIcons.device_phone_portrait,
+            color: const Color(0xFFF59E0B),
+            items: _devicesContent,
+          ),
+
+          const SizedBox(height: 24),
+
+          // DX Section
+          _buildSection(
+            context,
+            ref,
+            title: 'DX',
+            subtitle: 'Diagnostics & Testing',
+            icon: CupertinoIcons.lab_flask,
+            color: const Color(0xFFEF4444),
+            items: _dxContent,
+          ),
+
+          const SizedBox(height: 40),
         ]),
+      ),
+    );
+  }
+
+  Widget _buildHeroBanner(BuildContext context, WidgetRef ref) {
+    final systemBrightness = MediaQuery.of(context).platformBrightness;
+    final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF0F172A) : const Color(0xFF3B82F6),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      CupertinoIcons.bolt_fill,
+                      color: Colors.yellow[300],
+                      size: 14,
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Latest Updates',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Healthcare Industry Insights',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.5,
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Stay updated with the latest news in VC funding, M&A deals, drug approvals, medical devices, and diagnostics.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              _buildStatPill('152', 'Articles'),
+              const SizedBox(width: 12),
+              _buildStatPill('28', 'This Week'),
+              const SizedBox(width: 12),
+              _buildStatPill('5', 'Categories'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatPill(String value, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.8),
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSection(
+    BuildContext context,
+    WidgetRef ref, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required List<Map<String, dynamic>> items,
+  }) {
+    final systemBrightness = MediaQuery.of(context).platformBrightness;
+    final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
+    final textColor = isDarkMode
+        ? Colors.white.withValues(alpha: 0.9)
+        : Colors.black.withValues(alpha: 0.9);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Header
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: isDarkMode ? 0.2 : 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: textColor.withValues(alpha: 0.6),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () {
+                  // Navigate to full section
+                },
+                child: Row(
+                  children: [
+                    Text(
+                      'See All',
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(CupertinoIcons.chevron_right, color: color, size: 16),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Content Cards - Horizontal Scroll
+        SizedBox(
+          height: 180,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: EdgeInsets.only(
+                  right: index == items.length - 1 ? 0 : 12,
+                ),
+                child: _buildContentCard(
+                  context,
+                  ref,
+                  item: items[index],
+                  color: color,
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContentCard(
+    BuildContext context,
+    WidgetRef ref, {
+    required Map<String, dynamic> item,
+    required Color color,
+  }) {
+    final systemBrightness = MediaQuery.of(context).platformBrightness;
+    final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
+
+    final cardBg = isDarkMode
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.white;
+    final textColor = isDarkMode
+        ? Colors.white.withValues(alpha: 0.95)
+        : const Color(0xFF1F2937);
+
+    return GestureDetector(
+      onTap: () {
+        // Navigate to detail
+      },
+      child: Container(
+        width: 280,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDarkMode
+                ? Colors.white.withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: 0.06),
+          ),
+          boxShadow: isDarkMode
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Tag
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: isDarkMode ? 0.2 : 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                item['tag'],
+                style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Title
+            Text(
+              item['title'],
+              style: TextStyle(
+                color: textColor,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                height: 1.3,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+
+            // Description
+            Expanded(
+              child: Text(
+                item['description'],
+                style: TextStyle(
+                  color: textColor.withValues(alpha: 0.7),
+                  fontSize: 13,
+                  height: 1.4,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+
+            // Date
+            Row(
+              children: [
+                Icon(
+                  CupertinoIcons.calendar,
+                  color: textColor.withValues(alpha: 0.5),
+                  size: 14,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  item['date'],
+                  style: TextStyle(
+                    color: textColor.withValues(alpha: 0.5),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -230,1047 +687,6 @@ class _HomeTabState extends ConsumerState<HomeTab> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildParallaxCarousel(
-    BuildContext context,
-    WidgetRef ref,
-    HomePageData? homeData,
-  ) {
-    // Always show carousel immediately, data updates when ready
-    return SizedBox(height: 355, child: _ParallaxCarousel(homeData: homeData));
-  }
-
-  Widget _buildFeaturedSessions(
-    BuildContext context,
-    WidgetRef ref,
-    HomePageData? homeData,
-  ) {
-    final systemBrightness = MediaQuery.of(context).platformBrightness;
-    final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
-    final textColor = isDarkMode
-        ? Colors.white.withValues(alpha: 0.9)
-        : Colors.black.withValues(alpha: 0.9);
-
-    // Use API data only
-    final sessions = homeData?.featuredSessions ?? [];
-    final displaySessions = sessions
-        .asMap()
-        .entries
-        .map(
-          (entry) => {
-            'title': entry.value.title,
-            'organizer': entry.value.organizer ?? '',
-            'time': entry.value.formattedDatetime,
-            'icon': _getIconFromString(entry.value.icon),
-            'colors': _getColorsForIndex(entry.key),
-          },
-        )
-        .toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Featured Sessions',
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'SF Pro Display',
-                  letterSpacing: 0.2,
-                ),
-              ),
-              GestureDetector(
-                onTap: () => context.go('/company'),
-                child: Row(
-                  children: [
-                    Text(
-                      'View All',
-                      style: TextStyle(
-                        color: isDarkMode
-                            ? const Color(0xFF34D399)
-                            : const Color(0xFF21AA62),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'SF Pro Display',
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      CupertinoIcons.chevron_right,
-                      color: isDarkMode
-                          ? const Color(0xFF34D399)
-                          : const Color(0xFF21AA62),
-                      size: 16,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-        SizedBox(
-          height: 150,
-          child: PageView.builder(
-            controller: PageController(viewportFraction: 0.85),
-            itemCount: displaySessions.length,
-            padEnds: false,
-            itemBuilder: (context, index) {
-              final session = displaySessions[index];
-              return Padding(
-                padding: EdgeInsets.only(
-                  left: index == 0 ? 24 : 8,
-                  right: index == displaySessions.length - 1 ? 24 : 8,
-                ),
-                child: _buildSessionCard(
-                  context,
-                  ref,
-                  session['title'] as String,
-                  session['organizer'] as String,
-                  session['time'] as String,
-                  session['icon'] as IconData,
-                  session['colors'] as List<int>,
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  IconData _getIconFromString(String icon) {
-    switch (icon.toLowerCase()) {
-      case 'calendar':
-        return CupertinoIcons.calendar;
-      case 'scissors':
-        return CupertinoIcons.scissors;
-      case 'bandage':
-        return CupertinoIcons.bandage;
-      case 'heart':
-        return CupertinoIcons.heart_fill;
-      default:
-        return CupertinoIcons.calendar;
-    }
-  }
-
-  List<int> _getColorsForIndex(int index) {
-    final colorSets = [
-      [0xFF065F46, 0xFF059669],
-      [0xFF15803D, 0xFF16A34A],
-      [0xFF4D7C0F, 0xFF65A30D],
-    ];
-    return colorSets[index % colorSets.length];
-  }
-
-  Widget _buildSessionCard(
-    BuildContext context,
-    WidgetRef ref,
-    String title,
-    String organizer,
-    String time,
-    IconData icon,
-    List<int> gradientColors,
-  ) {
-    final systemBrightness = MediaQuery.of(context).platformBrightness;
-    final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
-
-    final baseColor = Color(gradientColors[0]);
-    final accentColor = isDarkMode ? Color(gradientColors[1]) : baseColor;
-    final cardBg = isDarkMode
-        ? Colors.white.withValues(alpha: 0.08)
-        : Colors.white;
-    final textColor = isDarkMode
-        ? Colors.white.withValues(alpha: 0.95)
-        : const Color(0xFF1F2937);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withValues(alpha: 0.15)
-              : Colors.black.withValues(alpha: 0.08),
-          width: 1,
-        ),
-        boxShadow: isDarkMode
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? accentColor.withValues(alpha: 0.25)
-                      : accentColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: accentColor, size: 20),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? accentColor.withValues(alpha: 0.2)
-                      : accentColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  children: [
-                    Icon(CupertinoIcons.clock, color: accentColor, size: 12),
-                    const SizedBox(width: 4),
-                    Text(
-                      time,
-                      style: TextStyle(
-                        color: accentColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'SF Pro Display',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: TextStyle(
-              color: textColor,
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'SF Pro Display',
-              letterSpacing: 0.2,
-              height: 1.3,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Icon(
-                CupertinoIcons.person_circle,
-                color: textColor.withValues(alpha: 0.6),
-                size: 16,
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  organizer,
-                  style: TextStyle(
-                    color: textColor.withValues(alpha: 0.6),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'SF Pro Display',
-                    letterSpacing: 0.2,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsCard(
-    BuildContext context,
-    WidgetRef ref,
-    HomePageData? homeData,
-  ) {
-    final systemBrightness = MediaQuery.of(context).platformBrightness;
-    final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
-
-    // Use API data only
-    final stats = homeData?.statistics;
-    final attendees =
-        stats?.display?.attendees ?? '${stats?.totalAttendees ?? 0}';
-    final speakers = stats?.display?.speakers ?? '${stats?.totalSpeakers ?? 0}';
-    final sessions = stats?.display?.sessions ?? '${stats?.totalSessions ?? 0}';
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF065F46) : const Color(0xFF21AA62),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem(attendees, 'Attendees', CupertinoIcons.person_2),
-              Container(
-                width: 1,
-                height: 40,
-                color: Colors.white.withValues(alpha: 0.3),
-              ),
-              _buildStatItem(speakers, 'Speakers', CupertinoIcons.mic),
-              Container(
-                width: 1,
-                height: 40,
-                color: Colors.white.withValues(alpha: 0.3),
-              ),
-              _buildStatItem(sessions, 'Sessions', CupertinoIcons.square_list),
-            ],
-          ),
-          // const SizedBox(height: 24),
-          // GestureDetector(
-          //   onTap: () {
-          //     // Add enrollment action
-          //   },
-          //   child: Container(
-          //     width: double.infinity,
-          //     padding: const EdgeInsets.symmetric(vertical: 14),
-          //     decoration: BoxDecoration(
-          //       color: Colors.white,
-          //       borderRadius: BorderRadius.circular(12),
-          //     ),
-          //     child: Center(
-          //       child: Text(
-          //         'Enroll Now',
-          //         style: TextStyle(
-          //           color: isDarkMode
-          //               ? const Color(0xFF065F46)
-          //               : const Color(0xFF21AA62),
-          //           fontSize: 16,
-          //           fontWeight: FontWeight.bold,
-          //           fontFamily: 'SF Pro Display',
-          //           letterSpacing: 0.3,
-          //         ),
-          //       ),
-          //     ),
-          //   ),
-          // ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String number, String label, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.white, size: 24),
-        const SizedBox(height: 8),
-        Text(
-          number,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'SF Pro Display',
-            letterSpacing: 0.2,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.8),
-            fontSize: 12,
-            fontFamily: 'SF Pro Display',
-            letterSpacing: 0.2,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ParallaxCarousel extends StatefulWidget {
-  final HomePageData? homeData;
-
-  const _ParallaxCarousel({this.homeData});
-
-  @override
-  State<_ParallaxCarousel> createState() => _ParallaxCarouselState();
-}
-
-class _ParallaxCarouselState extends State<_ParallaxCarousel> {
-  late PageController _pageController;
-  double _currentPage = 0;
-  Timer? _autoScrollTimer;
-  static const int _totalCards = 2;
-  static const int _initialPage = 0; // Start at 0 for faster initial load
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(
-      viewportFraction: 1.0,
-      initialPage: _initialPage,
-    );
-
-    // Defer listener attachment to after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        double lastPage = 0;
-        _pageController.addListener(() {
-          if (mounted) {
-            final currentPage = _pageController.page ?? 0;
-            // Only update if page changed significantly (reduces rebuilds)
-            if ((currentPage - lastPage).abs() > 0.01) {
-              setState(() {
-                _currentPage = currentPage;
-              });
-              lastPage = currentPage;
-            }
-          }
-        });
-
-        // Start auto-scroll after initial render is complete
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted) {
-            _startAutoScroll();
-          }
-        });
-      }
-    });
-  }
-
-  void _startAutoScroll() {
-    _autoScrollTimer?.cancel();
-    _autoScrollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (_pageController.hasClients && mounted) {
-        final nextPage = (_pageController.page ?? 0) + 1;
-        _pageController.animateToPage(
-          nextPage.toInt(),
-          duration: const Duration(milliseconds: 1000),
-          curve: Curves.easeInOut,
-        );
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _autoScrollTimer?.cancel();
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: PageView.builder(
-            controller: _pageController,
-            physics: const PageScrollPhysics(), // Use platform-specific physics
-            onPageChanged: (int page) {
-              // Reset auto-scroll timer on manual interaction
-              _autoScrollTimer?.cancel();
-              _startAutoScroll();
-            },
-            itemBuilder: (context, index) {
-              return _buildCarouselCard(context, index);
-            },
-          ),
-        ),
-        const SizedBox(height: 16),
-        _buildPageIndicator(),
-      ],
-    );
-  }
-
-  Widget _buildPageIndicator() {
-    final currentIndex = _currentPage.round() % _totalCards;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(_totalCards, (index) {
-        double distance = (currentIndex - index).abs().toDouble();
-        if (distance > _totalCards / 2) {
-          distance = _totalCards - distance;
-        }
-        double opacity = (1 - (distance * 0.3)).clamp(0.3, 1.0);
-        double size = index == currentIndex ? 8.0 : 6.0;
-
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFF23C061).withValues(alpha: opacity),
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildCarouselCard(BuildContext context, int index) {
-    // Calculate parallax offset for content (moves opposite to scroll)
-    double parallaxOffset = (_currentPage - index) * 60;
-
-    return RepaintBoundary(
-      child: Consumer(
-        builder: (context, ref, child) {
-          final systemBrightness = MediaQuery.of(context).platformBrightness;
-          final isDarkMode = ref.watch(isDarkModeProvider(systemBrightness));
-
-          return _buildCardContent(
-            context,
-            ref,
-            isDarkMode,
-            index,
-            parallaxOffset,
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildCardContent(
-    BuildContext context,
-    WidgetRef ref,
-    bool isDarkMode,
-    int index,
-    double parallaxOffset,
-  ) {
-    final cardIndex = index % _totalCards;
-    switch (cardIndex) {
-      case 0:
-        return _buildLogoCard(context, isDarkMode, parallaxOffset);
-      case 1:
-        return _buildLogoCard2(context, isDarkMode, parallaxOffset);
-      // case 2:
-      //   return _buildDateLocationCard(context, isDarkMode, parallaxOffset);
-      // case 3:
-      //   return _buildVenueCard(context, isDarkMode, parallaxOffset);
-      // case 4:
-      //   return _buildFloorMapCard(context, isDarkMode, parallaxOffset);
-      default:
-        return Container();
-    }
-  }
-
-  // Widget _buildLogoCard(
-  //   BuildContext context,
-  //   bool isDarkMode,
-  //   double parallaxOffset,
-  // ) {
-  //   return Container(
-  //     decoration: BoxDecoration(
-  //       gradient: LinearGradient(
-  //         begin: Alignment.topLeft,
-  //         end: Alignment.bottomRight,
-  //         colors: isDarkMode
-  //             ? [const Color(0xFF065F46), const Color(0xFF047857)]
-  //             : [const Color(0xFF10B981), const Color(0xFF059669)],
-  //       ),
-  //     ),
-  //     child: Stack(
-  //       children: [
-  //         // Decorative circles
-  //         Positioned(
-  //           top: -30,
-  //           right: -30,
-  //           child: Container(
-  //             width: 120,
-  //             height: 120,
-  //             decoration: BoxDecoration(
-  //               shape: BoxShape.circle,
-  //               color: Colors.white.withValues(alpha: 0.1),
-  //             ),
-  //           ),
-  //         ),
-  //         Positioned(
-  //           bottom: -20,
-  //           left: -20,
-  //           child: Container(
-  //             width: 80,
-  //             height: 80,
-  //             decoration: BoxDecoration(
-  //               shape: BoxShape.circle,
-  //               color: Colors.white.withValues(alpha: 0.05),
-  //             ),
-  //           ),
-  //         ),
-  //         // Content with parallax
-  //         Transform.translate(
-  //           offset: Offset(parallaxOffset, 0),
-  //           child: Center(
-  //             child: Column(
-  //               mainAxisAlignment: MainAxisAlignment.center,
-  //               children: [
-  //                 Container(
-  //                   width: 100,
-  //                   height: 100,
-  //                   child: Image.asset(
-  //                     'assets/images/banner-logo.png',
-  //                     fit: BoxFit.cover,
-  //                   ),
-  //                 ),
-  //                 const SizedBox(height: 20),
-  //                 Text(
-  //                   widget.homeData?.event?.title ?? '',
-  //                   style: const TextStyle(
-  //                     color: Colors.white,
-  //                     fontSize: 24,
-  //                     fontWeight: FontWeight.bold,
-  //                     fontFamily: 'SF Pro Display',
-  //                     letterSpacing: 0.5,
-  //                   ),
-  //                 ),
-  //                 if (widget.homeData?.event?.subTitle != null) ...[
-  //                   const SizedBox(height: 8),
-  //                   Padding(
-  //                     padding: const EdgeInsets.symmetric(horizontal: 32),
-  //                     child: Text(
-  //                       widget.homeData!.event!.subTitle!,
-  //                       textAlign: TextAlign.center,
-  //                       style: TextStyle(
-  //                         color: Colors.white.withValues(alpha: 0.9),
-  //                         fontSize: 13,
-  //                         fontWeight: FontWeight.w500,
-  //                         fontFamily: 'SF Pro Display',
-  //                         letterSpacing: 0.2,
-  //                         height: 1.4,
-  //                       ),
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ],
-  //             ),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  Widget _buildLogoCard(
-    BuildContext context,
-    bool isDarkMode,
-    double parallaxOffset,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDarkMode
-              ? [const Color(0xFF065F46), const Color(0xFF047857)]
-              : [const Color(0xFF10B981), const Color(0xFF059669)],
-        ),
-      ),
-      child: Container(
-        width: 100,
-        // height: 100,
-        child: Image.asset('assets/images/banner-image.png', fit: BoxFit.cover),
-      ),
-    );
-  }
-
-  Widget _buildLogoCard2(
-    BuildContext context,
-    bool isDarkMode,
-    double parallaxOffset,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDarkMode
-              ? [const Color(0xFF065F46), const Color(0xFF047857)]
-              : [const Color(0xFF10B981), const Color(0xFF059669)],
-        ),
-      ),
-      child: Container(
-        width: 100,
-        // height: 100,
-        child: Image.asset(
-          'assets/images/banner-image-2.png',
-          fit: BoxFit.cover,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDateLocationCard(
-    BuildContext context,
-    bool isDarkMode,
-    double parallaxOffset,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDarkMode
-              ? [const Color(0xFF15803D), const Color(0xFF16A34A)]
-              : [const Color(0xFF22C55E), const Color(0xFF4ADE80)],
-        ),
-      ),
-      child: Stack(
-        children: [
-          // Decorative elements
-          Positioned(
-            top: -40,
-            right: -40,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.08),
-              ),
-            ),
-          ),
-          // Content with parallax
-          Transform.translate(
-            offset: Offset(parallaxOffset, 0),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      CupertinoIcons.calendar,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  Text(
-                    'Event Date',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'SF Pro Display',
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  if (widget.homeData?.event?.formattedDates?.display !=
-                      null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.homeData!.event!.formattedDates!.display,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'SF Pro Display',
-                        letterSpacing: 0.3,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                  if (widget.homeData?.event?.formattedDates?.year != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      '${widget.homeData!.event!.formattedDates!.year}',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'SF Pro Display',
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ],
-                  if (widget.homeData?.event?.venue?.address?.city != null) ...[
-                    const SizedBox(height: 15),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            CupertinoIcons.location,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${widget.homeData!.event!.venue!.address!.city}, ${widget.homeData!.event!.venue!.address!.state}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'SF Pro Display',
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVenueCard(
-    BuildContext context,
-    bool isDarkMode,
-    double parallaxOffset,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDarkMode
-              ? [const Color(0xFF4D7C0F), const Color(0xFF65A30D)]
-              : [const Color(0xFF84CC16), const Color(0xFFA3E635)],
-        ),
-      ),
-      child: Stack(
-        children: [
-          // Decorative pattern
-          Positioned(
-            bottom: -30,
-            right: -30,
-            child: Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.08),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 20,
-            right: 20,
-            child: Icon(
-              CupertinoIcons.building_2_fill,
-              size: 80,
-              color: Colors.white.withValues(alpha: 0.15),
-            ),
-          ),
-          // Content with parallax
-          Transform.translate(
-            offset: Offset(parallaxOffset, 0),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      CupertinoIcons.map_pin_ellipse,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  Text(
-                    'Venue',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'SF Pro Display',
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  if (widget.homeData?.event?.venue?.name != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.homeData!.event!.venue!.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'SF Pro Display',
-                        letterSpacing: 0.3,
-                        height: 1.2,
-                      ),
-                    ),
-                  ],
-                  if (widget.homeData?.event?.venue?.address?.street !=
-                      null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      '${widget.homeData!.event!.venue!.address!.street}, ${widget.homeData!.event!.venue!.address!.city}',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'SF Pro Display',
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFloorMapCard(
-    BuildContext context,
-    bool isDarkMode,
-    double parallaxOffset,
-  ) {
-    return GestureDetector(
-      onTap: () => context.go('/more'),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDarkMode
-                ? [const Color(0xFF047857), const Color(0xFF059669)]
-                : [const Color(0xFF10B981), const Color(0xFF34D399)],
-          ),
-        ),
-        child: Stack(
-          children: [
-            // Decorative grid pattern
-            Positioned(
-              top: 30,
-              left: 30,
-              child: Icon(
-                CupertinoIcons.square_grid_3x2,
-                size: 100,
-                color: Colors.white.withValues(alpha: 0.1),
-              ),
-            ),
-            // Content with parallax
-            Transform.translate(
-              offset: Offset(parallaxOffset, 0),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        CupertinoIcons.map_fill,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    Text(
-                      'Floor Map',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'SF Pro Display',
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'View venue layout and find your way around',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'SF Pro Display',
-                        letterSpacing: 0.2,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Go to Floor Map',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'SF Pro Display',
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Icon(
-                            CupertinoIcons.arrow_right,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

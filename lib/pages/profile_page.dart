@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rajapsicon/theme_provider.dart';
+import 'package:axlmed/theme_provider.dart';
 import 'package:go_router/go_router.dart';
 
 class ProfilePage extends ConsumerWidget {

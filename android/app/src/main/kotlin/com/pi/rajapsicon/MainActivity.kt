@@ -1,4 +1,4 @@
-package com.pi.rajapsicon
+package com.pi.axlmed
 
 import io.flutter.embedding.android.FlutterActivity
 

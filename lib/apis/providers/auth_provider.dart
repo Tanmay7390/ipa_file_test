@@ -22,22 +22,18 @@ class LoginResponse {
   final Map<String, dynamic>? homePage;
   final Map<String, dynamic>? user;
   final String? message;
+  final String? detail;
 
-  LoginResponse({required this.token, this.homePage, this.user, this.message});
+  LoginResponse({required this.token, this.homePage, this.user, this.message, this.detail});
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
-    // Handle nested data structure from API
-    final data = json['data'] as Map<String, dynamic>?;
-
+    // Handle API response structure
     return LoginResponse(
-      token: data?['token'] ?? json['token'] ?? '',
-      homePage:
-          data?['home_page'] as Map<String, dynamic>? ??
-          json['home_page'] as Map<String, dynamic>?,
-      user:
-          data?['user'] as Map<String, dynamic>? ??
-          json['user'] as Map<String, dynamic>?,
-      message: json['message'] as String? ?? data?['message'] as String?,
+      token: json['token'] ?? '',
+      homePage: json['home_page'] as Map<String, dynamic>?,
+      user: json['user'] as Map<String, dynamic>?,
+      message: json['message'] as String?,
+      detail: json['detail'] as String?,
     );
   }
 
@@ -61,11 +57,11 @@ class AuthRepository {
     required String password,
   }) async {
     try {
-      log('🔐 Login Request - Email: $email');
+      log('🔐 Login Request - Email/Login: $email');
 
       final response = await dio.post(
         ApiUrls.login,
-        data: {'email': email, 'password': password},
+        data: {'login': email, 'password': password},
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
@@ -88,7 +84,7 @@ class AuthRepository {
 
           return ApiResponse.success(
             loginResponse,
-            loginResponse.message ?? 'Login successful',
+            loginResponse.detail ?? loginResponse.message ?? 'Login successful',
           );
         } else {
           log('❌ Invalid response format');
@@ -105,6 +101,106 @@ class AuthRepository {
       return ApiResponse.error(_handleDioError(e));
     } catch (e) {
       log('❌ Unexpected error during login: $e');
+      return ApiResponse.error('An unexpected error occurred');
+    }
+  }
+
+  // Google OAuth login
+  Future<ApiResponse<LoginResponse>> googleLogin({required String idToken}) async {
+    try {
+      log('🔐 Google OAuth Login Request with token');
+
+      final response = await dio.post(
+        ApiUrls.googleAuth,
+        data: {'token': idToken},
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+
+      log('✅ Google OAuth Response Status: ${response.statusCode}');
+      log('📦 Google OAuth Response Data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+
+        if (responseData is Map<String, dynamic>) {
+          final loginResponse = LoginResponse.fromJson(responseData);
+
+          // Safely log token (truncate if long enough)
+          final tokenPreview = loginResponse.token.length > 20
+              ? '${loginResponse.token.substring(0, 20)}...'
+              : loginResponse.token;
+          log('🎉 Google login successful - Token: $tokenPreview');
+          log('👤 User Data: ${loginResponse.user}');
+
+          return ApiResponse.success(
+            loginResponse,
+            loginResponse.detail ?? loginResponse.message ?? 'Google login successful',
+          );
+        } else {
+          log('❌ Invalid response format');
+          return ApiResponse.error('Invalid response format');
+        }
+      } else {
+        log('❌ Google login failed with status: ${response.statusCode}');
+        return ApiResponse.error('Google login failed');
+      }
+    } on DioException catch (e) {
+      log('❌ DioException during Google login: ${e.message}');
+      log('❌ Response: ${e.response?.data}');
+      log('❌ Status Code: ${e.response?.statusCode}');
+      return ApiResponse.error(_handleDioError(e));
+    } catch (e) {
+      log('❌ Unexpected error during Google login: $e');
+      return ApiResponse.error('An unexpected error occurred');
+    }
+  }
+
+  // Microsoft OAuth login
+  Future<ApiResponse<LoginResponse>> microsoftLogin({required String accessToken}) async {
+    try {
+      log('🔐 Microsoft OAuth Login Request with token');
+
+      final response = await dio.post(
+        ApiUrls.microsoftAuth,
+        data: {'token': accessToken},
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+
+      log('✅ Microsoft OAuth Response Status: ${response.statusCode}');
+      log('📦 Microsoft OAuth Response Data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+
+        if (responseData is Map<String, dynamic>) {
+          final loginResponse = LoginResponse.fromJson(responseData);
+
+          // Safely log token (truncate if long enough)
+          final tokenPreview = loginResponse.token.length > 20
+              ? '${loginResponse.token.substring(0, 20)}...'
+              : loginResponse.token;
+          log('🎉 Microsoft login successful - Token: $tokenPreview');
+          log('👤 User Data: ${loginResponse.user}');
+
+          return ApiResponse.success(
+            loginResponse,
+            loginResponse.detail ?? loginResponse.message ?? 'Microsoft login successful',
+          );
+        } else {
+          log('❌ Invalid response format');
+          return ApiResponse.error('Invalid response format');
+        }
+      } else {
+        log('❌ Microsoft login failed with status: ${response.statusCode}');
+        return ApiResponse.error('Microsoft login failed');
+      }
+    } on DioException catch (e) {
+      log('❌ DioException during Microsoft login: ${e.message}');
+      log('❌ Response: ${e.response?.data}');
+      log('❌ Status Code: ${e.response?.statusCode}');
+      return ApiResponse.error(_handleDioError(e));
+    } catch (e) {
+      log('❌ Unexpected error during Microsoft login: $e');
       return ApiResponse.error('An unexpected error occurred');
     }
   }
@@ -313,6 +409,38 @@ class AuthActions {
       log('📊 Login Result: ${result.message}');
     } else {
       log('❌ Login failed in AuthActions: ${result.error}');
+    }
+
+    return result;
+  }
+
+  Future<ApiResponse<LoginResponse>> googleLogin({required String idToken}) async {
+    final result = await _repository.googleLogin(idToken: idToken);
+
+    // If login successful, save token
+    if (result.success && result.data != null) {
+      log('💾 Saving Google authentication data to storage...');
+      await _authHelper.setTokenAsync(result.data!.token);
+      log('✅ Google authentication data saved successfully');
+      log('📊 Google Login Result: ${result.message}');
+    } else {
+      log('❌ Google login failed in AuthActions: ${result.error}');
+    }
+
+    return result;
+  }
+
+  Future<ApiResponse<LoginResponse>> microsoftLogin({required String accessToken}) async {
+    final result = await _repository.microsoftLogin(accessToken: accessToken);
+
+    // If login successful, save token
+    if (result.success && result.data != null) {
+      log('💾 Saving Microsoft authentication data to storage...');
+      await _authHelper.setTokenAsync(result.data!.token);
+      log('✅ Microsoft authentication data saved successfully');
+      log('📊 Microsoft Login Result: ${result.message}');
+    } else {
+      log('❌ Microsoft login failed in AuthActions: ${result.error}');
     }
 
     return result;

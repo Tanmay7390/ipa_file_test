@@ -1,15 +1,18 @@
 import 'package:flutter/cupertino.dart';
-import 'package:rajapsicon/drawer.dart';
-import 'package:rajapsicon/tabs/home_tab.dart';
-import 'package:rajapsicon/tabs/agenda_tab.dart';
-import 'package:rajapsicon/tabs/speakers_tab.dart';
-import 'package:rajapsicon/tabs/attendees_tab.dart';
-import 'package:rajapsicon/tabs/exhibitors_tab.dart';
-import 'package:rajapsicon/pages/settings_page.dart';
-import 'package:rajapsicon/pages/notifications_page.dart';
-import 'package:rajapsicon/pages/profile_page.dart';
-import 'package:rajapsicon/pages/login_page.dart';
-import 'package:rajapsicon/services/auth_service.dart';
+import 'package:axlmed/drawer.dart';
+import 'package:axlmed/tabs/home_tab.dart';
+import 'package:axlmed/tabs/company_tab.dart';
+import 'package:axlmed/tabs/speakers_tab.dart';
+import 'package:axlmed/tabs/people_tab_improved.dart';
+import 'package:axlmed/tabs/exhibitors_tab.dart';
+import 'package:axlmed/tabs/trials_tab.dart';
+import 'package:axlmed/tabs/funds_tab.dart';
+import 'package:axlmed/pages/settings_page.dart';
+import 'package:axlmed/pages/notifications_page.dart';
+import 'package:axlmed/pages/profile_page.dart';
+import 'package:axlmed/pages/privacy_policy_page.dart';
+import 'package:axlmed/pages/login_page.dart';
+import 'package:axlmed/services/auth_service.dart';
 import 'package:go_router/go_router.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -124,6 +127,26 @@ final appRouter = GoRouter(
         },
       ),
     ),
+    GoRoute(
+      path: '/privacy-policy',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: const StandaloneDrawerWrapper(child: PrivacyPolicyPage()),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // Slide from right to left when entering
+          return SlideTransition(
+            position:
+                Tween<Offset>(
+                  begin: const Offset(1.0, 0.0), // Start from right
+                  end: Offset.zero, // End at center
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                ),
+            child: child,
+          );
+        },
+      ),
+    ),
     StatefulShellRoute.indexedStack(
       pageBuilder: (context, state, navigationShell) {
         // Check navigation source
@@ -194,7 +217,7 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/company',
-              builder: (context, state) => const ScheduleTab(),
+              builder: (context, state) => const CompanyTab(),
             ),
           ],
         ),
@@ -202,7 +225,7 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/funds',
-              builder: (context, state) => const SpeakersTab(),
+              builder: (context, state) => const FundsTab(),
             ),
           ],
         ),
@@ -210,7 +233,7 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/people',
-              builder: (context, state) => const AttendeesTab(),
+              builder: (context, state) => const PeopleTab(),
             ),
           ],
         ),
@@ -218,7 +241,7 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/trials',
-              builder: (context, state) => const ExhibitorsTab(),
+              builder: (context, state) => const TrialsTab(),
               routes: [
                 // GoRoute(
                 //   path: 'add',

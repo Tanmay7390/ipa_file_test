@@ -1258,8 +1258,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
                               fontSize: 14,
                               fontWeight: FontWeight.w400,
                               color: isDarkMode
-                                  ? Color(0xFF23C061)
-                                  : Color(0xFF21AA62),
+                                  ? Color(0xFF007AFF)
+                                  : Color(0xFF0387FE),
                             ),
                           ),
                           SizedBox(width: 6),
@@ -1267,8 +1267,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
                             CupertinoIcons.chevron_right,
                             size: 14,
                             color: isDarkMode
-                                ? Color(0xFF23C061)
-                                : Color(0xFF21AA62),
+                                ? Color(0xFF007AFF)
+                                : Color(0xFF0387FE),
                           ),
                         ],
                       ),
@@ -1307,7 +1307,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
                   child: CupertinoButton(
                     padding: EdgeInsets.symmetric(vertical: 16),
                     borderRadius: BorderRadius.circular(16),
-                    color: isDarkMode ? Color(0xFF23C061) : Color(0xFF21AA62),
+                    color: isDarkMode ? Color(0xFF007AFF) : Color(0xFF0387FE),
                     onPressed: () {
                       context.push('/login');
                     },

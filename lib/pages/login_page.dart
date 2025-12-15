@@ -1,6 +1,10 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../config/oauth_config.dart';
 import '../services/auth_service.dart';
 import '../apis/providers/auth_provider.dart';
 import '../providers/home_data_provider.dart';
@@ -18,6 +22,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     text: '',
   );
   final TextEditingController _passwordController = TextEditingController();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
   bool _isLoading = false;
   String? _identifierError;
   String? _passwordError;
@@ -38,6 +43,184 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final digitsOnly = value.replaceAll(RegExp(r'\D'), '');
     // Check if it's a valid phone number (at least 10 digits)
     return digitsOnly.length >= 10;
+  }
+
+  void _showDevelopmentModeDialog() {
+    showCupertinoDialog(
+      context: context,
+      builder: (BuildContext context) => CupertinoAlertDialog(
+        title: Text('OAuth Configuration Required'),
+        content: Text(
+          'Google Sign-In requires configuration:\n\n'
+          '1. Add GoogleService-Info.plist for iOS\n'
+          '2. Add google-services.json for Android\n'
+          '3. Configure Firebase project\n\n'
+          'See OAUTH_SETUP.md for detailed instructions.',
+        ),
+        actions: [
+          CupertinoDialogAction(
+            child: Text('OK'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleGoogleLogin() async {
+    setState(() {
+      _isLoading = true;
+      _passwordError = null;
+    });
+
+    try {
+      // Check if we're in development mode
+      if (OAuthConfig.isDevelopmentMode) {
+        // Use test token for development
+        _showDevelopmentModeDialog();
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Step 1: Sign in with Google
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+      if (googleUser == null) {
+        // User cancelled the sign-in
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Step 2: Get authentication details
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      // Step 3: Get the ID token
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        setState(() {
+          _isLoading = false;
+          _passwordError = 'Failed to get Google authentication token';
+        });
+        return;
+      }
+
+      // Step 4: Send the token to your backend
+      final authActions = ref.read(authActionsProvider);
+      final result = await authActions.googleLogin(idToken: idToken);
+
+      if (!mounted) return;
+
+      if (result.success && result.data != null) {
+        // Save login info to AsyncStorage (SharedPreferences)
+        await AuthService.saveLoginInfo(
+          email: googleUser.email,
+          token: result.data!.token,
+          homePage: result.data!.homePage,
+          userData: result.data!.user,
+        );
+
+        // Refresh home page data cache
+        ref.read(homePageDataProvider.notifier).refresh();
+
+        // Refresh user data cache
+        ref.read(userDataProvider.notifier).refresh();
+
+        // Navigate to home using GoRouter with forward animation
+        if (mounted) {
+          context.go('/home', extra: {'fromLogin': true});
+        }
+      } else {
+        setState(() {
+          _isLoading = false;
+          _passwordError =
+              result.error ?? 'Google login failed. Please try again.';
+        });
+
+        // Sign out from Google if backend authentication failed
+        await _googleSignIn.signOut();
+      }
+    } on PlatformException catch (e) {
+      // Handle platform-specific errors (missing configuration, etc.)
+      String errorMessage = 'Google Sign-In Error: ';
+
+      if (e.code == 'channel-error' ||
+          e.message?.contains('Unable to establish connection') == true) {
+        errorMessage =
+            'Google Sign-In is not configured. Please add GoogleService-Info.plist (iOS) and google-services.json (Android) files. See OAUTH_SETUP.md for details.';
+      } else if (e.code == 'sign_in_failed') {
+        errorMessage =
+            'Google Sign-In failed. Please check your internet connection and try again.';
+      } else if (e.code == '10') {
+        errorMessage =
+            'Google Sign-In configuration error. Please check SHA certificates in Firebase Console.';
+      } else {
+        errorMessage = 'Google Sign-In error: ${e.message ?? e.code}';
+      }
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _passwordError = errorMessage;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _passwordError = 'An unexpected error occurred. Please try again.';
+        });
+      }
+
+      // Try to sign out from Google on error
+      try {
+        await _googleSignIn.signOut();
+      } catch (_) {
+        // Ignore sign out errors
+      }
+    }
+  }
+
+  void _handleMicrosoftLogin() async {
+    setState(() {
+      _isLoading = true;
+      _passwordError = null;
+    });
+
+    try {
+      // For Microsoft OAuth, we would need to implement a web-based OAuth flow
+      // or use a package like flutter_microsoft_authentication
+      // For now, let's show a message that this feature requires additional setup
+
+      // Since Microsoft OAuth requires more complex setup with Azure AD,
+      // we'll need to configure the app in Azure portal first
+
+      setState(() {
+        _isLoading = false;
+        _passwordError =
+            'Microsoft login requires additional configuration. Please contact support.';
+      });
+
+      // TODO: Implement proper Microsoft OAuth flow when Azure AD app is configured
+      // This would involve:
+      // 1. Registering app in Azure AD
+      // 2. Getting client ID and redirect URI
+      // 3. Using url_launcher to open Microsoft login page
+      // 4. Handling the redirect with the access token
+      // 5. Sending the token to your backend
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _passwordError = 'An unexpected error occurred. Please try again.';
+        });
+      }
+    }
   }
 
   void _handleLogin() async {
@@ -192,8 +375,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   Container(
                     decoration: BoxDecoration(
                       color: isDark
-                          ? Color(0xFF23C061).withOpacity(0.15)
-                          : Color(0xFF21AA62).withOpacity(0.10),
+                          ? Color(0xFF007AFF).withOpacity(0.15)
+                          : Color(0xFF0387FE).withOpacity(0.10),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -245,8 +428,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   Container(
                     decoration: BoxDecoration(
                       color: isDark
-                          ? Color(0xFF23C061).withOpacity(0.15)
-                          : Color(0xFF21AA62).withOpacity(0.10),
+                          ? Color(0xFF007AFF).withOpacity(0.15)
+                          : Color(0xFF0387FE).withOpacity(0.10),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -301,7 +484,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     child: CupertinoButton(
                       padding: EdgeInsets.symmetric(vertical: 16),
                       borderRadius: BorderRadius.circular(16),
-                      color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
+                      color: isDark ? Color(0xFF007AFF) : Color(0xFF0387FE),
                       onPressed: _isLoading ? null : _handleLogin,
                       child: _isLoading
                           ? CupertinoActivityIndicator(
@@ -333,7 +516,152 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w400,
-                          color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
+                          color: isDark ? Color(0xFF007AFF) : Color(0xFF0387FE),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: 32),
+
+                  // Divider with "OR"
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          color: CupertinoColors.systemGrey4,
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'OR',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: CupertinoColors.systemGrey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          color: CupertinoColors.systemGrey4,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 24),
+
+                  // Sign in with Google Button
+                  Container(
+                    width: double.infinity,
+                    child: CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      borderRadius: BorderRadius.circular(16),
+                      onPressed: _isLoading ? null : _handleGoogleLogin,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: CupertinoColors.systemGrey4,
+                            width: 1,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Google Icon - using a simple "G" for now
+                            Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: CupertinoColors.systemRed,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'G',
+                                  style: TextStyle(
+                                    color: CupertinoColors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text(
+                              'Sign in with Google',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w500,
+                                color: isDark
+                                    ? CupertinoColors.white
+                                    : CupertinoColors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: 12),
+
+                  // Sign in with Microsoft Button
+                  Container(
+                    width: double.infinity,
+                    child: CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      borderRadius: BorderRadius.circular(16),
+                      onPressed: _isLoading ? null : _handleMicrosoftLogin,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: CupertinoColors.systemGrey4,
+                            width: 1,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Microsoft Icon - using a simple "M" for now
+                            Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: CupertinoColors.systemBlue,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'M',
+                                  style: TextStyle(
+                                    color: CupertinoColors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text(
+                              'Sign in with Microsoft',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w500,
+                                color: isDark
+                                    ? CupertinoColors.white
+                                    : CupertinoColors.black,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

@@ -510,8 +510,8 @@ class _SpeakersTabState extends ConsumerState<SpeakersTab> {
                             fontWeight: FontWeight.w600,
                             color: hasSection
                                 ? isDark
-                                      ? Color(0xFF23C061)
-                                      : Color(0xFF21AA62)
+                                      ? Color(0xFF007AFF)
+                                      : Color(0xFF0387FE)
                                 : CupertinoColors.systemGrey3,
                           ),
                         ),

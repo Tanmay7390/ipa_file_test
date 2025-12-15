@@ -183,8 +183,8 @@ class _CustomPageScaffoldState extends State<CustomPageScaffold>
   Widget _buildBackButton(BuildContext context) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
     final activeColor = isDark
-        ? const Color(0xFF23C061)
-        : const Color(0xFF21AA62);
+        ? const Color(0xFF007AFF)
+        : const Color(0xFF0387FE);
 
     return CupertinoButton(
       padding: EdgeInsets.zero,

@@ -2,7 +2,7 @@ import 'dart:developer';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rajapsicon/theme_provider.dart';
+import 'package:axlmed/theme_provider.dart';
 import '../components/page_scaffold.dart';
 import '../pages/exhibitor_detail_page.dart';
 import '../apis/providers/exhibitors_provider.dart';
@@ -214,7 +214,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
   }
 
   Widget _buildViewToggleButton(bool isDarkMode) {
-    final activeColor = isDarkMode ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDarkMode ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return SizedBox(
       height: 32,
@@ -396,7 +396,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
     final categories = _getAllCategories(allExhibitors);
     if (categories.isEmpty) return const SizedBox.shrink();
 
-    final activeColor = isDarkMode ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDarkMode ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -553,7 +553,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
     Color cardBg,
     Color textColor,
   ) {
-    final activeColor = isDarkMode ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDarkMode ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return GestureDetector(
       onTap: () {
@@ -764,7 +764,7 @@ class _ExhibitorsTabState extends ConsumerState<ExhibitorsTab> {
     Color cardBg,
     Color textColor,
   ) {
-    final activeColor = isDarkMode ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDarkMode ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return GestureDetector(
       onTap: () {

@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:rajapsicon/components/page_scaffold.dart';
-// import 'package:rajapsicon/pages/chat_page.dart';
+import 'package:axlmed/components/page_scaffold.dart';
+// import 'package:axlmed/pages/chat_page.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class CompanyRepresentativeDetailPage extends StatefulWidget {
@@ -247,7 +247,7 @@ class _CompanyRepresentativeDetailPageState
 
   Widget _buildActionButtons(BuildContext context) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return Row(
       children: [
@@ -494,7 +494,7 @@ class _CompanyRepresentativeDetailPageState
   }
 
   Widget _buildAdditionalInfoSection(bool isDark) {
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -646,7 +646,7 @@ class _CompanyRepresentativeDetailPageState
 
   Widget _buildScheduleSection(bool isDark) {
     final sessions = widget.representative['sessions'] as List<dynamic>;
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -742,7 +742,7 @@ class _CompanyRepresentativeDetailPageState
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
+                    color: isDark ? Color(0xFF007AFF) : Color(0xFF0387FE),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -797,7 +797,7 @@ class _CompanyRepresentativeDetailPageState
                       ? CupertinoIcons.chevron_up
                       : CupertinoIcons.chevron_down,
                   size: 20,
-                  color: isDark ? Color(0xFF23C061) : Color(0xFF21AA62),
+                  color: isDark ? Color(0xFF007AFF) : Color(0xFF0387FE),
                 ),
               ],
             ),
@@ -855,15 +855,15 @@ class _CompanyRepresentativeDetailPageState
                                 decoration: BoxDecoration(
                                   color:
                                       (isDark
-                                              ? Color(0xFF23C061)
-                                              : Color(0xFF21AA62))
+                                              ? Color(0xFF007AFF)
+                                              : Color(0xFF0387FE))
                                           .withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
                                     color:
                                         (isDark
-                                                ? Color(0xFF23C061)
-                                                : Color(0xFF21AA62))
+                                                ? Color(0xFF007AFF)
+                                                : Color(0xFF0387FE))
                                             .withValues(alpha: 0.3),
                                     width: 1,
                                   ),
@@ -876,8 +876,8 @@ class _CompanyRepresentativeDetailPageState
                                     fontFamily: 'SF Pro Display',
                                     letterSpacing: 0.2,
                                     color: isDark
-                                        ? Color(0xFF23C061)
-                                        : Color(0xFF21AA62),
+                                        ? Color(0xFF007AFF)
+                                        : Color(0xFF0387FE),
                                   ),
                                 ),
                               ),
@@ -942,7 +942,7 @@ class _CompanyRepresentativeDetailPageState
     int dayNumber,
     bool isDark,
   ) {
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return Container(
       margin: EdgeInsets.only(bottom: 12),
@@ -1036,7 +1036,7 @@ class _MeetingFormSheetState extends State<_MeetingFormSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-    final activeColor = isDark ? Color(0xFF23C061) : Color(0xFF21AA62);
+    final activeColor = isDark ? Color(0xFF007AFF) : Color(0xFF0387FE);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,

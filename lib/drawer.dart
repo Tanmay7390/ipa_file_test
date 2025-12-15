@@ -3,12 +3,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // Add this import for kIsWeb
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rajapsicon/theme_provider.dart'; // Add this import
+import 'package:axlmed/theme_provider.dart'; // Add this import
 import 'package:go_router/go_router.dart';
-import 'package:rajapsicon/services/auth_service.dart';
+import 'package:axlmed/services/auth_service.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:rajapsicon/providers/user_data_provider.dart';
-import 'package:rajapsicon/providers/home_data_provider.dart';
+import 'package:axlmed/providers/user_data_provider.dart';
+import 'package:axlmed/providers/home_data_provider.dart';
 
 // Helper function to check if device is tablet
 bool isTablet(BuildContext context) {
@@ -366,6 +366,44 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
                             .toList(),
                   ),
                 ),
+                // Privacy Policy Button
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+                  child: CupertinoButton(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    alignment: Alignment.centerLeft,
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.transparent,
+                    onPressed: () {
+                      toggleDrawer(false);
+                      context.push('/privacy-policy');
+                    },
+                    child: Row(
+                      children: [
+                        Icon(
+                          CupertinoIcons.doc_text,
+                          color: CupertinoColors.secondaryLabel.resolveFrom(
+                            context,
+                          ),
+                          size: 24,
+                        ),
+                        SizedBox(width: 16),
+                        Text(
+                          'Privacy Policy',
+                          style: TextStyle(
+                            color: CupertinoColors.secondaryLabel.resolveFrom(
+                              context,
+                            ),
+                            fontSize: 17,
+                            fontWeight: FontWeight.w400,
+                            fontFamily: 'SF Pro Display',
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 // Bottom section with logo and controls side by side
                 Container(
                   padding: EdgeInsets.all(20),
@@ -503,7 +541,7 @@ mixin DrawerMixin<T extends StatefulWidget> on State<T> {
           child: Container(
             decoration: isSelected
                 ? BoxDecoration(
-                    color: isDarkMode ? Color(0xFF23C061) : Color(0xFF21AA62),
+                    color: isDarkMode ? Color(0xFF007AFF) : Color(0xFF0387FE),
                     borderRadius: BorderRadius.circular(12),
                   )
                 : null,
@@ -968,8 +1006,8 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar>
                               letterSpacing: 0.0,
                               color: isActive
                                   ? (isDark
-                                        ? Color(0xFF23C061)
-                                        : Color(0xFF21AA62))
+                                        ? Color(0xFF007AFF)
+                                        : Color(0xFF0387FE))
                                   : CupertinoColors.systemGrey,
                             ),
                           );
@@ -1083,8 +1121,8 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar>
                           ],
                           backgroundColor: Colors.transparent,
                           activeColor: isDark
-                              ? Color(0xFF23C061)
-                              : Color(0xFF21AA62),
+                              ? Color(0xFF007AFF)
+                              : Color(0xFF0387FE),
                           inactiveColor: CupertinoColors.systemGrey,
                           border: null,
                         );
